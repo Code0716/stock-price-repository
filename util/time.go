@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	datetimeLayout string = "2006-01-02 15:04:05"
-	dateLayout     string = "2006-01-02"
+	datetimeLayout       string = "2006-01-02 15:04:05"
+	dateLayout           string = "2006-01-02"
+	dateLayoutAsFileName string = "20060102"
 )
 
 func UnixToDatetime(timestamp int64) time.Time {
@@ -34,4 +35,8 @@ func DatetimeToDate(datetime time.Time) time.Time {
 
 func DatetimeToDateStr(datetime time.Time) string {
 	return datetime.Format(dateLayout)
+}
+
+func DatetimeToFileNameDateStr(datetime time.Time) string {
+	return datetime.Format(dateLayoutAsFileName)
 }

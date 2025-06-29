@@ -46,8 +46,10 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	djiRepository := database.NewDjiRepositoryImpl(gormDB)
 	indexInteractor := usecase.NewIndexInteractor(transaction, client, nikkeiRepository, djiRepository, stockAPIClient, slackAPIClient)
 	createNkkeiAndDjiHistoricalDataV1Command := commands.NewCreateNkkeiAndDjiHistoricalDataV1Command(indexInteractor)
-	exportStockBrandsDailyPriceToSQLV1Command := commands.NewExportStockBrandsDailyPriceToSQLV1Command(stockBrandInteractor)
-	runner := cli.NewRunner(healthCheckCommand, setJQuantsAPITokenToRedisV1Command, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNkkeiAndDjiHistoricalDataV1Command, exportStockBrandsDailyPriceToSQLV1Command, indexInteractor)
+	mySQLDumpClient := driver.NewMySQLDumpClient()
+	exportSQLInteractor := usecase.NewExportSQLInteractor(mySQLDumpClient)
+	exportStockBrandsAndDailyPriceToSQLV1Command := commands.NewExportStockBrandsAndDailyPriceToSQLV1Command(exportSQLInteractor)
+	runner := cli.NewRunner(healthCheckCommand, setJQuantsAPITokenToRedisV1Command, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNkkeiAndDjiHistoricalDataV1Command, exportStockBrandsAndDailyPriceToSQLV1Command, indexInteractor)
 	return runner, func() {
 		cleanup()
 	}, nil
@@ -55,10 +57,10 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 
 // wire.go:
 
-var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor)
+var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewExportSQLInteractor)
 
-var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient)
+var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient)
 
-var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewExportStockBrandsDailyPriceToSQLV1Command, commands.NewCreateNkkeiAndDjiHistoricalDataV1Command)
+var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewExportStockBrandsAndDailyPriceToSQLV1Command, commands.NewCreateNkkeiAndDjiHistoricalDataV1Command)
 
 var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl)

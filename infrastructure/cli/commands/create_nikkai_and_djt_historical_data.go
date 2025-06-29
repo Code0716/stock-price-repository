@@ -30,7 +30,7 @@ func (c *CreateNkkeiAndDjiHistoricalDataV1Command) Action(ctx *cli.Context) erro
 	now := time.Now()
 	err := c.nikkeiInteractor.CreateNikkeiAndDjiHistoricalData(ctx.Context, now)
 	if err != nil {
-		return errors.Wrap(err, "")
+		return errors.Wrap(err, "nikkeiInteractor.CreateNikkeiAndDjiHistoricalData error")
 	}
 
 	return nil

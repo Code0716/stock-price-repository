@@ -19,6 +19,7 @@ var usecaseSet = wire.NewSet(
 	usecase.NewStockBrandInteractor,
 	usecase.NewIndexInteractor,
 	usecase.NewStockBrandsDailyPriceInteractor,
+	usecase.NewExportSQLInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -28,6 +29,7 @@ var driverSet = wire.NewSet(
 	driver.NewSlackAPIClient,
 	driver.OpenRedis,
 	driver.NewStockAPIClient,
+	driver.NewMySQLDumpClient,
 )
 
 var cliSet = wire.NewSet(
@@ -37,7 +39,7 @@ var cliSet = wire.NewSet(
 	commands.NewUpdateStockBrandsV1Command,
 	commands.NewCreateHistoricalDailyStockPricesV1Command,
 	commands.NewCreateDailyStockPriceV1Command,
-	commands.NewExportStockBrandsDailyPriceToSQLV1Command,
+	commands.NewExportStockBrandsAndDailyPriceToSQLV1Command,
 	commands.NewCreateNkkeiAndDjiHistoricalDataV1Command,
 )
 

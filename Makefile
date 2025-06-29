@@ -79,5 +79,4 @@ format:
 
 .PHONY: build
 build:
-	cd entrypoint/cli && GOARCH=arm GOOS=linux GOARM=7 go build -o stt-cli
-
+	cd entrypoint/cli && GOARCH=arm GOOS=linux GOARM=7 go build -o spr-cli

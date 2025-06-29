@@ -2,9 +2,9 @@ services:
   db:
     image: mysql:latest
     volumes:
-      - ./stock-price-repository/sql/db_data:/var/lib/mysql
-      - ./stock-price-repository/sql/_init_sql:/docker-entrypoint-initdb.d
-      - ./stock-price-repository/sql/mysql/mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
+      - ./sql/db_data:/var/lib/mysql
+      - ./sql/_init_sql:/docker-entrypoint-initdb.d
+      - ./sql/mysql/mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
     container_name: stock-price-repository-db
     ports:
       - '3306:3306'

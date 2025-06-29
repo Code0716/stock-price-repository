@@ -27,7 +27,7 @@ func NewRunner(
 	createHistoricalDailyStockPricesV1Command *commands.CreateHistoricalDailyStockPricesV1Command,
 	createDailyStockPriceV1Command *commands.CreateDailyStockPriceV1Command,
 	createNikkeiAndDjiHistoricalDataV1Command *commands.CreateNkkeiAndDjiHistoricalDataV1Command,
-	exportDatabaseToSQLV1Command *commands.ExportStockBrandsDailyPriceToSQLV1Command,
+	exportStockBrandsAndDailyPriceToSQLV1Command *commands.ExportStockBrandsAndDailyPriceToSQLV1Command,
 	indexInteractor usecase.IndexInteractor,
 ) *Runner {
 	r := &Runner{
@@ -38,7 +38,7 @@ func NewRunner(
 			createHistoricalDailyStockPricesV1Command.Command(),
 			createDailyStockPriceV1Command.Command(),
 			createNikkeiAndDjiHistoricalDataV1Command.Command(),
-			exportDatabaseToSQLV1Command.Command(),
+			exportStockBrandsAndDailyPriceToSQLV1Command.Command(),
 		},
 		indexInteractor: indexInteractor,
 	}

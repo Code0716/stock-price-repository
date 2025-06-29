@@ -11,3 +11,4 @@ init_data
 insert_csv
 back_up
 private_key.pem
+spr-cli

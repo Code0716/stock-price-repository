@@ -1,0 +1,26 @@
+services:
+  db:
+    image: mysql:latest
+    volumes:
+      - ./stock-price-repository/sql/db_data:/var/lib/mysql
+      - ./stock-price-repository/sql/_init_sql:/docker-entrypoint-initdb.d
+      - ./stock-price-repository/sql/mysql/mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
+    container_name: stock-price-repository-db
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: $STOCK_PRICE_REPOSITORY_MYSQL_ROOT_PASSWORD
+      MYSQL_DATABASE: $STOCK_PRICE_REPOSITORY_MYSQL_DBNAME
+      MYSQL_USER: $STOCK_PRICE_REPOSITORY_MYSQL_USER
+      MYSQL_PASSWORD: $STOCK_PRICE_REPOSITORY_MYSQL_PASSWORD
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_general_ci
+      TZ: $STOCK_PRICE_REPOSITORY_MYSQL_TIMEZONE
+  redis:
+    image: redis:alpine
+    ports:
+      - '6379:6379'
+    container_name: stock-price-repository-redis
+
+volumes:
+  db_data:

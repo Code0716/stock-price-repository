@@ -1,0 +1,13 @@
+.DS_Store
+/.env
+vendor
+tmp
+.vscode
+cover.out
+cover.html
+document
+csv
+init_data
+insert_csv
+back_up
+private_key.pem

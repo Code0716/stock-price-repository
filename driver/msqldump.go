@@ -61,7 +61,7 @@ func (c *MySQLDumpClient) ExportDailyStockPriceByYear(ctx context.Context, year 
 		return errors.New("year must be a positive integer")
 	}
 
-	if err := c.exportDailyStockPriceByYear(ctx, year); err != nil {
+	if err := c.exportDailyStockPriceByYear(year); err != nil {
 		return errors.Wrapf(err, "exportYearlyData error for year %d", year)
 	}
 
@@ -69,7 +69,7 @@ func (c *MySQLDumpClient) ExportDailyStockPriceByYear(ctx context.Context, year 
 }
 
 // exportDailyStockPriceByYearは、指定された年の日足データをエクスポートする。
-func (c *MySQLDumpClient) exportDailyStockPriceByYear(ctx context.Context, year int) error {
+func (c *MySQLDumpClient) exportDailyStockPriceByYear(year int) error {
 	dbConfig := config.Database()
 	where := fmt.Sprintf("YEAR(date) = %d", year)
 

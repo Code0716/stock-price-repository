@@ -20,11 +20,6 @@ func (ei *exportSQLInteractorImpl) ExportSQLFiles(ctx context.Context, now time.
 		gateway.MySQLDumpTableNameStockBrand,
 		gateway.MySQLDumpTableNameSector33AverageDailyPrice,
 	}
-	for _, tableName := range tableNames {
-		if err := ei.exportTableAll(ctx, tableName, now); err != nil {
-			return errors.Wrapf(err, "exportTableAll %s error", tableName)
-		}
-	}
 
 	errCh := make(chan error, len(tableNames))
 	for _, tableName := range tableNames {

@@ -104,3 +104,29 @@ CREATE TABLE IF NOT EXISTS `stock_price_repository`.`sector_17_average_daily_pri
   UNIQUE KEY idx_sector_17_average_date_and_17_and_33_code (`date`, `sector_17_code`, `sector_33_code`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+--  高出来高銘柄 - 日足
+CREATE TABLE IF NOT EXISTS `stock_price_repository`.`high_volume_stock_brands` (
+  `stock_brand_id` CHAR(36) NOT NULL COMMENT 'uuid',
+  `ticker_symbol` VARCHAR(5) NOT NULL COMMENT '証券コード',
+  `volume_average` BIGINT UNSIGNED NOT NULL COMMENT '一ヶ月間の出来高平均',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created_at',
+  PRIMARY KEY (`stock_brand_id`),
+  FOREIGN KEY (`stock_brand_id`) REFERENCES stock_brand (id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- 分析結果
+CREATE TABLE IF NOT EXISTS `stock_price_repository`.`analyze_stock_brand_price_history` (
+  `id` CHAR(36) NOT NULL COMMENT 'uuid',
+  `stock_brand_id` CHAR(36) NOT NULL COMMENT 'uuid',
+  `ticker_symbol` varchar(36) NOT NULL COMMENT '証券コード',
+  `trade_price` decimal(10, 4) NOT NULL COMMENT 'トレード金額',
+  `current_price` decimal(10, 4) NOT NULL COMMENT '現在値',
+  `action` varchar(10) NOT NULL COMMENT '売り/買いの別',
+  `method` varchar(255) NOT NULL COMMENT '分析方法',
+  `memo` text COMMENT 'メモ',
+  `created_at` date DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_symbol_action_method_created_at` (`ticker_symbol`, `action`, `method`, `created_at`),
+  KEY `ticker_symbol` (`ticker_symbol`),
+  CONSTRAINT `analyze_stock_brand_price_history_ibfk_1` FOREIGN KEY (`stock_brand_id`) REFERENCES `stock_brand` (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

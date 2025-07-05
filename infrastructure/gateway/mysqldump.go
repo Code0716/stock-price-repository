@@ -21,5 +21,5 @@ type MySQLDumpClient interface {
 	// 指定したテーブルを全件exportする.
 	ExportTableAll(ctx context.Context, fileName, tableName string) error
 	// 各銘柄の日足を年ごとにexportす
-	ExportDailyStockPriceByYear(ctx context.Context, yearFrom, yearTo int) error
+	ExportDailyStockPriceByYear(ctx context.Context, year int) error
 }

@@ -41,17 +41,17 @@ func (m *MockMySQLDumpClient) EXPECT() *MockMySQLDumpClientMockRecorder {
 }
 
 // ExportDailyStockPriceByYear mocks base method.
-func (m *MockMySQLDumpClient) ExportDailyStockPriceByYear(ctx context.Context, yearFrom, yearTo int) error {
+func (m *MockMySQLDumpClient) ExportDailyStockPriceByYear(ctx context.Context, year int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExportDailyStockPriceByYear", ctx, yearFrom, yearTo)
+	ret := m.ctrl.Call(m, "ExportDailyStockPriceByYear", ctx, year)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ExportDailyStockPriceByYear indicates an expected call of ExportDailyStockPriceByYear.
-func (mr *MockMySQLDumpClientMockRecorder) ExportDailyStockPriceByYear(ctx, yearFrom, yearTo any) *gomock.Call {
+func (mr *MockMySQLDumpClientMockRecorder) ExportDailyStockPriceByYear(ctx, year any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportDailyStockPriceByYear", reflect.TypeOf((*MockMySQLDumpClient)(nil).ExportDailyStockPriceByYear), ctx, yearFrom, yearTo)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportDailyStockPriceByYear", reflect.TypeOf((*MockMySQLDumpClient)(nil).ExportDailyStockPriceByYear), ctx, year)
 }
 
 // ExportTableAll mocks base method.

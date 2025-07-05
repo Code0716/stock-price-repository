@@ -16,7 +16,10 @@ import (
 )
 
 func (si *stockBrandsDailyStockPriceInteractorImpl) CreateHistoricalDailyStockPrices(ctx context.Context, now time.Time) error {
-	symbolFrom, err := si.redisClient.Get(ctx, createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolRedisKey).Result()
+	symbolFrom, err := si.redisClient.Get(
+		ctx,
+		createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey,
+	).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return errors.Wrap(err, "redisClient.Get error")
 	}
@@ -44,9 +47,9 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) CreateHistoricalDailyStockPr
 
 	err = si.redisClient.SetEx(
 		ctx,
-		createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolRedisKey,
+		createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey,
 		stockBrands[len(stockBrands)-1].TickerSymbol,
-		createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolRedisTTL,
+		createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisTTL,
 	).Err()
 	if err != nil {
 		return errors.Wrap(err, "redisClient.Set error")
@@ -117,6 +120,7 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPricesBySt
 		return nil
 	}
 
+	log.Printf("newStockBrandDailyPricesByStockPrice: %s(%s), %d", stockBrand.Name, stockBrand.TickerSymbol, len(stockPrices))
 	result := make([]*models.StockBrandDailyPrice, 0, len(stockPrices))
 	for _, v := range stockPrices {
 		if v.High.IsZero() && v.Close.IsZero() && v.Low.IsZero() && v.Open.IsZero() {

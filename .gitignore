@@ -13,3 +13,5 @@ back_up
 private_key.pem
 spr-cli
 migration_daily_price
+sql/mysql
+sql/db_data

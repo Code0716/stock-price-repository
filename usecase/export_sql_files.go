@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
@@ -15,24 +16,40 @@ func (ei *exportSQLInteractorImpl) ExportSQLFiles(ctx context.Context, now time.
 
 	tableNames := []string{
 		gateway.MySQLDumpTableNameNikkeiStockAverageDailyPrice,
-		gateway.MySQLDumpTableNameNikkeiStockAverageDailyPrice,
+		gateway.MySQLDumpTableNameDjiStockAverageDailyStockPrice,
 		gateway.MySQLDumpTableNameStockBrand,
+		gateway.MySQLDumpTableNameSector33AverageDailyPrice,
 	}
+
+	errCh := make(chan error, len(tableNames))
 	for _, tableName := range tableNames {
-		if err := ei.exportTableAll(ctx, tableName, now); err != nil {
-			return errors.Wrapf(err, "exportTableAll %s error", tableName)
+		tName := tableName // goroutine内で正しくキャプチャするため
+		go func() {
+			if err := ei.exportTableAll(ctx, tName, now); err != nil {
+				errCh <- errors.Wrapf(err, "exportTableAll %s error", tName)
+				return
+			}
+			errCh <- nil
+		}()
+	}
+
+	for range tableNames {
+		if err := <-errCh; err != nil {
+			log.Printf("Error occurred: %v", err)
 		}
 	}
 
 	// Export daily stock prices
-	if err := ei.mySQLDumpClient.ExportDailyStockPriceByYear(
-		ctx,
-		now.AddDate(-5, 0, 0).Year(),
-		now.Year(),
-	); err != nil {
-		return errors.Wrap(err, "ExportDailyStockPriceByYear error")
+	// ゴルーチンでやると、重い処理を同時にやることになるので、DB側に負荷がかかる。
+	// レコード数も多いことから順次実行でいいと思う。
+	for year := 2019; year <= now.Year(); year++ {
+		if err := ei.mySQLDumpClient.ExportDailyStockPriceByYear(
+			ctx,
+			year,
+		); err != nil {
+			return errors.Wrap(err, "ExportDailyStockPriceByYear error")
+		}
 	}
-
 	return nil
 }
 
@@ -44,7 +61,7 @@ func (ei *exportSQLInteractorImpl) exportTableAll(ctx context.Context, tableName
 			util.DatetimeToFileNameDateStr(now),
 			tableName,
 		),
-		gateway.MySQLDumpTableNameStockBrand,
+		tableName,
 	); err != nil {
 		return errors.Wrap(err, "ExportTableAll StockBrand error")
 	}

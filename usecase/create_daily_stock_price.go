@@ -17,7 +17,10 @@ import (
 )
 
 func (si *stockBrandsDailyStockPriceInteractorImpl) CreateDailyStockPrice(ctx context.Context, now time.Time) error {
-	symbolFrom, err := si.redisClient.Get(ctx, createDailyStockPriceListToshyoStockBrandsBySymbolRedisKey).Result()
+	symbolFrom, err := si.redisClient.Get(
+		ctx,
+		createDailyStockPriceListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey,
+	).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return errors.Wrap(err, "redisClient.Get error")
 	}
@@ -49,9 +52,9 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) CreateDailyStockPrice(ctx co
 
 	err = si.redisClient.SetEx(
 		ctx,
-		createDailyStockPriceListToshyoStockBrandsBySymbolRedisKey,
+		createDailyStockPriceListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey,
 		stockBrands[len(stockBrands)-1].TickerSymbol,
-		createDailyStockPriceListToshyoStockBrandsBySymbolRedisTTL,
+		createDailyStockPriceListToshyoStockBrandsBySymbolStockPriceRepositoryRedisTTL,
 	).Err()
 	if err != nil {
 		return errors.Wrap(err, "redisClient.Set error")

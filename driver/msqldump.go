@@ -56,22 +56,20 @@ func (c *MySQLDumpClient) ExportTableAll(ctx context.Context, fileName, tableNam
 }
 
 // ExportDailyStockPriceByYear 各銘柄の日足を年ごとにexportする
-func (c *MySQLDumpClient) ExportDailyStockPriceByYear(ctx context.Context, yearFrom, yearTo int) error {
-	if yearFrom > yearTo {
-		return errors.New("yearFrom must be less than or equal to yearTo")
+func (c *MySQLDumpClient) ExportDailyStockPriceByYear(ctx context.Context, year int) error {
+	if year < 0 {
+		return errors.New("year must be a positive integer")
 	}
 
-	for i := yearFrom; i <= yearTo; i++ {
-		if err := c.exportDailyStockPriceByYear(ctx, i); err != nil {
-			return errors.Wrapf(err, "exportYearlyData error for year %d", i)
-		}
+	if err := c.exportDailyStockPriceByYear(year); err != nil {
+		return errors.Wrapf(err, "exportYearlyData error for year %d", year)
 	}
 
 	return nil
 }
 
 // exportDailyStockPriceByYearは、指定された年の日足データをエクスポートする。
-func (c *MySQLDumpClient) exportDailyStockPriceByYear(ctx context.Context, year int) error {
+func (c *MySQLDumpClient) exportDailyStockPriceByYear(year int) error {
 	dbConfig := config.Database()
 	where := fmt.Sprintf("YEAR(date) = %d", year)
 
@@ -99,6 +97,5 @@ func (c *MySQLDumpClient) exportDailyStockPriceByYear(ctx context.Context, year 
 		return errors.Wrap(err, "mysqldump command run error")
 	}
 
-	log.Printf("mysqldump & export success for year %d: %s\n", year, tableName)
 	return nil
 }

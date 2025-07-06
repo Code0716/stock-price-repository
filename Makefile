@@ -31,7 +31,6 @@ gen: gorm-gen
 	go generate ./...
 
 gorm-gen:
-	rm -rf infrastructure/database/gen_model infrastructure/database/gen_query
 	go run _gorm_gen/main.go
 
 .PHONY: mock

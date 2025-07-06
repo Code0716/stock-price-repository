@@ -49,6 +49,7 @@ var databaseSet = wire.NewSet(
 	database.NewNikkeiRepositoryImpl,
 	database.NewDjiRepositoryImpl,
 	database.NewStockBrandsDailyPriceRepositoryImpl,
+	database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {

@@ -12,11 +12,12 @@ import (
 )
 
 type stockBrandInteractorImpl struct {
-	tx                              database.Transaction
-	stockBrandRepository            repositories.StockBrandRepository
-	stockBrandsDailyPriceRepository repositories.StockBrandsDailyPriceRepository
-	stockAPIClient                  gateway.StockAPIClient
-	redisClient                     *redis.Client
+	tx                                      database.Transaction
+	stockBrandRepository                    repositories.StockBrandRepository
+	stockBrandsDailyPriceRepository         repositories.StockBrandsDailyPriceRepository
+	analyzeStockBrandPriceHistoryRepository repositories.AnalyzeStockBrandPriceHistoryRepository
+	stockAPIClient                          gateway.StockAPIClient
+	redisClient                             *redis.Client
 }
 
 type StockBrandInteractor interface {
@@ -27,6 +28,7 @@ func NewStockBrandInteractor(
 	tx database.Transaction,
 	stockBrandRepository repositories.StockBrandRepository,
 	stockBrandsDailyPriceRepository repositories.StockBrandsDailyPriceRepository,
+	analyzeStockBrandPriceHistoryRepository repositories.AnalyzeStockBrandPriceHistoryRepository,
 	stockAPIClient gateway.StockAPIClient,
 	redisClient *redis.Client,
 ) StockBrandInteractor {
@@ -34,6 +36,7 @@ func NewStockBrandInteractor(
 		tx,
 		stockBrandRepository,
 		stockBrandsDailyPriceRepository,
+		analyzeStockBrandPriceHistoryRepository,
 		stockAPIClient,
 		redisClient,
 	}

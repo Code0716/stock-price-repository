@@ -74,7 +74,11 @@ func (si *stockBrandInteractorImpl) UpdateStockBrands(ctx context.Context, now t
 				return errors.Wrap(err, "stockBrandsDailyPriceRepository.DeleteDelisting error")
 			}
 
-			// 上場廃止銘柄の削除
+			if err := si.analyzeStockBrandPriceHistoryRepository.DeleteByStockBrandIDs(ctx, deleteIDs); err != nil {
+				return errors.Wrap(err, "analyzeStockBrandPriceHistoryRepository.DeleteByStockBrandIDs error")
+			}
+
+			// 上場廃止銘柄の削除 これが最後
 			if err := si.stockBrandRepository.DeleteDelistingStockBrands(ctx, deleteIDs); err != nil {
 				return errors.Wrap(err, "stockBrandRepository.DeleteDelistingStockBrands error")
 			}

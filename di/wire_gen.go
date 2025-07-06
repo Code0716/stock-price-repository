@@ -37,7 +37,8 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	}
 	stockBrandRepository := database.NewStockBrandRepositoryImpl(gormDB)
 	stockBrandsDailyPriceRepository := database.NewStockBrandsDailyPriceRepositoryImpl(gormDB)
-	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, stockAPIClient, client)
+	analyzeStockBrandPriceHistoryRepository := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(gormDB)
+	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, analyzeStockBrandPriceHistoryRepository, stockAPIClient, client)
 	updateStockBrandsV1Command := commands.NewUpdateStockBrandsV1Command(stockBrandInteractor)
 	stockBrandsDailyPriceInteractor := usecase.NewStockBrandsDailyPriceInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, stockAPIClient, client, slackAPIClient)
 	createHistoricalDailyStockPricesV1Command := commands.NewCreateHistoricalDailyStockPricesV1Command(stockBrandsDailyPriceInteractor)
@@ -63,4 +64,4 @@ var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequ
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewExportStockBrandsAndDailyPriceToSQLV1Command, commands.NewCreateNkkeiAndDjiHistoricalDataV1Command)
 
-var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl)
+var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl)

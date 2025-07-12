@@ -50,7 +50,7 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	mySQLDumpClient := driver.NewMySQLDumpClient()
 	exportSQLInteractor := usecase.NewExportSQLInteractor(mySQLDumpClient)
 	exportStockBrandsAndDailyPriceToSQLV1Command := commands.NewExportStockBrandsAndDailyPriceToSQLV1Command(exportSQLInteractor)
-	runner := cli.NewRunner(healthCheckCommand, setJQuantsAPITokenToRedisV1Command, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNkkeiAndDjiHistoricalDataV1Command, exportStockBrandsAndDailyPriceToSQLV1Command, indexInteractor)
+	runner := cli.NewRunner(healthCheckCommand, setJQuantsAPITokenToRedisV1Command, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNkkeiAndDjiHistoricalDataV1Command, exportStockBrandsAndDailyPriceToSQLV1Command, indexInteractor, slackAPIClient)
 	return runner, func() {
 		cleanup()
 	}, nil

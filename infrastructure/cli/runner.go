@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Code0716/stock-price-repository/config"
 	sContext "github.com/Code0716/stock-price-repository/context"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
@@ -30,6 +31,7 @@ func NewRunner(
 	createNikkeiAndDjiHistoricalDataV1Command *commands.CreateNkkeiAndDjiHistoricalDataV1Command,
 	exportStockBrandsAndDailyPriceToSQLV1Command *commands.ExportStockBrandsAndDailyPriceToSQLV1Command,
 	indexInteractor usecase.IndexInteractor,
+	slackAPIClient gateway.SlackAPIClient,
 ) *Runner {
 	r := &Runner{
 		commands: []*commands.Command{
@@ -42,6 +44,7 @@ func NewRunner(
 			exportStockBrandsAndDailyPriceToSQLV1Command.Command(),
 		},
 		indexInteractor: indexInteractor,
+		slackAPIClient:  slackAPIClient,
 	}
 	return r
 }
@@ -76,7 +79,21 @@ func (r *Runner) Run() {
 
 	// FIXME: commandにかかった時間を通知する
 	end := time.Now()
-	timeTakenMessage := fmt.Sprintf("command name: %s*\n*time taken: %v", commandName, end.Sub(start))
-	r.slackAPIClient.SendMessageByStrings(ctx, gateway.SlackChannelNameDevNotification, timeTakenMessage, nil, nil)
+	timeTakenMessage := fmt.Sprintf(
+		"env: %s*\n *command name: %s*\n*time taken: %v",
+		config.App().AppEnv,
+		commandName,
+		end.Sub(start),
+	)
+
+	if _, err := r.slackAPIClient.SendMessageByStrings(ctx, gateway.SlackChannelNameDevNotification, timeTakenMessage, nil, nil); err != nil {
+		err := r.slackAPIClient.SendErrMessageNotification(
+			ctx,
+			errors.Wrap(err, fmt.Sprintf("Error SendMessageByStrings: %s failed.", commandName)),
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 	log.Printf("%s command success", msg)
 }

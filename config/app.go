@@ -7,6 +7,7 @@ import (
 )
 
 type ConfigApp struct {
+	AppEnv      string `envconfig:"app_env" default:"local"`
 	AppLogLevel string `envconfig:"app_log_level" default:"debug"`
 	AppTimezone string `envconfig:"app_timezone" default:"Asia/Tokyo"`
 }

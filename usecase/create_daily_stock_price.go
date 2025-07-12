@@ -191,8 +191,8 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPriceBySto
 		return nil
 	}
 
+	log.Printf("newStockBrandDailyPriceByStockChartWithRangeAPIResponseInfo: %s(%s)", stockBrand.Name, stockBrand.TickerSymbol)
 	result := make([]*models.StockBrandDailyPrice, 0, len(prices))
-
 	for _, v := range prices {
 		if v == nil {
 			continue

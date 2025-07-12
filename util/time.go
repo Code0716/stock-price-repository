@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	datetimeLayout       string = "2006-01-02 15:04:05"
+	DatetimeLayout       string = "2006-01-02 15:04:05"
 	dateLayout           string = "2006-01-02"
 	dateLayoutAsFileName string = "20060102"
 )

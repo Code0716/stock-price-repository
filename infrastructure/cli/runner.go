@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	sContext "github.com/Code0716/stock-price-repository/context"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
@@ -59,9 +60,9 @@ func (r *Runner) Run() {
 		app.Commands = append(app.Commands, command.CliCommand())
 	}
 
-	err := app.RunContext(ctx, args)
+	start := time.Now()
 	msg := fmt.Sprintf("command: %s finished \n", commandName)
-	if err != nil {
+	if err := app.RunContext(ctx, args); err != nil {
 		log.Print(msg, args, errors.Wrap(err, "command failed"))
 		err := r.slackAPIClient.SendErrMessageNotification(
 			ctx,
@@ -72,5 +73,10 @@ func (r *Runner) Run() {
 		}
 		return
 	}
+
+	// FIXME: commandにかかった時間を通知する
+	end := time.Now()
+	timeTakenMessage := fmt.Sprintf("command name: %s*\n*time taken: %v", commandName, end.Sub(start))
+	r.slackAPIClient.SendMessageByStrings(ctx, gateway.SlackChannelNameDevNotification, timeTakenMessage, nil, nil)
 	log.Printf("%s command success", msg)
 }

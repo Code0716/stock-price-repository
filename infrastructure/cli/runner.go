@@ -80,7 +80,7 @@ func (r *Runner) Run() {
 	// FIXME: commandにかかった時間を通知する
 	end := time.Now()
 	timeTakenMessage := fmt.Sprintf(
-		"env: %s*\n *command name: %s*\n*time taken: %v",
+		"env: %s*\n*command name: %s*\n*time taken: %v",
 		config.App().AppEnv,
 		commandName,
 		end.Sub(start),

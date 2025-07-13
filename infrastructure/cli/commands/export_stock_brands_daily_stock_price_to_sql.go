@@ -22,7 +22,7 @@ func NewExportStockBrandsAndDailyPriceToSQLV1Command(
 func (c *ExportStockBrandsAndDailyPriceToSQLV1Command) Command() *Command {
 	return &Command{
 		Name:   "export_stock_brands_daily_stock_price_to_sql_v1",
-		Usage:  "何某かの方法ででexportする",
+		Usage:  "DBをsqlでexportする",
 		Action: c.Action,
 	}
 }

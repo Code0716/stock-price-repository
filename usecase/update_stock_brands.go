@@ -69,7 +69,7 @@ func (si *stockBrandInteractorImpl) UpdateStockBrands(ctx context.Context, now t
 
 		if len(deleteIDs) != 0 {
 			// 上場廃止銘柄の日足削除
-			if err := si.stockBrandsDailyPriceRepository.DeleteDelisting(ctx, deleteIDs); err != nil {
+			if err := si.stockBrandsDailyPriceRepository.DeleteByIDs(ctx, deleteIDs); err != nil {
 				return errors.Wrap(err, "stockBrandsDailyPriceRepository.DeleteDelisting error")
 			}
 

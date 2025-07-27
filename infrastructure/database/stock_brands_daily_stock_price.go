@@ -70,7 +70,7 @@ func (si *StockBrandsDailyPriceRepositoryImpl) CreateStockBrandDailyPrice(ctx co
 	return nil
 }
 
-func (si *StockBrandsDailyPriceRepositoryImpl) DeleteDelisting(ctx context.Context, ids []string) error {
+func (si *StockBrandsDailyPriceRepositoryImpl) DeleteByIDs(ctx context.Context, ids []string) error {
 	tx, ok := GetTxQuery(ctx)
 	if !ok {
 		tx = si.query

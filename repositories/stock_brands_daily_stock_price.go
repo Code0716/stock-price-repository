@@ -16,5 +16,5 @@ type StockBrandsDailyPriceRepository interface {
 	// ListDailyPricesBySymbol symbolから日足を取得する
 	ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPrice, error)
 	// 上場廃止銘柄を削除する。
-	DeleteDelisting(ctx context.Context, deleteSymbols []string) error
+	DeleteByIDs(ctx context.Context, ids []string) error
 }

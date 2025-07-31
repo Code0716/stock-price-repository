@@ -85,6 +85,13 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createHistoricalDailyStockPr
 		if err := si.stockBrandsDailyStockPriceRepository.CreateStockBrandDailyPrice(ctx, v); err != nil {
 			log.Printf("stockBrandsDailyStockPriceRepository.CreateStockBrandsDailyPrice error: %v", err)
 		}
+		if err := si.stockBrandsDailyPriceForAnalyzeRepository.
+			CreateStockBrandDailyPriceForAnalyze(
+				ctx,
+				si.newStockBrandDailyPriceForAnalyzeByStockBrandsDailyPrice(v, now),
+			); err != nil {
+			log.Printf("stockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandsDailyPriceForAnalyze error: %v", err)
+		}
 	}
 
 	return nil

@@ -10,7 +10,6 @@ import (
 	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/models"
-	"github.com/Code0716/stock-price-repository/util"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 )
@@ -125,16 +124,26 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 
 	// worker
 	var batch []*models.StockBrandDailyPrice
+	var batchForAnalyze []*models.StockBrandDailyPriceForAnalyze
+
 	for v := range stockBrandDailyPricesCh {
 		// チャネルから受け取ったデータをバッチに追加
 		batch = append(batch, v...)
+		batchForAnalyze = append(batchForAnalyze, si.newStockBrandDailyPriceForAnalyzeByStockBrandsDailyPrice(v, now)...)
 
 		// バッチサイズが100に達したら処理を実行
 		if len(batch) >= batchSize {
 			if err := si.stockBrandsDailyStockPriceRepository.CreateStockBrandDailyPrice(ctx, batch); err != nil {
-				return errors.Wrap(err, "failed to create batch")
+				return errors.Wrap(err, "stockBrandsDailyStockPriceRepository.CreateStockBrandDailyPrice error: failed to create batch")
 			}
+
 			batch = batch[:0] // バッチをリセット
+		}
+		if len(batchForAnalyze) >= batchSize {
+			if err := si.stockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandDailyPriceForAnalyze(ctx, batchForAnalyze); err != nil {
+				return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandDailyPriceForAnalyze error: failed to create batch")
+			}
+			batchForAnalyze = batchForAnalyze[:0] // バッチをリセット
 		}
 	}
 
@@ -183,37 +192,4 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPriceBySymbo
 			}
 		}
 	}
-}
-
-func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPriceByStockChartWithRangeAPIResponseInfo(stockBrand *models.StockBrand, prices []*gateway.StockPrice, now time.Time) []*models.StockBrandDailyPrice {
-	if len(prices) == 0 {
-		return nil
-	}
-
-	log.Printf("newStockBrandDailyPriceByStockChartWithRangeAPIResponseInfo: %s(%s)", stockBrand.Name, stockBrand.TickerSymbol)
-	result := make([]*models.StockBrandDailyPrice, 0, len(prices))
-	for _, v := range prices {
-		if v == nil {
-			continue
-		}
-		if v.High.IsZero() && v.Close.IsZero() && v.Low.IsZero() && v.Open.IsZero() {
-			continue
-		}
-		result = append(result, models.NewStockBrandDailyPrice(
-			util.GenerateUUID(),
-			stockBrand.ID,
-			v.Date,
-			v.TickerSymbol,
-			v.High,
-			v.Low,
-			v.Open,
-			v.Close,
-			v.Volume,
-			v.AdjustmentClose,
-			now,
-			now,
-		))
-	}
-	return result
-
 }

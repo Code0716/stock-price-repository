@@ -38,9 +38,10 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	stockBrandRepository := database.NewStockBrandRepositoryImpl(gormDB)
 	stockBrandsDailyPriceRepository := database.NewStockBrandsDailyPriceRepositoryImpl(gormDB)
 	analyzeStockBrandPriceHistoryRepository := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(gormDB)
-	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, analyzeStockBrandPriceHistoryRepository, stockAPIClient, client)
+	stockBrandsDailyPriceForAnalyzeRepository := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(gormDB)
+	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, analyzeStockBrandPriceHistoryRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client)
 	updateStockBrandsV1Command := commands.NewUpdateStockBrandsV1Command(stockBrandInteractor)
-	stockBrandsDailyPriceInteractor := usecase.NewStockBrandsDailyPriceInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, stockAPIClient, client, slackAPIClient)
+	stockBrandsDailyPriceInteractor := usecase.NewStockBrandsDailyPriceInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client, slackAPIClient)
 	createHistoricalDailyStockPricesV1Command := commands.NewCreateHistoricalDailyStockPricesV1Command(stockBrandsDailyPriceInteractor)
 	createDailyStockPriceV1Command := commands.NewCreateDailyStockPriceV1Command(stockBrandsDailyPriceInteractor)
 	nikkeiRepository := database.NewNikkeiRepositoryImpl(gormDB)
@@ -64,4 +65,4 @@ var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequ
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewExportStockBrandsAndDailyPriceToSQLV1Command, commands.NewCreateNkkeiAndDjiHistoricalDataV1Command)
 
-var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl)
+var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl)

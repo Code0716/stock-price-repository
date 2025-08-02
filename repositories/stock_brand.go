@@ -20,5 +20,5 @@ type StockBrandRepository interface {
 	// upsertされたタイミングで利用。upsertされてなかったら上場廃止と判断する
 	FindDelistingStockBrandsFromUpdateTime(ctx context.Context, now time.Time) ([]string, error)
 	// 上場廃止銘柄を削除する。
-	DeleteDelistingStockBrands(ctx context.Context, deleteSymbols []string) error
+	DeleteDelistingStockBrands(ctx context.Context, ids []string) ([]*models.StockBrand, error)
 }

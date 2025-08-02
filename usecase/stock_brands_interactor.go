@@ -12,12 +12,13 @@ import (
 )
 
 type stockBrandInteractorImpl struct {
-	tx                                      database.Transaction
-	stockBrandRepository                    repositories.StockBrandRepository
-	stockBrandsDailyPriceRepository         repositories.StockBrandsDailyPriceRepository
-	analyzeStockBrandPriceHistoryRepository repositories.AnalyzeStockBrandPriceHistoryRepository
-	stockAPIClient                          gateway.StockAPIClient
-	redisClient                             *redis.Client
+	tx                                        database.Transaction
+	stockBrandRepository                      repositories.StockBrandRepository
+	stockBrandsDailyPriceRepository           repositories.StockBrandsDailyPriceRepository
+	analyzeStockBrandPriceHistoryRepository   repositories.AnalyzeStockBrandPriceHistoryRepository
+	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository
+	stockAPIClient                            gateway.StockAPIClient
+	redisClient                               *redis.Client
 }
 
 type StockBrandInteractor interface {
@@ -29,6 +30,7 @@ func NewStockBrandInteractor(
 	stockBrandRepository repositories.StockBrandRepository,
 	stockBrandsDailyPriceRepository repositories.StockBrandsDailyPriceRepository,
 	analyzeStockBrandPriceHistoryRepository repositories.AnalyzeStockBrandPriceHistoryRepository,
+	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository,
 	stockAPIClient gateway.StockAPIClient,
 	redisClient *redis.Client,
 ) StockBrandInteractor {
@@ -37,6 +39,7 @@ func NewStockBrandInteractor(
 		stockBrandRepository,
 		stockBrandsDailyPriceRepository,
 		analyzeStockBrandPriceHistoryRepository,
+		stockBrandsDailyPriceForAnalyzeRepository,
 		stockAPIClient,
 		redisClient,
 	}

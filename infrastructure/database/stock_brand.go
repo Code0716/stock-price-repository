@@ -130,18 +130,36 @@ func (si *StockBrandRepositoryImpl) FindDelistingStockBrandsFromUpdateTime(ctx c
 	return ids, nil
 }
 
-func (si *StockBrandRepositoryImpl) DeleteDelistingStockBrands(ctx context.Context, ids []string) error {
+func (si *StockBrandRepositoryImpl) DeleteDelistingStockBrands(ctx context.Context, ids []string) ([]*models.StockBrand, error) {
 	tx, ok := GetTxQuery(ctx)
 	if !ok {
 		tx = si.query
 	}
 
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	deleteBrands, err := tx.StockBrand.WithContext(ctx).
+		Where(tx.StockBrand.ID.In(ids...)).
+		Where(tx.StockBrand.DeletedAt.IsNull()).
+		Find()
+	if err != nil {
+		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.DeleteDelistingStockBrands error")
+	}
+
 	if _, err := tx.StockBrand.WithContext(ctx).
 		Where(tx.StockBrand.ID.In(ids...)).
 		Delete(); err != nil {
-		return errors.Wrap(err, "StockBrandRepositoryImpl.DeleteDelistingStockBrands error")
+		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.DeleteDelistingStockBrands error")
 	}
-	return nil
+
+	results := make([]*models.StockBrand, 0, len(deleteBrands))
+	for _, v := range deleteBrands {
+		results = append(results, si.convertToDomainModel(v))
+
+	}
+	return results, nil
 }
 
 func (si *StockBrandRepositoryImpl) convertToDBModels(stockBrands []*models.StockBrand) []*genModel.StockBrand {

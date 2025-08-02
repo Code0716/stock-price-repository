@@ -55,18 +55,18 @@ func (mr *MockStockBrandsDailyPriceRepositoryMockRecorder) CreateStockBrandDaily
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStockBrandDailyPrice", reflect.TypeOf((*MockStockBrandsDailyPriceRepository)(nil).CreateStockBrandDailyPrice), ctx, dailyPrice)
 }
 
-// DeleteDelisting mocks base method.
-func (m *MockStockBrandsDailyPriceRepository) DeleteDelisting(ctx context.Context, deleteSymbols []string) error {
+// DeleteByIDs mocks base method.
+func (m *MockStockBrandsDailyPriceRepository) DeleteByIDs(ctx context.Context, ids []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDelisting", ctx, deleteSymbols)
+	ret := m.ctrl.Call(m, "DeleteByIDs", ctx, ids)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteDelisting indicates an expected call of DeleteDelisting.
-func (mr *MockStockBrandsDailyPriceRepositoryMockRecorder) DeleteDelisting(ctx, deleteSymbols any) *gomock.Call {
+// DeleteByIDs indicates an expected call of DeleteByIDs.
+func (mr *MockStockBrandsDailyPriceRepositoryMockRecorder) DeleteByIDs(ctx, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDelisting", reflect.TypeOf((*MockStockBrandsDailyPriceRepository)(nil).DeleteDelisting), ctx, deleteSymbols)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByIDs", reflect.TypeOf((*MockStockBrandsDailyPriceRepository)(nil).DeleteByIDs), ctx, ids)
 }
 
 // GetLatestPriceBySymbol mocks base method.

@@ -7,7 +7,7 @@ import (
 )
 
 type ConfigFeatureFlag struct {
-	FeatureFlagStartUseingJQuants bool `envconfig:"start_useing_j_quants" default:""`
+	// FeatureFlagStartUseingJQuants bool `envconfig:"start_useing_j_quants" default:""`
 }
 
 var configFeatureFlag ConfigFeatureFlag

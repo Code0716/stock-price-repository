@@ -109,8 +109,7 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createHistoricalDailyStockPr
 		resp, err := si.stockAPIClient.GetDailyPricesBySymbolAndRange(
 			ctx,
 			gateway.StockAPISymbol(v.TickerSymbol),
-			now.AddDate(-5, 0, 0),
-			now,
+			gateway.StockAPIValidRange5Y,
 		)
 		if err != nil {
 			log.Printf("stockAPIClient.GetDailyPricesBySymbolAndRange error: %v", err)

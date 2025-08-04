@@ -5,7 +5,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/util"
 	"github.com/pkg/errors"
@@ -56,12 +55,8 @@ func (c *StockAPIClient) GetCurrentStockPriceBySymbol(ctx context.Context, symbo
 	return c.getCurrentStockPriceBySymbolYF(ctx, symbol.String())
 }
 
-func (c *StockAPIClient) GetDailyPricesBySymbolAndRange(ctx context.Context, symbol gateway.StockAPISymbol, dateFrom, dateTo time.Time) ([]*gateway.StockPrice, error) {
-	if config.FeatureFlag().FeatureFlagStartUseingJQuants {
-		return c.getDailyPricesBySymbolAndRangeJQ(ctx, symbol.String(), dateFrom, dateTo)
-	}
-
-	dailyPrices, err := c.getStockPriceChart(ctx, gateway.StockAPISymbol(c.getYahooFinanceAPIStckBrandSymbol(symbol.String())), gateway.StockAPIInterval1D, gateway.StockAPIValidRange1MO)
+func (c *StockAPIClient) GetDailyPricesBySymbolAndRange(ctx context.Context, symbol gateway.StockAPISymbol, dateRange gateway.StockAPIValidRange) ([]*gateway.StockPrice, error) {
+	dailyPrices, err := c.getStockPriceChart(ctx, gateway.StockAPISymbol(c.getYahooFinanceAPIStckBrandSymbol(symbol.String())), gateway.StockAPIInterval1D, dateRange)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetDailyPricesBySymbolAndRange error")
 	}

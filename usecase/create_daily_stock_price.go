@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/pkg/errors"
@@ -29,10 +28,7 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) CreateDailyStockPrice(ctx co
 	}
 
 	// JQuantsを使用する場合は、一度で全てのデータを取得する
-	limit := createDailyStockPriceLimitAtOnceByDivision
-	if config.FeatureFlag().FeatureFlagStartUseingJQuants {
-		limit = createDailyStockPriceLimitAtOnceByAll
-	}
+	limit := createDailyStockPriceLimitAtOnceByAll
 
 	stockBrands, err := si.stockBrandRepository.
 		FindFromSymbol(ctx, symbolFrom, limit)
@@ -173,8 +169,7 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPriceBySymbo
 			resp, err := si.stockAPIClient.GetDailyPricesBySymbolAndRange(
 				ctx,
 				gateway.StockAPISymbol(v.TickerSymbol),
-				now.AddDate(0, -1, 0),
-				now,
+				gateway.StockAPIValidRange5D,
 			)
 
 			if err != nil {

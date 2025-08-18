@@ -55,13 +55,8 @@ func (c *StockAPIClient) GetCurrentStockPriceBySymbol(ctx context.Context, symbo
 	return c.getCurrentStockPriceBySymbolYF(ctx, symbol.String())
 }
 
-func (c *StockAPIClient) GetDailyPricesBySymbolAndRange(ctx context.Context, symbol gateway.StockAPISymbol, dateRange gateway.StockAPIValidRange) ([]*gateway.StockPrice, error) {
-	dailyPrices, err := c.getStockPriceChart(ctx, gateway.StockAPISymbol(c.getYahooFinanceAPIStckBrandSymbol(symbol.String())), gateway.StockAPIInterval1D, dateRange)
-	if err != nil {
-		return nil, errors.Wrap(err, "GetDailyPricesBySymbolAndRange error")
-	}
-
-	return dailyPrices.Indicator, nil
+func (c *StockAPIClient) GetDailyPricesBySymbolAndRange(ctx context.Context, symbol gateway.StockAPISymbol, dateFrom, dateTo time.Time) ([]*gateway.StockPrice, error) {
+	return c.getDailyPricesBySymbolAndRangeJQ(ctx, symbol.String(), dateFrom, dateTo)
 }
 
 // GetFinancialStatementsBySymbol シンボルから財務情報の取得

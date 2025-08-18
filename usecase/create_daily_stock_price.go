@@ -166,7 +166,8 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPriceBySymbo
 			resp, err := si.stockAPIClient.GetDailyPricesBySymbolAndRange(
 				ctx,
 				gateway.StockAPISymbol(v.TickerSymbol),
-				gateway.StockAPIValidRange5D,
+				now.AddDate(0, -1, 0),
+				now,
 			)
 
 			if err != nil {

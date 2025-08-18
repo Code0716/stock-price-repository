@@ -83,10 +83,7 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 	// バッファサイズの計算
 	// 1. ワーカー数 × ワーカーあたりのバッファ数
 	// 2. 最大バッファサイズを超えないように制限
-	bufferSize := numWorkers * bufferPerWorker
-	if bufferSize > maxBufferSize {
-		bufferSize = maxBufferSize
-	}
+	bufferSize := min(numWorkers*bufferPerWorker, maxBufferSize)
 
 	// 入力チャネルは全データを格納できるサイズに
 	stockBrandsCh := make(chan *models.StockBrand, len(stockBrands))

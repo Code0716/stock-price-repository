@@ -54,7 +54,7 @@ cli:
 	go run entrypoint/cli/main.go ${command}
 
 migrate-file:
-	migrate create -ext sql -dir sql/migrations -seq ${table_name}
+	migrate create -ext sql -dir sql/migrations -seq ${name}
 
 migrate-up:
 	migrate -path sql/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository up

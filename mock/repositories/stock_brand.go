@@ -43,17 +43,18 @@ func (m *MockStockBrandRepository) EXPECT() *MockStockBrandRepositoryMockRecorde
 }
 
 // DeleteDelistingStockBrands mocks base method.
-func (m *MockStockBrandRepository) DeleteDelistingStockBrands(ctx context.Context, deleteSymbols []string) error {
+func (m *MockStockBrandRepository) DeleteDelistingStockBrands(ctx context.Context, ids []string) ([]*models.StockBrand, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDelistingStockBrands", ctx, deleteSymbols)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "DeleteDelistingStockBrands", ctx, ids)
+	ret0, _ := ret[0].([]*models.StockBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DeleteDelistingStockBrands indicates an expected call of DeleteDelistingStockBrands.
-func (mr *MockStockBrandRepositoryMockRecorder) DeleteDelistingStockBrands(ctx, deleteSymbols any) *gomock.Call {
+func (mr *MockStockBrandRepositoryMockRecorder) DeleteDelistingStockBrands(ctx, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDelistingStockBrands", reflect.TypeOf((*MockStockBrandRepository)(nil).DeleteDelistingStockBrands), ctx, deleteSymbols)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDelistingStockBrands", reflect.TypeOf((*MockStockBrandRepository)(nil).DeleteDelistingStockBrands), ctx, ids)
 }
 
 // FindAll mocks base method.

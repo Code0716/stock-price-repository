@@ -14,6 +14,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	createHistoricalDailyStockPricesLimitAtOnce                                               int           = 4000
+	createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey string        = "create_historical_daily_stock_price_list_toshyo_stock_brands_by_symbol_stock_price_repository_redis_key"
+	createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisTTL time.Duration = 2 * time.Hour
+)
+
 func (si *stockBrandsDailyStockPriceInteractorImpl) CreateHistoricalDailyStockPrices(ctx context.Context, now time.Time) error {
 	symbolFrom, err := si.redisClient.Get(
 		ctx,

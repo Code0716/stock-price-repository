@@ -49,19 +49,6 @@ func NewStockBrandsDailyPriceInteractor(
 	}
 }
 
-const (
-	createDailyStockPriceLimitAtOnceByAll                                          int           = 4000
-	createDailyStockPriceLimitAtOnceByDivision                                     int           = 800
-	createDailyStockPriceListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey string        = "create_daily_stock_price_list_toshyo_stock_brands_by_symbol_stock_price_repository_redis_key"
-	createDailyStockPriceListToshyoStockBrandsBySymbolStockPriceRepositoryRedisTTL time.Duration = 2 * time.Hour
-)
-
-const (
-	createHistoricalDailyStockPricesLimitAtOnce                                               int           = 4000
-	createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey string        = "create_historical_daily_stock_price_list_toshyo_stock_brands_by_symbol_stock_price_repository_redis_key"
-	createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisTTL time.Duration = 2 * time.Hour
-)
-
 func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPriceByStockChartWithRangeAPIResponseInfo(stockBrand *models.StockBrand, prices []*gateway.StockPrice, now time.Time) []*models.StockBrandDailyPrice {
 	if len(prices) == 0 {
 		return nil

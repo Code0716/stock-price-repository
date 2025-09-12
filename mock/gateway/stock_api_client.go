@@ -88,18 +88,18 @@ func (mr *MockStockAPIClientMockRecorder) GetCurrentStockPriceBySymbol(ctx, symb
 }
 
 // GetDailyPricesBySymbolAndRange mocks base method.
-func (m *MockStockAPIClient) GetDailyPricesBySymbolAndRange(ctx context.Context, symbol gateway.StockAPISymbol, dateRange gateway.StockAPIValidRange) ([]*gateway.StockPrice, error) {
+func (m *MockStockAPIClient) GetDailyPricesBySymbolAndRange(ctx context.Context, symbol gateway.StockAPISymbol, dateFrom, dateTo time.Time) ([]*gateway.StockPrice, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDailyPricesBySymbolAndRange", ctx, symbol, dateRange)
+	ret := m.ctrl.Call(m, "GetDailyPricesBySymbolAndRange", ctx, symbol, dateFrom, dateTo)
 	ret0, _ := ret[0].([]*gateway.StockPrice)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetDailyPricesBySymbolAndRange indicates an expected call of GetDailyPricesBySymbolAndRange.
-func (mr *MockStockAPIClientMockRecorder) GetDailyPricesBySymbolAndRange(ctx, symbol, dateRange any) *gomock.Call {
+func (mr *MockStockAPIClientMockRecorder) GetDailyPricesBySymbolAndRange(ctx, symbol, dateFrom, dateTo any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDailyPricesBySymbolAndRange", reflect.TypeOf((*MockStockAPIClient)(nil).GetDailyPricesBySymbolAndRange), ctx, symbol, dateRange)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDailyPricesBySymbolAndRange", reflect.TypeOf((*MockStockAPIClient)(nil).GetDailyPricesBySymbolAndRange), ctx, symbol, dateFrom, dateTo)
 }
 
 // GetFinancialStatementsByDate mocks base method.

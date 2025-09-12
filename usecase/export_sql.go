@@ -1,3 +1,4 @@
+//go:generate mockgen -source=$GOFILE -package=mock_$GOPACKAGE -destination=../mock/$GOPACKAGE/$GOFILE
 package usecase
 
 import (
@@ -10,6 +11,23 @@ import (
 	"github.com/Code0716/stock-price-repository/util"
 	"github.com/pkg/errors"
 )
+
+type exportSQLInteractorImpl struct {
+	mySQLDumpClient gateway.MySQLDumpClient
+}
+
+func NewExportSQLInteractor(
+	mySQLDumpClient gateway.MySQLDumpClient,
+
+) ExportSQLInteractor {
+	return &exportSQLInteractorImpl{
+		mySQLDumpClient: mySQLDumpClient,
+	}
+}
+
+type ExportSQLInteractor interface {
+	ExportSQLFiles(ctx context.Context, t time.Time) error
+}
 
 // ExportSQLFiles mysqlをsqlファイルにバックアップする。
 func (ei *exportSQLInteractorImpl) ExportSQLFiles(ctx context.Context, now time.Time) error {

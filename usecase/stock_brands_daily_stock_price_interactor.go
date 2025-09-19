@@ -45,10 +45,3 @@ func NewStockBrandsDailyPriceInteractor(
 		slackAPIClient,
 	}
 }
-
-const (
-	// createHistoricalDailyStockPrices
-	createHistoricalDailyStockPricesLimitAtOnce                                               int           = 4000
-	createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey string        = "create_historical_daily_stock_price_list_toshyo_stock_brands_by_symbol_stock_price_repository_redis_key"
-	createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisTTL time.Duration = 2 * time.Hour
-)

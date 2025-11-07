@@ -11,5 +11,6 @@ import (
 // StockBrandsDailyPriceForAnalyzeRepository 分析用の日足のリポジトリインターフェース
 type StockBrandsDailyPriceForAnalyzeRepository interface {
 	CreateStockBrandDailyPriceForAnalyze(ctx context.Context, dailyPrice []*models.StockBrandDailyPriceForAnalyze) error
+	ListLatestPriceBySymbols(ctx context.Context, symbols []*string) ([]*models.StockBrandDailyPriceForAnalyze, error)
 	DeleteBySymbols(ctx context.Context, deleteSymbols []string) error
 }

@@ -9,7 +9,6 @@ import (
 	genQuery "github.com/Code0716/stock-price-repository/infrastructure/database/gen_query"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/repositories"
-	"github.com/Code0716/stock-price-repository/util"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
@@ -82,46 +81,6 @@ func (si *StockBrandsDailyPriceRepositoryImpl) DeleteByIDs(ctx context.Context, 
 		return errors.Wrap(err, "StockBrandsDailyPrice.DeleteDelisting error")
 	}
 	return nil
-}
-
-func (si *StockBrandsDailyPriceRepositoryImpl) ListLatestPriceBySymbols(ctx context.Context, symbols []*string) ([]*models.StockBrandDailyPrice, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
-
-	// シンボルをstring型に変換
-	var symbolStrings []string
-	for _, s := range symbols {
-		if s != nil {
-			symbolStrings = append(symbolStrings, util.FromPtrGenerics(s))
-		}
-	}
-
-	var prices []*genModel.StockBrandsDailyPrice
-	result := tx.StockBrandsDailyPrice.WithContext(ctx).UnderlyingDB().Raw(`
-		SELECT sp.*
-		FROM stock_brands_daily_price sp
-		INNER JOIN (
-			SELECT ticker_symbol, MAX(date) AS latest_date
-			FROM stock_brands_daily_price
-			WHERE ticker_symbol IN ?
-			GROUP BY ticker_symbol
-		) AS latest
-		ON sp.ticker_symbol = latest.ticker_symbol AND sp.date = latest.latest_date
-	`, symbolStrings).Scan(&prices)
-
-	if result.Error != nil {
-		return nil, errors.Wrap(result.Error, "ListLatestPriceBySymbols error")
-	}
-
-	// ドメインモデルに変換
-	var domainResult []*models.StockBrandDailyPrice
-	for _, price := range prices {
-		domainResult = append(domainResult, si.convertToDomainModel(price))
-	}
-
-	return domainResult, nil
 }
 
 func (si *StockBrandsDailyPriceRepositoryImpl) ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPrice, error) {

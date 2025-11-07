@@ -68,3 +68,18 @@ func (mr *MockStockBrandsDailyPriceForAnalyzeRepositoryMockRecorder) DeleteBySym
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBySymbols", reflect.TypeOf((*MockStockBrandsDailyPriceForAnalyzeRepository)(nil).DeleteBySymbols), ctx, deleteSymbols)
 }
+
+// ListLatestPriceBySymbols mocks base method.
+func (m *MockStockBrandsDailyPriceForAnalyzeRepository) ListLatestPriceBySymbols(ctx context.Context, symbols []*string) ([]*models.StockBrandDailyPriceForAnalyze, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLatestPriceBySymbols", ctx, symbols)
+	ret0, _ := ret[0].([]*models.StockBrandDailyPriceForAnalyze)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListLatestPriceBySymbols indicates an expected call of ListLatestPriceBySymbols.
+func (mr *MockStockBrandsDailyPriceForAnalyzeRepositoryMockRecorder) ListLatestPriceBySymbols(ctx, symbols any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLatestPriceBySymbols", reflect.TypeOf((*MockStockBrandsDailyPriceForAnalyzeRepository)(nil).ListLatestPriceBySymbols), ctx, symbols)
+}

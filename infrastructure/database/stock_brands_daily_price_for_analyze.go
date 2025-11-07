@@ -8,7 +8,9 @@ import (
 	genQuery "github.com/Code0716/stock-price-repository/infrastructure/database/gen_query"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/repositories"
+	"github.com/Code0716/stock-price-repository/util"
 	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -49,6 +51,46 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) CreateStockBrandDailyPr
 	return nil
 }
 
+func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListLatestPriceBySymbols(ctx context.Context, symbols []*string) ([]*models.StockBrandDailyPriceForAnalyze, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	// シンボルをstring型に変換
+	var symbolStrings []string
+	for _, s := range symbols {
+		if s != nil {
+			symbolStrings = append(symbolStrings, util.FromPtrGenerics(s))
+		}
+	}
+
+	var prices []*genModel.StockBrandsDailyPriceForAnalyze
+	result := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).UnderlyingDB().Raw(`
+		SELECT sp.*
+		FROM stock_brands_daily_price_for_analyze sp
+		INNER JOIN (
+			SELECT ticker_symbol, MAX(date) AS latest_date
+			FROM stock_brands_daily_price_for_analyze
+			WHERE ticker_symbol IN ?
+			GROUP BY ticker_symbol
+		) AS latest
+		ON sp.ticker_symbol = latest.ticker_symbol AND sp.date = latest.latest_date
+	`, symbolStrings).Scan(&prices)
+
+	if result.Error != nil {
+		return nil, errors.Wrap(result.Error, "ListLatestPriceBySymbols error")
+	}
+
+	// ドメインモデルに変換
+	var domainResult []*models.StockBrandDailyPriceForAnalyze
+	for _, price := range prices {
+		domainResult = append(domainResult, si.convertToDomainModel(price))
+	}
+
+	return domainResult, nil
+}
+
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx context.Context, deleteSymbols []string) error {
 	tx, ok := GetTxQuery(ctx)
 	if !ok {
@@ -63,25 +105,25 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx con
 	return nil
 }
 
-// func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) convertToDomainModel(dailyPriceDB *genModel.StockBrandsDailyPriceForAnalyze) *models.StockBrandDailyPriceForAnalyze {
-// 	if dailyPriceDB == nil {
-// 		return nil
-// 	}
+func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) convertToDomainModel(dailyPriceDB *genModel.StockBrandsDailyPriceForAnalyze) *models.StockBrandDailyPriceForAnalyze {
+	if dailyPriceDB == nil {
+		return nil
+	}
 
-// 	return &models.StockBrandDailyPriceForAnalyze{
-// 		ID:           dailyPriceDB.ID,
-// 		TickerSymbol: dailyPriceDB.TickerSymbol,
-// 		Date:         dailyPriceDB.Date,
-// 		Open:         decimal.NewFromFloat(dailyPriceDB.OpenPrice),
-// 		Close:        decimal.NewFromFloat(dailyPriceDB.ClosePrice),
-// 		High:         decimal.NewFromFloat(dailyPriceDB.HighPrice),
-// 		Low:          decimal.NewFromFloat(dailyPriceDB.LowPrice),
-// 		Adjclose:     decimal.NewFromFloat(dailyPriceDB.AdjClosePrice),
-// 		Volume:       int64(dailyPriceDB.Volume),
-// 		CreatedAt:    dailyPriceDB.CreatedAt,
-// 		UpdatedAt:    dailyPriceDB.UpdatedAt,
-// 	}
-// }
+	return &models.StockBrandDailyPriceForAnalyze{
+		ID:           dailyPriceDB.ID,
+		TickerSymbol: dailyPriceDB.TickerSymbol,
+		Date:         dailyPriceDB.Date,
+		Open:         decimal.NewFromFloat(dailyPriceDB.OpenPrice),
+		Close:        decimal.NewFromFloat(dailyPriceDB.ClosePrice),
+		High:         decimal.NewFromFloat(dailyPriceDB.HighPrice),
+		Low:          decimal.NewFromFloat(dailyPriceDB.LowPrice),
+		Adjclose:     decimal.NewFromFloat(dailyPriceDB.AdjClosePrice),
+		Volume:       int64(dailyPriceDB.Volume),
+		CreatedAt:    dailyPriceDB.CreatedAt,
+		UpdatedAt:    dailyPriceDB.UpdatedAt,
+	}
+}
 
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) convertToDBModels(dailyPrices []*models.StockBrandDailyPriceForAnalyze) []*genModel.StockBrandsDailyPriceForAnalyze {
 	var dailyPricesDB []*genModel.StockBrandsDailyPriceForAnalyze

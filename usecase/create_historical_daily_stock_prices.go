@@ -164,40 +164,6 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPricesBySt
 	return result
 }
 
-// newStockBrandDailyPriceByStockChartWithRangeAPIResponseInfo model.StockBrandDailyPriceスライスの作成
-func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPriceByStockChartWithRangeAPIResponseInfo(stockBrand *models.StockBrand, prices []*gateway.StockPrice, now time.Time) []*models.StockBrandDailyPrice {
-	if len(prices) == 0 {
-		return nil
-	}
-
-	log.Printf("newStockBrandDailyPriceByStockChartWithRangeAPIResponseInfo: %s(%s)", stockBrand.Name, stockBrand.TickerSymbol)
-	result := make([]*models.StockBrandDailyPrice, 0, len(prices))
-	for _, v := range prices {
-		if v == nil {
-			continue
-		}
-		if v.High.IsZero() && v.Close.IsZero() && v.Low.IsZero() && v.Open.IsZero() {
-			continue
-		}
-		result = append(result, models.NewStockBrandDailyPrice(
-			util.GenerateUUID(),
-			stockBrand.ID,
-			v.Date,
-			v.TickerSymbol,
-			v.High,
-			v.Low,
-			v.Open,
-			v.Close,
-			v.Volume,
-			v.AdjustmentClose,
-			now,
-			now,
-		))
-	}
-	return result
-
-}
-
 // newStockBrandDailyPriceForAnalyzeByStockBrandsDailyPrice
 func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPriceForAnalyzeByStockBrandsDailyPrice(
 	prices []*models.StockBrandDailyPrice,

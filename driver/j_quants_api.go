@@ -46,6 +46,9 @@ func (jc *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockB
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	res, err := jc.request.GetHttpClient().Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
+	}
 	if res.StatusCode == http.StatusUnauthorized {
 		// IDToken再取得
 		_, err := jc.getNewIDToken(ctx)
@@ -55,9 +58,6 @@ func (jc *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockB
 		// 再度リクエスト。だめだったらエラーを返す。
 		result, err := jc.GetStockBrands(ctx)
 		return result, err
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 	defer res.Body.Close()
 
@@ -100,6 +100,9 @@ func (jc *StockAPIClient) GetAnnounceFinsSchedule(ctx context.Context) ([]*gatew
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	res, err := jc.request.GetHttpClient().Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
+	}
 	if res.StatusCode == http.StatusUnauthorized {
 		// IDToken再取得
 		_, err := jc.getNewIDToken(ctx)
@@ -109,9 +112,6 @@ func (jc *StockAPIClient) GetAnnounceFinsSchedule(ctx context.Context) ([]*gatew
 		// 再度リクエスト。だめだったらエラーを返す。
 		result, err := jc.GetAnnounceFinsSchedule(ctx)
 		return result, err
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 	defer res.Body.Close()
 
@@ -165,6 +165,9 @@ func (c *StockAPIClient) getDailyPricesBySymbolAndRangeJQ(ctx context.Context, s
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	res, err := c.request.GetHttpClient().Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
+	}
 	if res.StatusCode == http.StatusUnauthorized {
 		// IDToken再取得
 		_, err := c.getNewIDToken(ctx)
@@ -174,9 +177,6 @@ func (c *StockAPIClient) getDailyPricesBySymbolAndRangeJQ(ctx context.Context, s
 		// 再度リクエスト。だめだったらエラーを返す。
 		result, err := c.getDailyPricesBySymbolAndRangeJQ(ctx, symbol, dateFrom, dateTo)
 		return result, err
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 	defer res.Body.Close()
 
@@ -245,6 +245,9 @@ func (jc *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol s
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	res, err := jc.request.GetHttpClient().Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
+	}
 	if res.StatusCode == http.StatusUnauthorized {
 		// IDToken再取得
 		_, err := jc.getNewIDToken(ctx)
@@ -254,9 +257,6 @@ func (jc *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol s
 		// 再度リクエスト。だめだったらエラーを返す。
 		result, err := jc.getFinancialStatementsJQ(ctx, symbol, date)
 		return result, err
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 	defer res.Body.Close()
 
@@ -306,6 +306,9 @@ func (c *StockAPIClient) getTradingCalendarsInfo(ctx context.Context, filter gat
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
 	res, err := c.request.GetHttpClient().Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
+	}
 	if res.StatusCode == http.StatusUnauthorized {
 		// IDToken再取得
 		_, err := c.getNewIDToken(ctx)
@@ -315,9 +318,6 @@ func (c *StockAPIClient) getTradingCalendarsInfo(ctx context.Context, filter gat
 		// 再度リクエスト。だめだったらエラーを返す。
 		result, err := c.getTradingCalendarsInfo(ctx, filter)
 		return result, err
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 	defer res.Body.Close()
 

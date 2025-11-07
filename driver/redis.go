@@ -29,6 +29,7 @@ func OpenRedis() *redis.Client {
 		ContextTimeoutEnabled: true,
 		PoolSize:              poolSize,
 		MinIdleConns:          poolSize,
+		MaxRetries:            3, // リトライを有効化
 		// 古いコネクションが残り続けて不通にならないように定期的に破棄する
 		ConnMaxLifetime: time.Minute,
 	})

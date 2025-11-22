@@ -9,7 +9,7 @@ Yahoo Finance や j-Quants API から上場銘柄、日足、日経平均日足�
 
 ### 技術スタック
 
-- **言語**: Go 1.24.0
+- **言語**: Go 1.25.0
 - **CLI フレームワーク**: `github.com/urfave/cli/v2`
 - **ORM**: `gorm.io/gorm`, `gorm.io/gen` (Type-safe Query Builder)
 - **データベース**: MySQL (`github.com/go-sql-driver/mysql`)
@@ -142,34 +142,78 @@ func (r *StockBrandRepositoryImpl) FindAll(ctx context.Context) ([]*models.Stock
 - **出力先**: `mock/` ディレクトリ配下の各パッケージディレクトリ。
   - 例: `mock/repositories/stock_brand.go`
 
-### テストコード例 (テーブル駆動テスト)
+### テストコード記述ルール
+
+- **Mock の初期化**: `fields` 構造体の各フィールドは `func(ctrl *gomock.Controller) Interface` 型とし、テストケースごとに必要なモックのみを初期化する関数を定義する。
+- **不要なモックの除外**: テストケースで使用しないリポジトリやサービスは `nil` (または未定義) とし、テスト実行時に `nil` チェックを行って設定する。これにより、テストのセットアップを最小限に保ち、可読性を向上させる。
+- **未使用のモック定義の削除**: テストケース内で使用しないモックの初期化関数（`return nil` を返すだけのものなど）は記述せず、フィールド自体を省略する。
+- **アサーション**: `reflect.DeepEqual` や `github.com/stretchr/testify/assert` を使用して結果を検証する。
+
+#### 推奨されるテストコード構成例
 
 ```go
-func TestStockBrandRepository_FindAll(t *testing.T) {
-    ctrl := gomock.NewController(t)
-    defer ctrl.Finish()
+func TestService_Method(t *testing.T) {
+	type fields struct {
+		// 必須の依存関係
+		mainRepo func(ctrl *gomock.Controller) repository.MainRepository
+		// オプショナルな依存関係（テストケースによって使わないもの）
+		subRepo  func(ctrl *gomock.Controller) repository.SubRepository
+	}
+	type args struct {
+		ctx context.Context
+		id  uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *model.Result
+		wantErr bool
+	}{
+		{
+			name: "正常系 - 必要なモックのみ定義",
+			fields: fields{
+				mainRepo: func(ctrl *gomock.Controller) repository.MainRepository {
+					mock := mockrepository.NewMockMainRepository(ctrl)
+					mock.EXPECT().Find(gomock.Any(), gomock.Eq(uint64(1))).Return(&model.Entity{}, nil)
+					return mock
+				},
+				// subRepo はこのテストケースでは使われないため定義しない（nil）
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  1,
+			},
+			want:    &model.Result{},
+			wantErr: false,
+		},
+	}
 
-    tests := []struct {
-        name    string
-        setup   func(*mock_repositories.MockStockBrandRepository)
-        want    []*models.StockBrand
-        wantErr bool
-    }{
-        {
-            name: "正常系",
-            setup: func(m *mock_repositories.MockStockBrandRepository) {
-                m.EXPECT().FindAll(gomock.Any()).Return([]*models.StockBrand{{ID: "1"}}, nil)
-            },
-            want:    []*models.StockBrand{{ID: "1"}},
-            wantErr: false,
-        },
-        // ...
-    }
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
 
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            // ...
-        })
-    }
+			// 必須フィールドの初期化
+			s := &service{
+				mainRepo: tt.fields.mainRepo(mockCtrl),
+			}
+
+			// オプショナルフィールドの初期化（nilチェック）
+			// テストケースで定義されていない場合はセットアップしない
+			if tt.fields.subRepo != nil {
+				s.subRepo = tt.fields.subRepo(mockCtrl)
+			}
+
+			got, err := s.Method(tt.args.ctx, tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Method() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Method() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 ```

@@ -14,9 +14,8 @@ import (
 	reflect "reflect"
 	time "time"
 
-	gomock "go.uber.org/mock/gomock"
-
 	models "github.com/Code0716/stock-price-repository/models"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockStockBrandRepository is a mock of StockBrandRepository interface.

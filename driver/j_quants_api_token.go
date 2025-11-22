@@ -122,7 +122,7 @@ func (jc *StockAPIClient) setRefreshToken(ctx context.Context) (string, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", fmt.Errorf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String())
+		return "", errors.New(fmt.Sprintf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String()))
 	}
 
 	var response jQuantsAPIClientRefreshTokenResponse
@@ -163,7 +163,7 @@ func (jc *StockAPIClient) setIDToken(ctx context.Context, refreshToken string) (
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", fmt.Errorf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String())
+		return "", errors.New(fmt.Sprintf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String()))
 	}
 
 	var response jQuantsAPIClientIDTokenResponse

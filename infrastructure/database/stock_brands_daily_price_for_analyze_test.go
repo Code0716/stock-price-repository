@@ -196,3 +196,83 @@ func TestStockBrandsDailyPriceForAnalyzeRepositoryImpl_DeleteBySymbols(t *testin
 		})
 	}
 }
+
+func TestStockBrandsDailyPriceForAnalyzeRepositoryImpl_DeleteBeforeDate(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	repo := NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db)
+	ctx := context.Background()
+	now := time.Now().Truncate(time.Second)
+	oldDate := now.AddDate(-4, 0, 0) // 4年前
+
+	// 初期データ投入
+	initialData := []*models.StockBrandDailyPriceForAnalyze{
+		{
+			ID:           "uuid-1",
+			TickerSymbol: "1001",
+			Date:         now, // 最新
+			Open:         decimal.NewFromFloat(1000),
+			Close:        decimal.NewFromFloat(1000),
+			High:         decimal.NewFromFloat(1000),
+			Low:          decimal.NewFromFloat(1000),
+			Adjclose:     decimal.NewFromFloat(1000),
+			Volume:       1000,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		},
+		{
+			ID:           "uuid-2",
+			TickerSymbol: "1001",
+			Date:         oldDate, // 古いデータ
+			Open:         decimal.NewFromFloat(1000),
+			Close:        decimal.NewFromFloat(1000),
+			High:         decimal.NewFromFloat(1000),
+			Low:          decimal.NewFromFloat(1000),
+			Adjclose:     decimal.NewFromFloat(1000),
+			Volume:       1000,
+			CreatedAt:    oldDate,
+			UpdatedAt:    oldDate,
+		},
+	}
+	err := repo.CreateStockBrandDailyPriceForAnalyze(ctx, initialData)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		date    time.Time
+		wantErr bool
+	}{
+		{
+			name:    "削除_正常系",
+			date:    now.AddDate(-3, 0, 0), // 3年前
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := repo.DeleteBeforeDate(ctx, tt.date)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+
+				// 削除確認
+				// 古いデータは削除されているはず
+				// 最新データは残っているはず
+				// ListLatestPriceBySymbols で確認できるが、全件取得メソッドがないので、
+				// ここでは ListLatestPriceBySymbols を使って最新データが残っていることを確認する
+				// 本当は全件取得して件数確認したいが、メソッドがないので、
+				// 削除対象の日付より前のデータが消えていることを確認する手段が必要。
+				// テスト内で直接クエリを投げて確認する。
+				var count int64
+				db.Table("stock_brands_daily_price_for_analyze").Where("date < ?", tt.date).Count(&count)
+				assert.Equal(t, int64(0), count)
+
+				db.Table("stock_brands_daily_price_for_analyze").Where("date >= ?", tt.date).Count(&count)
+				assert.Equal(t, int64(1), count)
+			}
+		})
+	}
+}

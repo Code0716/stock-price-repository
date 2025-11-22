@@ -1,3 +1,4 @@
+````instructions
 # GitHub Copilot Instructions for stock-price-repository
 
 ## 基本情報
@@ -144,6 +145,8 @@ func (r *StockBrandRepositoryImpl) FindAll(ctx context.Context) ([]*models.Stock
 
 ### テストコード記述ルール
 
+- **関数ごとのテスト作成**: テスト関数はテスト対象の関数ごとに作成する（1対1対応）。**プライベート関数（非公開関数）も含め、全ての関数に対してテストを作成する。**
+- **網羅的なテストケース**: 正常系だけでなく、異常系、境界値、エッジケースを網羅するテストケースを作成する。
 - **Mock の初期化**: `fields` 構造体の各フィールドは `func(ctrl *gomock.Controller) Interface` 型とし、テストケースごとに必要なモックのみを初期化する関数を定義する。
 - **不要なモックの除外**: テストケースで使用しないリポジトリやサービスは `nil` (または未定義) とし、テスト実行時に `nil` チェックを行って設定する。これにより、テストのセットアップを最小限に保ち、可読性を向上させる。
 - **未使用のモック定義の削除**: テストケース内で使用しないモックの初期化関数（`return nil` を返すだけのものなど）は記述せず、フィールド自体を省略する。
@@ -217,3 +220,4 @@ func TestService_Method(t *testing.T) {
 	}
 }
 ```
+````

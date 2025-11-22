@@ -3,6 +3,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
@@ -102,6 +103,20 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx con
 		Where(tx.StockBrandsDailyPriceForAnalyze.TickerSymbol.In(deleteSymbols...)).
 		Delete(); err != nil {
 		return errors.Wrap(err, "StockBrandsDailyPriceForAnalyze.deleteSymbols error")
+	}
+	return nil
+}
+
+func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBeforeDate(ctx context.Context, date time.Time) error {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	if _, err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).
+		Where(tx.StockBrandsDailyPriceForAnalyze.Date.Lt(date)).
+		Delete(); err != nil {
+		return errors.Wrap(err, "StockBrandsDailyPriceForAnalyze.DeleteBeforeDate error")
 	}
 	return nil
 }

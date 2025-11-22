@@ -64,6 +64,12 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) CreateDailyStockPrice(ctx co
 		return errors.Wrap(err, "redisClient.Set error")
 	}
 
+	// 3年前の日付を計算
+	threeYearsAgo := now.AddDate(-3, 0, 0)
+	if err := si.stockBrandsDailyPriceForAnalyzeRepository.DeleteBeforeDate(ctx, threeYearsAgo); err != nil {
+		return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.DeleteBeforeDate error")
+	}
+
 	return nil
 }
 

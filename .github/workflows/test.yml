@@ -33,6 +33,9 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: Build
+        run: go build -v ./...
+
       - name: Run tests
         env:
           TEST_DB_HOST: 127.0.0.1

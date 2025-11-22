@@ -4,15 +4,16 @@ package database
 import (
 	"context"
 
+	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
 	genModel "github.com/Code0716/stock-price-repository/infrastructure/database/gen_model"
 	genQuery "github.com/Code0716/stock-price-repository/infrastructure/database/gen_query"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/repositories"
 	"github.com/Code0716/stock-price-repository/util"
-	"github.com/pkg/errors"
-	"github.com/shopspring/decimal"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type StockBrandsDailyPriceForAnalyzeRepositoryImpl struct {

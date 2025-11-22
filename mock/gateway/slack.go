@@ -13,9 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "go.uber.org/mock/gomock"
+
 	gateway "github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	resource "github.com/Code0716/stock-price-repository/infrastructure/gateway/resource"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // MockSlackAPIClient is a mock of SlackAPIClient interface.

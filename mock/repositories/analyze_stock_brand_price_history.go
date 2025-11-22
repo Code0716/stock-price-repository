@@ -13,8 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	models "github.com/Code0716/stock-price-repository/models"
 	gomock "go.uber.org/mock/gomock"
+
+	models "github.com/Code0716/stock-price-repository/models"
 )
 
 // MockAnalyzeStockBrandPriceHistoryRepository is a mock of AnalyzeStockBrandPriceHistoryRepository interface.

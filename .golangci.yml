@@ -1,0 +1,41 @@
+run:
+  timeout: 5m
+  go: '1.25'
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gocyclo
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  goimports:
+    local-prefixes: github.com/Code0716/stock-price-repository
+
+issues:
+  exclude-dirs:
+    - _gorm_gen
+    - infrastructure/database/gen_model
+    - infrastructure/database/gen_query
+    - mock
+  exclude-rules:
+    - path: infrastructure/database/gen_query/.*
+      linters:
+        - typecheck
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec

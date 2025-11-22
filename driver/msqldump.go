@@ -8,9 +8,10 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/pkg/errors"
+
 	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
-	"github.com/pkg/errors"
 )
 
 // mySQLDumpClientは、MySQLのダンプするためのクライアント。

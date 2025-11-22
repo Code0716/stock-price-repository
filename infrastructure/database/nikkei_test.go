@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/models"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Code0716/stock-price-repository/models"
 )
 
 func TestNikkeiRepositoryImpl_CreateNikkeiStockAverageDailyPrices(t *testing.T) {

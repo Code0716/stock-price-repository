@@ -12,11 +12,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway/resource"
-	"github.com/pkg/errors"
-	"github.com/redis/go-redis/v9"
 )
 
 type SlackAPIClient struct {

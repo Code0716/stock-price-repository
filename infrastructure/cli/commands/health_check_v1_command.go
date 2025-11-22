@@ -1,10 +1,11 @@
 package commands
 
 import (
-	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
-	"github.com/Code0716/stock-price-repository/infrastructure/gateway/resource"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
+
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway/resource"
 )
 
 type HealthCheckCommand struct {

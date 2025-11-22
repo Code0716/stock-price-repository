@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/urfave/cli/v2"
+
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 )
 
 type SetJQuantsAPITokenToRedisV1Command struct {

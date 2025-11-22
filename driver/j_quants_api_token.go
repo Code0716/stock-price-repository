@@ -11,9 +11,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/Code0716/stock-price-repository/config"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/Code0716/stock-price-repository/config"
 )
 
 // idTokenは24時間有効
@@ -121,7 +122,7 @@ func (jc *StockAPIClient) setRefreshToken(ctx context.Context) (string, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return "", fmt.Errorf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsAPIClientRefreshTokenResponse
@@ -162,7 +163,7 @@ func (jc *StockAPIClient) setIDToken(ctx context.Context, refreshToken string) (
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return "", fmt.Errorf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsAPIClientIDTokenResponse

@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/util"
-	"github.com/shopspring/decimal"
 )
 
 type jQuantsAPIClientRefreshTokenRequest struct {

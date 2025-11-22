@@ -8,12 +8,14 @@ package di
 
 import (
 	"context"
+
+	"github.com/google/wire"
+
 	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	"github.com/Code0716/stock-price-repository/usecase"
-	"github.com/google/wire"
 )
 
 // Injectors from wire.go:

@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Code0716/stock-price-repository/models"
 )
 
 func TestStockBrandRepositoryImpl_UpsertStockBrands(t *testing.T) {

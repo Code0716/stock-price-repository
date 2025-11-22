@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/models"
-	"github.com/Code0716/stock-price-repository/util"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Code0716/stock-price-repository/models"
+	"github.com/Code0716/stock-price-repository/util"
 )
 
 func TestStockBrandsDailyPriceForAnalyzeRepositoryImpl_CreateStockBrandDailyPriceForAnalyze(t *testing.T) {

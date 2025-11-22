@@ -7,13 +7,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/pkg/errors"
+	c "github.com/urfave/cli/v2"
+
 	"github.com/Code0716/stock-price-repository/config"
 	sContext "github.com/Code0716/stock-price-repository/context"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/usecase"
-	"github.com/pkg/errors"
-	c "github.com/urfave/cli/v2"
 )
 
 type Runner struct {

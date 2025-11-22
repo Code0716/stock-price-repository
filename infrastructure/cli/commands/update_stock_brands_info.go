@@ -3,9 +3,10 @@ package commands
 import (
 	"time"
 
-	"github.com/Code0716/stock-price-repository/usecase"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
+
+	"github.com/Code0716/stock-price-repository/usecase"
 )
 
 type UpdateStockBrandsV1Command struct {

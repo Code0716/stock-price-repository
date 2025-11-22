@@ -14,8 +14,9 @@ import (
 	reflect "reflect"
 	time "time"
 
-	gateway "github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	gomock "go.uber.org/mock/gomock"
+
+	gateway "github.com/Code0716/stock-price-repository/infrastructure/gateway"
 )
 
 // MockStockAPIClient is a mock of StockAPIClient interface.

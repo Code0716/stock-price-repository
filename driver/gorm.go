@@ -6,11 +6,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/Code0716/stock-price-repository/config"
 	gormMySQLDriver "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	gormLogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
+
+	"github.com/Code0716/stock-price-repository/config"
 )
 
 // NewGorm initializes db

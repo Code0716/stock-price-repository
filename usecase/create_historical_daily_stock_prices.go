@@ -7,11 +7,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/util"
-	"github.com/pkg/errors"
-	"github.com/redis/go-redis/v9"
 )
 
 const (

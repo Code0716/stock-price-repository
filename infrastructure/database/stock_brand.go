@@ -5,13 +5,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
 	genModel "github.com/Code0716/stock-price-repository/infrastructure/database/gen_model"
 	genQuery "github.com/Code0716/stock-price-repository/infrastructure/database/gen_query"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/repositories"
-	"github.com/pkg/errors"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const (

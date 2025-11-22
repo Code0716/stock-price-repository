@@ -7,9 +7,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/util"
-	"github.com/pkg/errors"
 )
 
 type exportSQLInteractorImpl struct {

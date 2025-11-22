@@ -5,9 +5,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/config"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/Code0716/stock-price-repository/config"
 )
 
 func OpenRedis() *redis.Client {

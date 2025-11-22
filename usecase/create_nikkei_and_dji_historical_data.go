@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/pkg/errors"
+
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 )
 
 func (ii *indexInteractorImpl) CreateNikkeiAndDjiHistoricalData(ctx context.Context, t time.Time) error {

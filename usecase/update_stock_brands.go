@@ -5,8 +5,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/models"
 	"github.com/pkg/errors"
+
+	"github.com/Code0716/stock-price-repository/models"
 )
 
 func (si *stockBrandInteractorImpl) UpdateStockBrands(ctx context.Context, now time.Time) error {

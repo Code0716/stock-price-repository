@@ -13,10 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/util"
-	"github.com/pkg/errors"
 )
 
 // 週足以外
@@ -59,7 +60,7 @@ func (c *StockAPIClient) getStockPriceChart(
 	if res.StatusCode != http.StatusOK {
 		// エラー時のResponseが不明なので、log出してエラーを返す。
 		// ハンドリングしたい気持ちはある。
-		return nil, errors.New(fmt.Sprintf(`yahoo.finance.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`yahoo.finance.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response yahooFinanceAPIResponse

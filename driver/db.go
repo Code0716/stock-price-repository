@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/config"
 	"github.com/go-sql-driver/mysql"
+
+	"github.com/Code0716/stock-price-repository/config"
 )
 
 // NewDBConn initializes DB connection.

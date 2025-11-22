@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Code0716/stock-price-repository/models"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Code0716/stock-price-repository/models"
 )
 
 func TestDjiRepositoryImpl_CreateDjiStockAverageDailyPrices(t *testing.T) {

@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/Code0716/stock-price-repository/config"
-	"github.com/Code0716/stock-price-repository/driver"
 	"gorm.io/driver/mysql"
 	"gorm.io/gen"
 	"gorm.io/gorm"
+
+	"github.com/Code0716/stock-price-repository/config"
+	"github.com/Code0716/stock-price-repository/driver"
 )
 
 func main() {

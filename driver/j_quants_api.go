@@ -11,11 +11,12 @@ import (
 	"net/url"
 	"time"
 
+	holidayJP "github.com/holiday-jp/holiday_jp-go"
+	"github.com/pkg/errors"
+
 	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/util"
-	holidayJP "github.com/holiday-jp/holiday_jp-go"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -67,7 +68,7 @@ func (jc *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockB
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsStockBrandsResponse
@@ -121,7 +122,7 @@ func (jc *StockAPIClient) GetAnnounceFinsSchedule(ctx context.Context) ([]*gatew
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsAnnounceFinsScheduleResponse
@@ -186,7 +187,7 @@ func (c *StockAPIClient) getDailyPricesBySymbolAndRangeJQ(ctx context.Context, s
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsDailyQuotesResponse
@@ -266,7 +267,7 @@ func (jc *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol s
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsFinancialStatementsResponse
@@ -327,7 +328,7 @@ func (c *StockAPIClient) getTradingCalendarsInfo(ctx context.Context, filter gat
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response TradingCalendarsResponse

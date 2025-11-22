@@ -5,10 +5,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/repositories"
-	"github.com/redis/go-redis/v9"
 )
 
 type stockBrandsDailyStockPriceInteractorImpl struct {

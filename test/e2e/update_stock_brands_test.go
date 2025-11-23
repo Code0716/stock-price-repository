@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/Code0716/stock-price-repository/infrastructure/cli"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
+
 	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	genModel "github.com/Code0716/stock-price-repository/infrastructure/database/gen_model"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
@@ -64,25 +64,10 @@ func TestE2E_UpdateStockBrands(t *testing.T) {
 	// Commands
 	updateCmd := commands.NewUpdateStockBrandsV1Command(interactor)
 
-	// Dummy commands for others (passing nil where safe)
-	healthCmd := commands.NewHealthCheckCommand(mockSlackAPI)
-	setTokenCmd := commands.NewSetJQuantsAPITokenToRedisV1Command(nil)
-	createHistCmd := commands.NewCreateHistoricalDailyStockPricesV1Command(nil)
-	createDailyCmd := commands.NewCreateDailyStockPriceV1Command(nil)
-	createNikkeiCmd := commands.NewCreateNikkeiAndDjiHistoricalDataV1Command(nil)
-	exportCmd := commands.NewExportStockBrandsAndDailyPriceToSQLV1Command(nil)
-
-	runner := cli.NewRunner(
-		healthCmd,
-		setTokenCmd,
-		updateCmd,
-		createHistCmd,
-		createDailyCmd,
-		createNikkeiCmd,
-		exportCmd,
-		nil, // indexInteractor
-		mockSlackAPI,
-	)
+	runner := helper.NewTestRunner(helper.TestRunnerOptions{
+		UpdateStockBrandsV1Command: updateCmd,
+		SlackAPIClient:             mockSlackAPI,
+	})
 
 	// 5. Define Test Data & Expectations
 	expectedBrands := []*gateway.StockBrand{

@@ -8,14 +8,13 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/repositories"
 )
 
 type indexInteractorImpl struct {
-	tx               database.Transaction
+	tx               repositories.Transaction
 	nikkeiRepository repositories.NikkeiRepository
 	djiRepository    repositories.DjiRepository
 	stockAPIClient   gateway.StockAPIClient
@@ -24,7 +23,7 @@ type indexInteractorImpl struct {
 }
 
 func NewIndexInteractor(
-	tx database.Transaction,
+	tx repositories.Transaction,
 	redisClient *redis.Client,
 	nikkeiRepository repositories.NikkeiRepository,
 	djiRepository repositories.DjiRepository,

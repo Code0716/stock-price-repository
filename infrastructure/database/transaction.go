@@ -6,6 +6,7 @@ import (
 	"log"
 
 	genQuery "github.com/Code0716/stock-price-repository/infrastructure/database/gen_query"
+	"github.com/Code0716/stock-price-repository/repositories"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -15,19 +16,12 @@ type contextKey int
 
 const dbTxContextKey contextKey = iota
 
-// Transaction transaction
-// gorm.io/genは中間テーブルのqueryがなぜか登録されないなど出来ないことも多いそうなので、完全以降はまだしない。
-// https://zenn.dev/mizuko_dev/articles/dbeb7c93883b57#%E4%B8%AD%E9%96%93%E3%83%86%E3%83%BC%E3%83%96%E3%83%AB%E3%81%AEquery%E3%81%8C%E3%81%AA%E3%81%9C%E3%81%8B%E7%99%BB%E9%8C%B2%E3%81%95%E3%82%8C%E3%81%AA%E3%81%84
-type Transaction interface {
-	DoInTx(ctx context.Context, fn func(context.Context) error) error
-}
-
 type transaction struct {
 	db *gorm.DB
 }
 
 // NewTransaction init Transaction
-func NewTransaction(db *gorm.DB) Transaction {
+func NewTransaction(db *gorm.DB) repositories.Transaction {
 	return &transaction{
 		db,
 	}

@@ -8,9 +8,7 @@ import (
 
 	"go.uber.org/mock/gomock"
 
-	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
-	mock_database "github.com/Code0716/stock-price-repository/mock/database"
 	mock_gateway "github.com/Code0716/stock-price-repository/mock/gateway"
 	mock_repositories "github.com/Code0716/stock-price-repository/mock/repositories"
 	"github.com/Code0716/stock-price-repository/models"
@@ -19,7 +17,7 @@ import (
 
 func TestStockBrandInteractorImpl_UpdateStockBrands(t *testing.T) {
 	type fields struct {
-		tx                                        func(ctrl *gomock.Controller) database.Transaction
+		tx                                        func(ctrl *gomock.Controller) repositories.Transaction
 		stockBrandRepository                      func(ctrl *gomock.Controller) repositories.StockBrandRepository
 		stockBrandsDailyPriceRepository           func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceRepository
 		analyzeStockBrandPriceHistoryRepository   func(ctrl *gomock.Controller) repositories.AnalyzeStockBrandPriceHistoryRepository
@@ -39,8 +37,8 @@ func TestStockBrandInteractorImpl_UpdateStockBrands(t *testing.T) {
 		{
 			name: "Success - No delisting",
 			fields: fields{
-				tx: func(ctrl *gomock.Controller) database.Transaction {
-					mock := mock_database.NewMockTransaction(ctrl)
+				tx: func(ctrl *gomock.Controller) repositories.Transaction {
+					mock := mock_repositories.NewMockTransaction(ctrl)
 					mock.EXPECT().DoInTx(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
 						return fn(ctx)
 					})
@@ -79,8 +77,8 @@ func TestStockBrandInteractorImpl_UpdateStockBrands(t *testing.T) {
 		{
 			name: "Success - With delisting",
 			fields: fields{
-				tx: func(ctrl *gomock.Controller) database.Transaction {
-					mock := mock_database.NewMockTransaction(ctrl)
+				tx: func(ctrl *gomock.Controller) repositories.Transaction {
+					mock := mock_repositories.NewMockTransaction(ctrl)
 					mock.EXPECT().DoInTx(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
 						return fn(ctx)
 					})

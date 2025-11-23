@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/Code0716/stock-price-repository/infrastructure/cli"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	mock_gateway "github.com/Code0716/stock-price-repository/mock/gateway"
+	"github.com/Code0716/stock-price-repository/test/helper"
 )
 
 func TestE2E_SetJQuantsAPITokenToRedis(t *testing.T) {
@@ -61,25 +61,10 @@ func TestE2E_SetJQuantsAPITokenToRedis(t *testing.T) {
 	// Commands
 	setTokenCmd := commands.NewSetJQuantsAPITokenToRedisV1Command(mockStockAPI)
 
-	// Dummy commands
-	healthCmd := commands.NewHealthCheckCommand(mockSlackAPI)
-	updateCmd := commands.NewUpdateStockBrandsV1Command(nil)
-	createHistCmd := commands.NewCreateHistoricalDailyStockPricesV1Command(nil)
-	createDailyCmd := commands.NewCreateDailyStockPriceV1Command(nil)
-	createNikkeiCmd := commands.NewCreateNikkeiAndDjiHistoricalDataV1Command(nil)
-	exportCmd := commands.NewExportStockBrandsAndDailyPriceToSQLV1Command(nil)
-
-	runner := cli.NewRunner(
-		healthCmd,
-		setTokenCmd,
-		updateCmd,
-		createHistCmd,
-		createDailyCmd,
-		createNikkeiCmd,
-		exportCmd,
-		nil, // indexInteractor
-		mockSlackAPI,
-	)
+	runner := helper.NewTestRunner(helper.TestRunnerOptions{
+		SetJQuantsAPITokenToRedisV1Command: setTokenCmd,
+		SlackAPIClient:                     mockSlackAPI,
+	})
 
 	// 5. Run Command
 	// args: [main, command, refreshToken, idToken]

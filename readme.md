@@ -146,7 +146,7 @@ Clean Architecture に基づいたディレクトリ構成になっています�
 
 - **`entrypoint/`**: アプリケーションのエントリーポイント (CLI)。
 - **`usecase/`**: ビジネスロジックとオーケストレーション。
-- **`repositories/`**: データアクセスのインターフェース定義。
+- **`repositories/`**: リポジトリとトランザクションのインターフェース定義。
 - **`infrastructure/`**: 外部インターフェースの実装。
   - **`database/`**: GORM を使用した DB 実装。
   - **`gateway/`**: 外部 API (Yahoo, j-Quants) クライアント。

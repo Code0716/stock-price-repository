@@ -7,13 +7,12 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/repositories"
 )
 
 type stockBrandsDailyStockPriceInteractorImpl struct {
-	tx                                        database.Transaction
+	tx                                        repositories.Transaction
 	stockBrandRepository                      repositories.StockBrandRepository
 	stockBrandsDailyStockPriceRepository      repositories.StockBrandsDailyPriceRepository
 	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository
@@ -28,7 +27,7 @@ type StockBrandsDailyPriceInteractor interface {
 }
 
 func NewStockBrandsDailyPriceInteractor(
-	tx database.Transaction,
+	tx repositories.Transaction,
 	stockBrandRepository repositories.StockBrandRepository,
 	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
 	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository,

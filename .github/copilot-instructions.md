@@ -27,7 +27,7 @@ stock-price-repository/
 ├── entrypoint/             # アプリケーションのエントリーポイント
 │   └── cli/                # CLIコマンド定義
 ├── usecase/                # ビジネスロジック
-├── repositories/           # リポジトリインターフェース定義
+├── repositories/           # リポジトリ・トランザクションインターフェース定義
 ├── models/                 # ドメインモデル
 ├── infrastructure/         # 外部インターフェースの実装
 │   ├── database/           # DBアクセス実装 (GORM)

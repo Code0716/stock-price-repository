@@ -64,7 +64,7 @@ jobs:
           TEST_DB_PORT: 3306
           TEST_DB_USER: root
           TEST_DB_PASSWORD: password
-        run: make test
+        run: make test-unit
 
       - name: Run E2E tests
         env:

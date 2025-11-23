@@ -41,7 +41,9 @@ mock:
 	rm -rf ./mock
 	go generate ./...
 
-test: test-e2e
+test:  test-unit  test-e2e
+
+test-unit: 
 	ENVCODE=unit go test -v -race -coverprofile=cover.out $(shell go list ./... | grep -vE "(test|gen)/")
 	@go tool cover -func=cover.out | grep "total:" | tr '\t' ' '
 	go tool cover -html=cover.out -o cover.html

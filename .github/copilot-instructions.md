@@ -150,6 +150,7 @@ func (r *StockBrandRepositoryImpl) FindAll(ctx context.Context) ([]*models.Stock
 - **Mock の初期化**: `fields` 構造体の各フィールドは `func(ctrl *gomock.Controller) Interface` 型とし、テストケースごとに必要なモックのみを初期化する関数を定義する。
 - **不要なモックの除外**: テストケースで使用しないリポジトリやサービスは `nil` (または未定義) とし、テスト実行時に `nil` チェックを行って設定する。これにより、テストのセットアップを最小限に保ち、可読性を向上させる。
 - **未使用のモック定義の削除**: テストケース内で使用しないモックの初期化関数（`return nil` を返すだけのものなど）は記述せず、フィールド自体を省略する。
+- **引数の厳密なチェック**: `gomock.Any()` の使用は避け、可能な限り具体的な値や `gomock.Eq()` を使用して引数を検証する。
 - **アサーション**: `reflect.DeepEqual` や `github.com/stretchr/testify/assert` を使用して結果を検証する。
 
 ### E2Eテスト方針

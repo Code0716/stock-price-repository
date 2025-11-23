@@ -63,8 +63,21 @@ func TestStockBrandInteractorImpl_UpdateStockBrands(t *testing.T) {
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					mock := mock_repositories.NewMockStockBrandRepository(ctrl)
 					mock.EXPECT().FindAll(gomock.Any()).Return([]*models.StockBrand{}, nil)
-					mock.EXPECT().UpsertStockBrands(gomock.Any(), gomock.Any()).Return(nil)
-					mock.EXPECT().FindDelistingStockBrandsFromUpdateTime(gomock.Any(), gomock.Any()).Return([]string{}, nil)
+					mock.EXPECT().UpsertStockBrands(gomock.Any(), []*models.StockBrand{
+						{
+							TickerSymbol:     "1111",
+							Name:             "Test Company",
+							MarketCode:       "P",
+							MarketName:       "Prime",
+							Sector33Code:     "1000",
+							Sector33CodeName: "Sector",
+							Sector17Code:     "10",
+							Sector17CodeName: "Sector17",
+							CreatedAt:        time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
+							UpdatedAt:        time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
+						},
+					}).Return(nil)
+					mock.EXPECT().FindDelistingStockBrandsFromUpdateTime(gomock.Any(), time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC)).Return([]string{}, nil)
 					return mock
 				},
 			},
@@ -103,8 +116,21 @@ func TestStockBrandInteractorImpl_UpdateStockBrands(t *testing.T) {
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					mock := mock_repositories.NewMockStockBrandRepository(ctrl)
 					mock.EXPECT().FindAll(gomock.Any()).Return([]*models.StockBrand{}, nil)
-					mock.EXPECT().UpsertStockBrands(gomock.Any(), gomock.Any()).Return(nil)
-					mock.EXPECT().FindDelistingStockBrandsFromUpdateTime(gomock.Any(), gomock.Any()).Return([]string{"999"}, nil)
+					mock.EXPECT().UpsertStockBrands(gomock.Any(), []*models.StockBrand{
+						{
+							TickerSymbol:     "1111",
+							Name:             "Test Company",
+							MarketCode:       "P",
+							MarketName:       "Prime",
+							Sector33Code:     "1000",
+							Sector33CodeName: "Sector",
+							Sector17Code:     "10",
+							Sector17CodeName: "Sector17",
+							CreatedAt:        time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
+							UpdatedAt:        time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
+						},
+					}).Return(nil)
+					mock.EXPECT().FindDelistingStockBrandsFromUpdateTime(gomock.Any(), time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC)).Return([]string{"999"}, nil)
 					mock.EXPECT().DeleteDelistingStockBrands(gomock.Any(), []string{"999"}).Return([]*models.StockBrand{
 						{
 							TickerSymbol: "9999",

@@ -87,7 +87,16 @@ func TestE2E_UpdateStockBrands(t *testing.T) {
 	mockStockAPI.EXPECT().GetStockBrands(gomock.Any()).Return(expectedBrands, nil)
 
 	// Slack expectations
-	mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil)
+	mockSlackAPI.EXPECT().SendMessageByStrings(
+		gomock.Any(),
+		gateway.SlackChannelNameDevNotification,
+		gomock.Any(),
+		nil,
+		nil,
+	).DoAndReturn(func(ctx context.Context, channelName gateway.SlackChannelName, title string, message, ts *string) (string, error) {
+		assert.Contains(t, title, "command name: update_stock_brands_v1")
+		return "", nil
+	})
 
 	// 6. Run Command
 	args := []string{"main", "update_stock_brands_v1"}

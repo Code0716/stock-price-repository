@@ -67,12 +67,12 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 	msg := fmt.Sprintf("command: %s finished \n", commandName)
 	if err := app.RunContext(ctx, args); err != nil {
 		log.Print(msg, args, errors.Wrap(err, "command failed"))
-		err := r.slackAPIClient.SendErrMessageNotification(
+		slackErr := r.slackAPIClient.SendErrMessageNotification(
 			ctx,
 			errors.Wrap(err, fmt.Sprintf("Error command name: %s failed.", commandName)),
 		)
-		if err != nil {
-			return err
+		if slackErr != nil {
+			return slackErr
 		}
 		return err
 	}

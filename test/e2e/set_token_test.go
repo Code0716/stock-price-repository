@@ -12,15 +12,10 @@ import (
 	"github.com/Code0716/stock-price-repository/infrastructure/cli"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	mock_gateway "github.com/Code0716/stock-price-repository/mock/gateway"
-	"github.com/Code0716/stock-price-repository/test/helper"
 )
 
 func TestE2E_SetJQuantsAPITokenToRedis(t *testing.T) {
-	// 1. Setup DB (Not used but required for Runner)
-	_, cleanup := helper.SetupTestDB(t)
-	defer cleanup()
-
-	// 2. Setup Redis (Miniredis)
+	// 1. Setup Redis (Miniredis)
 	mr, err := miniredis.Run()
 	if err != nil {
 		t.Fatalf("failed to start miniredis: %v", err)
@@ -31,18 +26,18 @@ func TestE2E_SetJQuantsAPITokenToRedis(t *testing.T) {
 		Addr: mr.Addr(),
 	})
 
-	// 3. Setup Mocks
+	// 2. Setup Mocks
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockSlackAPI := mock_gateway.NewMockSlackAPIClient(ctrl)
 	mockStockAPI := mock_gateway.NewMockStockAPIClient(ctrl)
 
-	// 4. Define Test Data
+	// 3. Define Test Data
 	refreshToken := "test-refresh-token"
 	idToken := "test-id-token"
 
-	// 5. Setup Dependencies & Expectations
+	// 4. Setup Dependencies & Expectations
 	// We use a mock for StockAPIClient but implement the method to actually write to Redis
 	// This allows us to test the command's interaction with the "driver" (simulated) and the driver's effect on Redis.
 	mockStockAPI.EXPECT().GetOrSetJQuantsAPIIDTokenToRedis(gomock.Any()).DoAndReturn(func(ctx context.Context) (string, error) {
@@ -86,7 +81,7 @@ func TestE2E_SetJQuantsAPITokenToRedis(t *testing.T) {
 		mockSlackAPI,
 	)
 
-	// 6. Run Command
+	// 5. Run Command
 	// args: [main, command, refreshToken, idToken]
 	// Note: The command might expect arguments to be passed in a specific way.
 	// Let's check the command definition if it parses args or expects them from flags/env.
@@ -107,7 +102,7 @@ func TestE2E_SetJQuantsAPITokenToRedis(t *testing.T) {
 	err = runner.Run(context.Background(), args)
 	assert.NoError(t, err)
 
-	// 7. Verify Redis
+	// 6. Verify Redis
 	// Check Refresh Token
 	val, err := redisClient.Get(context.Background(), "j_quants_api_refresh_token").Result()
 	assert.NoError(t, err)

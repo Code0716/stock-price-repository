@@ -47,11 +47,11 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	nikkeiRepository := database.NewNikkeiRepositoryImpl(gormDB)
 	djiRepository := database.NewDjiRepositoryImpl(gormDB)
 	indexInteractor := usecase.NewIndexInteractor(transaction, client, nikkeiRepository, djiRepository, stockAPIClient, slackAPIClient)
-	createNkkeiAndDjiHistoricalDataV1Command := commands.NewCreateNkkeiAndDjiHistoricalDataV1Command(indexInteractor)
+	createNikkeiAndDjiHistoricalDataV1Command := commands.NewCreateNikkeiAndDjiHistoricalDataV1Command(indexInteractor)
 	mySQLDumpClient := driver.NewMySQLDumpClient()
 	exportSQLInteractor := usecase.NewExportSQLInteractor(mySQLDumpClient)
 	exportStockBrandsAndDailyPriceToSQLV1Command := commands.NewExportStockBrandsAndDailyPriceToSQLV1Command(exportSQLInteractor)
-	runner := cli.NewRunner(healthCheckCommand, setJQuantsAPITokenToRedisV1Command, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNkkeiAndDjiHistoricalDataV1Command, exportStockBrandsAndDailyPriceToSQLV1Command, indexInteractor, slackAPIClient)
+	runner := cli.NewRunner(healthCheckCommand, setJQuantsAPITokenToRedisV1Command, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, exportStockBrandsAndDailyPriceToSQLV1Command, indexInteractor, slackAPIClient)
 	return runner, func() {
 		cleanup()
 	}, nil
@@ -63,6 +63,6 @@ var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexIn
 
 var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient)
 
-var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewExportStockBrandsAndDailyPriceToSQLV1Command, commands.NewCreateNkkeiAndDjiHistoricalDataV1Command)
+var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewExportStockBrandsAndDailyPriceToSQLV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command)
 
 var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl)

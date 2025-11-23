@@ -40,7 +40,7 @@ var cliSet = wire.NewSet(
 	commands.NewCreateHistoricalDailyStockPricesV1Command,
 	commands.NewCreateDailyStockPriceV1Command,
 	commands.NewExportStockBrandsAndDailyPriceToSQLV1Command,
-	commands.NewCreateNkkeiAndDjiHistoricalDataV1Command,
+	commands.NewCreateNikkeiAndDjiHistoricalDataV1Command,
 )
 
 var databaseSet = wire.NewSet(

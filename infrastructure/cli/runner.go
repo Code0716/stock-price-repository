@@ -29,7 +29,7 @@ func NewRunner(
 	updateStockBrandsInfoV1Command *commands.UpdateStockBrandsV1Command,
 	createHistoricalDailyStockPricesV1Command *commands.CreateHistoricalDailyStockPricesV1Command,
 	createDailyStockPriceV1Command *commands.CreateDailyStockPriceV1Command,
-	createNikkeiAndDjiHistoricalDataV1Command *commands.CreateNkkeiAndDjiHistoricalDataV1Command,
+	createNikkeiAndDjiHistoricalDataV1Command *commands.CreateNikkeiAndDjiHistoricalDataV1Command,
 	exportStockBrandsAndDailyPriceToSQLV1Command *commands.ExportStockBrandsAndDailyPriceToSQLV1Command,
 	indexInteractor usecase.IndexInteractor,
 	slackAPIClient gateway.SlackAPIClient,

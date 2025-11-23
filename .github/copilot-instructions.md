@@ -152,6 +152,14 @@ func (r *StockBrandRepositoryImpl) FindAll(ctx context.Context) ([]*models.Stock
 - **未使用のモック定義の削除**: テストケース内で使用しないモックの初期化関数（`return nil` を返すだけのものなど）は記述せず、フィールド自体を省略する。
 - **アサーション**: `reflect.DeepEqual` や `github.com/stretchr/testify/assert` を使用して結果を検証する。
 
+### E2Eテスト方針
+
+- **配置場所**: `test/e2e` ディレクトリに配置する。
+- **実行環境**: Docker上のMySQLを使用し、テスト実行ごとに専用のDBを作成・破棄する。
+- **外部API**: `mock/gateway` を使用して外部API (Yahoo Finance, j-Quants) をモック化し、実際のAPIコールは行わない。
+- **実行方法**: `infrastructure/cli.Runner` を使用してCLIコマンドの実行をシミュレートする。
+- **ヘルパー利用**: DBセットアップなどの共通処理は `test/helper` パッケージを利用する。
+
 #### 推奨されるテストコード構成例
 
 ```go

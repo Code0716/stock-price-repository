@@ -81,7 +81,7 @@ func (si *StockBrandRepositoryImpl) UpsertStockBrands(ctx context.Context, stock
 				}),
 		}).Create(si.convertToDBModels(stockBrands)...)
 	if err != nil {
-		return errors.Wrap(err, "")
+		return errors.Wrap(err, "StockBrandRepositoryImpl.UpsertStockBrands error")
 	}
 	return nil
 }

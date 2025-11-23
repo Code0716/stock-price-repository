@@ -25,7 +25,6 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	healthCheckCommand := commands.NewHealthCheckCommand(slackAPIClient)
 	stockAPIClient := driver.NewStockAPIClient(httpRequest, client)
 	setJQuantsAPITokenToRedisV1Command := commands.NewSetJQuantsAPITokenToRedisV1Command(stockAPIClient)
-	transaction := database.NewTransaction()
 	db, cleanup, err := driver.NewDBConn()
 	if err != nil {
 		return nil, nil, err
@@ -35,6 +34,7 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
+	transaction := database.NewTransaction(gormDB)
 	stockBrandRepository := database.NewStockBrandRepositoryImpl(gormDB)
 	stockBrandsDailyPriceRepository := database.NewStockBrandsDailyPriceRepositoryImpl(gormDB)
 	analyzeStockBrandPriceHistoryRepository := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(gormDB)

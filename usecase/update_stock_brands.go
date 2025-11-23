@@ -49,14 +49,8 @@ func (si *stockBrandInteractorImpl) UpdateStockBrands(ctx context.Context, now t
 			return errors.Wrap(err, "stockBrandRepository.FindAll error")
 		}
 
-		for _, v := range stockBrands {
-			// 既に存在する銘柄は更新
-			for _, current := range currentBrands {
-				if v.TickerSymbol == current.TickerSymbol {
-					v.ID = current.ID
-				}
-			}
-		}
+		si.matchStockBrandIDs(stockBrands, currentBrands)
+
 		// 銘柄を保存
 		if err := si.stockBrandRepository.UpsertStockBrands(ctx, stockBrands); err != nil {
 			return errors.Wrap(err, "stockBrandRepository.UpsertStockBrands error")
@@ -68,31 +62,8 @@ func (si *stockBrandInteractorImpl) UpdateStockBrands(ctx context.Context, now t
 			return errors.Wrap(err, "stockBrandRepository.FindDelistingStockBrandsFromUpdateTime error")
 		}
 
-		if len(deleteIDs) != 0 {
-			// 上場廃止銘柄の日足削除
-			if err := si.stockBrandsDailyPriceRepository.DeleteByIDs(ctx, deleteIDs); err != nil {
-				return errors.Wrap(err, "stockBrandsDailyPriceRepository.DeleteDelisting error")
-			}
-
-			if err := si.analyzeStockBrandPriceHistoryRepository.DeleteByStockBrandIDs(ctx, deleteIDs); err != nil {
-				return errors.Wrap(err, "analyzeStockBrandPriceHistoryRepository.DeleteByStockBrandIDs error")
-			}
-
-			// 上場廃止銘柄の削除
-			deleteBrands, err := si.stockBrandRepository.DeleteDelistingStockBrands(ctx, deleteIDs)
-			if err != nil {
-				return errors.Wrap(err, "stockBrandRepository.DeleteDelistingStockBrands error")
-			}
-
-			symbols := make([]string, 0, len(deleteBrands))
-			for _, v := range deleteBrands {
-				symbols = append(symbols, v.TickerSymbol)
-			}
-
-			// 分析用日足の削除
-			if err := si.stockBrandsDailyPriceForAnalyzeRepository.DeleteBySymbols(ctx, symbols); err != nil {
-				return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.DeleteBySymbols error")
-			}
+		if err := si.handleDelistedStockBrands(ctx, deleteIDs); err != nil {
+			return err
 		}
 
 		return nil
@@ -100,6 +71,52 @@ func (si *stockBrandInteractorImpl) UpdateStockBrands(ctx context.Context, now t
 
 	if err != nil {
 		return errors.Wrap(err, "DoInTx error")
+	}
+
+	return nil
+}
+
+func (si *stockBrandInteractorImpl) matchStockBrandIDs(newBrands []*models.StockBrand, currentBrands []*models.StockBrand) {
+	currentMap := make(map[string]string, len(currentBrands))
+	for _, brand := range currentBrands {
+		currentMap[brand.TickerSymbol] = brand.ID
+	}
+
+	for _, brand := range newBrands {
+		if id, ok := currentMap[brand.TickerSymbol]; ok {
+			brand.ID = id
+		}
+	}
+}
+
+func (si *stockBrandInteractorImpl) handleDelistedStockBrands(ctx context.Context, deleteIDs []string) error {
+	if len(deleteIDs) == 0 {
+		return nil
+	}
+
+	// 上場廃止銘柄の日足削除
+	if err := si.stockBrandsDailyPriceRepository.DeleteByIDs(ctx, deleteIDs); err != nil {
+		return errors.Wrap(err, "stockBrandsDailyPriceRepository.DeleteDelisting error")
+	}
+
+	if err := si.analyzeStockBrandPriceHistoryRepository.DeleteByStockBrandIDs(ctx, deleteIDs); err != nil {
+		return errors.Wrap(err, "analyzeStockBrandPriceHistoryRepository.DeleteByStockBrandIDs error")
+	}
+
+	// 上場廃止銘柄の削除
+	deleteBrands, err := si.stockBrandRepository.DeleteDelistingStockBrands(ctx, deleteIDs)
+	if err != nil {
+		return errors.Wrap(err, "stockBrandRepository.DeleteDelistingStockBrands error")
+	}
+
+	symbols := make([]string, 0, len(deleteBrands))
+	for _, v := range deleteBrands {
+		symbols = append(symbols, v.TickerSymbol)
+	}
+
+	// 分析用日足の削除
+	if err := si.stockBrandsDailyPriceForAnalyzeRepository.DeleteBySymbols(ctx, symbols); err != nil {
+		return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.DeleteBySymbols error")
 	}
 
 	return nil

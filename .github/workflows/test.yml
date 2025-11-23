@@ -55,6 +55,12 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: Install mockgen
+        run: go install go.uber.org/mock/mockgen@latest
+
+      - name: Generate mocks
+        run: make mock
+
       - name: Build
         run: go build -v ./...
 

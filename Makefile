@@ -1,3 +1,8 @@
+.PHONY: install-tools install-build-tools install-dev-tools \
+	di deps lint gen gorm-gen mock test test-e2e up cli \
+	migrate-file migrate-up migrate-down migrate-down-all \
+	down docker-down volume-down format build
+
 ## Init .env file
 # .PHONY: init
 # init: init-env install-tools install-dev-tools
@@ -15,7 +20,6 @@ install-dev-tools:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	go install github.com/air-verse/air@latest
 
-.PHONY: di
 di:
 	cd di && wire gen
 	
@@ -33,23 +37,24 @@ gen: gorm-gen
 gorm-gen:
 	go run _gorm_gen/main.go
 
-.PHONY: mock
 mock:
 	rm -rf ./mock
 	go generate ./...
 
-.PHONY: test
-test:
+test:  test-unit  test-e2e
+
+test-unit: 
 	ENVCODE=unit go test -v -race -coverprofile=cover.out $(shell go list ./... | grep -vE "(test|gen)/")
 	@go tool cover -func=cover.out | grep "total:" | tr '\t' ' '
 	go tool cover -html=cover.out -o cover.html
 
-.PHONY: up
+test-e2e:
+	ENVCODE=e2e go test -v -race ./test/e2e/...
+
 up:
 	docker compose up -d
 	# air -c .air.toml
 
-.PHONY: cli
 cli:
 	go run entrypoint/cli/main.go ${command}
 
@@ -76,6 +81,5 @@ volume-down:
 format:
 	npx sql-formatter@15.5.2 --fix  sql/_init_sql/create_database.sql
 
-.PHONY: build
 build:
 	cd entrypoint/cli && GOARCH=arm GOOS=linux GOARM=7 go build -o spr-cli

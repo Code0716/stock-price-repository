@@ -5,7 +5,6 @@ import (
 	"context"
 	"log"
 
-	stDriver "github.com/Code0716/stock-price-repository/driver"
 	genQuery "github.com/Code0716/stock-price-repository/infrastructure/database/gen_query"
 
 	"github.com/pkg/errors"
@@ -28,17 +27,9 @@ type transaction struct {
 }
 
 // NewTransaction init Transaction
-func NewTransaction() Transaction {
-	db, _, err := stDriver.NewDBConn()
-	if err != nil {
-		panic(any(err))
-	}
-	gm, err := stDriver.NewGorm(db)
-	if err != nil {
-		panic(any(err))
-	}
+func NewTransaction(db *gorm.DB) Transaction {
 	return &transaction{
-		gm,
+		db,
 	}
 }
 

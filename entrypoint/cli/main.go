@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/di"
@@ -19,5 +20,7 @@ func main() {
 	}
 	defer cleanup()
 
-	cli.Run()
+	if err := cli.Run(ctx, os.Args); err != nil {
+		log.Fatal(err)
+	}
 }

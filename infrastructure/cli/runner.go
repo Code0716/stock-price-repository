@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -50,10 +49,10 @@ func NewRunner(
 	return r
 }
 
-func (r *Runner) Run() {
-	args := os.Args
-
-	ctx := context.Background()
+func (r *Runner) Run(ctx context.Context, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("not enough arguments")
+	}
 	commandName := args[1]
 
 	ctx = sContext.SetTagName(ctx, commandName)
@@ -68,14 +67,14 @@ func (r *Runner) Run() {
 	msg := fmt.Sprintf("command: %s finished \n", commandName)
 	if err := app.RunContext(ctx, args); err != nil {
 		log.Print(msg, args, errors.Wrap(err, "command failed"))
-		err := r.slackAPIClient.SendErrMessageNotification(
+		slackErr := r.slackAPIClient.SendErrMessageNotification(
 			ctx,
 			errors.Wrap(err, fmt.Sprintf("Error command name: %s failed.", commandName)),
 		)
-		if err != nil {
-			log.Fatal(err)
+		if slackErr != nil {
+			return slackErr
 		}
-		return
+		return err
 	}
 
 	// FIXME: commandにかかった時間を通知する
@@ -93,8 +92,9 @@ func (r *Runner) Run() {
 			errors.Wrap(err, fmt.Sprintf("Error SendMessageByStrings: %s failed.", commandName)),
 		)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 	log.Printf("%s command success", msg)
+	return nil
 }

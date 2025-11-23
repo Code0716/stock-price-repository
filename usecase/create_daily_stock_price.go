@@ -164,6 +164,12 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 		}
 	}
 
+	if len(batchForAnalyze) > 0 {
+		if err := si.stockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandDailyPriceForAnalyze(ctx, batchForAnalyze); err != nil {
+			return errors.Wrap(err, "failed to create final batch for analyze")
+		}
+	}
+
 	return nil
 }
 

@@ -1,9 +1,7 @@
-version: '2'
-
+version: "2"
 run:
-  go: '1.24'
-  timeout: 5m
-
+  go: "1.24"
+  tests: true
 linters:
   default: none
   enable:
@@ -15,18 +13,7 @@ linters:
     - revive
     - staticcheck
     - unused
-
   settings:
-    gocyclo:
-      min-complexity: 15
-    goimports:
-      local-prefixes: github.com/Code0716/stock-price-repository
-    revive:
-      rules:
-        - name: exported
-          disabled: true
-        - name: package-comments
-          disabled: true
     errcheck:
       exclude-functions:
         - (io.Closer).Close
@@ -35,10 +22,18 @@ linters:
         - (*database/sql.Rows).Close
         - (*net/http.Response).Body.Close
         - (*github.com/redis/go-redis/v9.Client).Close
-
+    gocyclo:
+      min-complexity: 15
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
   exclusions:
     generated: lax
     paths:
+      - di/wire_gen.go
       - _gorm_gen
       - infrastructure/database/gen_model
       - infrastructure/database/gen_query
@@ -46,7 +41,6 @@ linters:
       - third_party
       - builtin
       - examples
-      - di/wire_gen.go
     rules:
       - linters:
           - dupl
@@ -57,7 +51,7 @@ linters:
       - linters:
           - revive
         path: util/.*
-        text: 'avoid meaningless package names'
+        text: "avoid meaningless package names"
       - linters:
           - errcheck
         text: "Error return value of `.*\\.Close` is not checked"
@@ -67,3 +61,7 @@ linters:
       - linters:
           - errcheck
         text: "Error return value of `.*\\.Set` is not checked"
+formatters:
+  settings:
+    goimports:
+      local-prefixes: github.com/Code0716/stock-price-repository

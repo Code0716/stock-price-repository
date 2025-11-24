@@ -1,0 +1,69 @@
+run:
+  go: '1.24'
+  timeout: 5m
+  tests: true
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gocyclo
+    - govet
+    - ineffassign
+    - misspell
+    - revive
+    - staticcheck
+    - unused
+    # goimports removed to avoid potential conflicts in CI if it behaves like local
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+      - name: package-comments
+        disabled: true
+  errcheck:
+    exclude-functions:
+      - (io.Closer).Close
+      - (*os.File).Close
+      - (*database/sql.DB).Close
+      - (*database/sql.Rows).Close
+      - (*net/http.Response).Body.Close
+      - (*github.com/redis/go-redis/v9.Client).Close
+
+issues:
+  exclude-dirs:
+    - _gorm_gen
+    - infrastructure/database/gen_model
+    - infrastructure/database/gen_query
+    - mock
+    - third_party
+    - builtin
+    - examples
+  exclude-files:
+    - di/wire_gen.go
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - dupl
+        - errcheck
+        - gocyclo
+        - gosec
+    # Allow package name "util"
+    - path: util/.*
+      text: "avoid meaningless package names"
+      linters:
+        - revive
+    # Fallback for errcheck if exclude-functions doesn't work perfectly
+    - linters:
+        - errcheck
+      text: "Error return value of `.*\\.Close` is not checked"
+    - linters:
+        - errcheck
+      text: "Error return value of `.*\\.Write` is not checked"
+    - linters:
+        - errcheck
+      text: "Error return value of `.*\\.Set` is not checked"

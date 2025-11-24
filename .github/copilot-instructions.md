@@ -160,70 +160,66 @@ func (r *StockBrandRepositoryImpl) FindAll(ctx context.Context) ([]*models.Stock
 - **外部API**: `mock/gateway` を使用して外部API (Yahoo Finance, j-Quants) をモック化し、実際のAPIコールは行わない。
 - **実行方法**: `infrastructure/cli.Runner` を使用してCLIコマンドの実行をシミュレートする。
 - **ヘルパー利用**: DBセットアップなどの共通処理は `test/helper` パッケージを利用する。
+- **テーブル駆動テスト**: E2Eテストもテーブル駆動テスト形式で記述する。
+  - `setup` 関数でテストケースごとの初期データ投入を行う。
+  - `check` 関数で実行後のDB状態検証を行う。
+  - 各テストケース実行前に `helper.TruncateAllTables` でDBをクリーンアップする。
 
-#### 推奨されるテストコード構成例
+#### 推奨されるE2Eテストコード構成例
 
 ```go
-func TestService_Method(t *testing.T) {
-	type fields struct {
-		// 必須の依存関係
-		mainRepo func(ctrl *gomock.Controller) repository.MainRepository
-		// オプショナルな依存関係（テストケースによって使わないもの）
-		subRepo  func(ctrl *gomock.Controller) repository.SubRepository
-	}
+func TestE2E_CommandName(t *testing.T) {
+	// DBセットアップ
+	db, cleanup := helper.SetupTestDB(t)
+	defer cleanup()
+
+	// Redis, Mock等のセットアップ
+	// ...
+
 	type args struct {
-		ctx context.Context
-		id  uint64
+		cmdArgs []string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
-		want    *model.Result
+		setup   func(t *testing.T)
 		wantErr bool
+		check   func(t *testing.T)
 	}{
 		{
-			name: "正常系 - 必要なモックのみ定義",
-			fields: fields{
-				mainRepo: func(ctrl *gomock.Controller) repository.MainRepository {
-					mock := mockrepository.NewMockMainRepository(ctrl)
-					mock.EXPECT().Find(gomock.Any(), gomock.Eq(uint64(1))).Return(&model.Entity{}, nil)
-					return mock
-				},
-				// subRepo はこのテストケースでは使われないため定義しない（nil）
-			},
+			name: "正常系",
 			args: args{
-				ctx: context.Background(),
-				id:  1,
+				cmdArgs: []string{"command", "subcommand"},
 			},
-			want:    &model.Result{},
+			setup: func(t *testing.T) {
+				// 初期データ投入
+			},
 			wantErr: false,
+			check: func(t *testing.T) {
+				// 結果検証
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
+			// テーブルクリア
+			helper.TruncateAllTables(t, db)
 
-			// 必須フィールドの初期化
-			s := &service{
-				mainRepo: tt.fields.mainRepo(mockCtrl),
+			if tt.setup != nil {
+				tt.setup(t)
 			}
 
-			// オプショナルフィールドの初期化（nilチェック）
-			// テストケースで定義されていない場合はセットアップしない
-			if tt.fields.subRepo != nil {
-				s.subRepo = tt.fields.subRepo(mockCtrl)
-			}
+			// Runnerの構築と実行
+			// ...
+			err := runner.Run(context.Background(), tt.args.cmdArgs)
 
-			got, err := s.Method(tt.args.ctx, tt.args.id)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Method() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Method() = %v, want %v", got, tt.want)
+
+			if tt.check != nil {
+				tt.check(t)
 			}
 		})
 	}

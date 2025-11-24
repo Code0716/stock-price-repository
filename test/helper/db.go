@@ -98,6 +98,30 @@ func SetupTestDB(t *testing.T) (*gorm.DB, func()) {
 	return testDB, cleanup
 }
 
+// TruncateAllTables truncates all tables in the test database.
+func TruncateAllTables(t *testing.T, db *gorm.DB) {
+	t.Helper()
+
+	// 外部キー制約を一時的に無効化
+	err := db.Exec("SET FOREIGN_KEY_CHECKS = 0").Error
+	require.NoError(t, err)
+
+	// 全テーブルを取得
+	var tables []string
+	err = db.Raw("SHOW TABLES").Scan(&tables).Error
+	require.NoError(t, err)
+
+	// 各テーブルをTruncate
+	for _, table := range tables {
+		err = db.Exec(fmt.Sprintf("TRUNCATE TABLE %s", table)).Error
+		require.NoError(t, err)
+	}
+
+	// 外部キー制約を有効化
+	err = db.Exec("SET FOREIGN_KEY_CHECKS = 1").Error
+	require.NoError(t, err)
+}
+
 func executeSQLFile(t *testing.T, db *gorm.DB, filePath string, dbName string) {
 	sqlBytes, err := os.ReadFile(filePath)
 	require.NoError(t, err)

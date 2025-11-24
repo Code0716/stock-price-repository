@@ -26,75 +26,90 @@ func TestE2E_SetJQuantsAPITokenToRedis(t *testing.T) {
 		Addr: mr.Addr(),
 	})
 
-	// 2. Setup Mocks
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	type args struct {
+		cmdArgs []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		setup   func(t *testing.T, mockStockAPI *mock_gateway.MockStockAPIClient, mockSlackAPI *mock_gateway.MockSlackAPIClient)
+		wantErr bool
+		check   func(t *testing.T)
+	}{
+		{
+			name: "正常系: J-Quants APIトークンがRedisにセットされる",
+			args: args{
+				cmdArgs: []string{"main", "set_j_quants_api_token_to_redis_v1"},
+			},
+			setup: func(t *testing.T, mockStockAPI *mock_gateway.MockStockAPIClient, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
+				refreshToken := "test-refresh-token"
+				idToken := "test-id-token"
 
-	mockSlackAPI := mock_gateway.NewMockSlackAPIClient(ctrl)
-	mockStockAPI := mock_gateway.NewMockStockAPIClient(ctrl)
+				// Setup Expectations
+				mockStockAPI.EXPECT().GetOrSetJQuantsAPIIDTokenToRedis(gomock.Any()).DoAndReturn(func(ctx context.Context) (string, error) {
+					// Simulate the logic: set tokens to Redis
+					err := redisClient.Set(ctx, "j_quants_api_refresh_token", refreshToken, 0).Err()
+					if err != nil {
+						return "", err
+					}
+					err = redisClient.Set(ctx, "j_quants_api_id_token", idToken, 0).Err()
+					if err != nil {
+						return "", err
+					}
+					return idToken, nil
+				})
 
-	// 3. Define Test Data
-	refreshToken := "test-refresh-token"
-	idToken := "test-id-token"
+				// Slack expectations
+				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
+			},
+			wantErr: false,
+			check: func(t *testing.T) {
+				// Verify Redis
+				// Check Refresh Token
+				val, err := redisClient.Get(context.Background(), "j_quants_api_refresh_token").Result()
+				assert.NoError(t, err)
+				assert.Equal(t, "test-refresh-token", val)
 
-	// 4. Setup Dependencies & Expectations
-	// We use a mock for StockAPIClient but implement the method to actually write to Redis
-	// This allows us to test the command's interaction with the "driver" (simulated) and the driver's effect on Redis.
-	mockStockAPI.EXPECT().GetOrSetJQuantsAPIIDTokenToRedis(gomock.Any()).DoAndReturn(func(ctx context.Context) (string, error) {
-		// Simulate the logic: set tokens to Redis
-		// Note: The actual implementation might use specific keys. We should match them.
-		// Based on driver/j_quants_api_token.go, keys are likely "j_quants_api_refresh_token" and "j_quants_api_id_token"
-		err := redisClient.Set(ctx, "j_quants_api_refresh_token", refreshToken, 0).Err()
-		if err != nil {
-			return "", err
-		}
-		err = redisClient.Set(ctx, "j_quants_api_id_token", idToken, 0).Err()
-		if err != nil {
-			return "", err
-		}
-		return idToken, nil
-	})
+				// Check ID Token
+				val, err = redisClient.Get(context.Background(), "j_quants_api_id_token").Result()
+				assert.NoError(t, err)
+				assert.Equal(t, "test-id-token", val)
+			},
+		},
+	}
 
-	// Slack expectations
-	mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Redis flush
+			redisClient.FlushAll(context.Background())
 
-	// Commands
-	setTokenCmd := commands.NewSetJQuantsAPITokenToRedisV1Command(mockStockAPI)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	runner := helper.NewTestRunner(helper.TestRunnerOptions{
-		SetJQuantsAPITokenToRedisV1Command: setTokenCmd,
-		SlackAPIClient:                     mockSlackAPI,
-	})
+			mockSlackAPI := mock_gateway.NewMockSlackAPIClient(ctrl)
+			mockStockAPI := mock_gateway.NewMockStockAPIClient(ctrl)
 
-	// 5. Run Command
-	// args: [main, command, refreshToken, idToken]
-	// Note: The command might expect arguments to be passed in a specific way.
-	// Let's check the command definition if it parses args or expects them from flags/env.
-	// Assuming it takes args from the CLI context.
-	args := []string{"main", "set_j_quants_api_token_to_redis_v1"}
-	// Wait, does the command take arguments for the tokens?
-	// Checking the command implementation is needed.
-	// If it doesn't take args, how does it get the tokens?
-	// Usually via environment variables or flags.
-	// Let's assume for now it might prompt or read env vars.
-	// BUT, the mock implementation above hardcodes the tokens it writes.
-	// So the command just calls the method.
+			if tt.setup != nil {
+				tt.setup(t, mockStockAPI, mockSlackAPI)
+			}
 
-	// Actually, looking at the command name "SetJQuantsAPITokenToRedisV1Command",
-	// it likely triggers the flow to fetch/refresh tokens.
-	// If the command is just "ensure tokens exist", then it calls GetOrSet...
+			// Commands
+			setTokenCmd := commands.NewSetJQuantsAPITokenToRedisV1Command(mockStockAPI)
 
-	err = runner.Run(context.Background(), args)
-	assert.NoError(t, err)
+			runner := helper.NewTestRunner(helper.TestRunnerOptions{
+				SetJQuantsAPITokenToRedisV1Command: setTokenCmd,
+				SlackAPIClient:                     mockSlackAPI,
+			})
 
-	// 6. Verify Redis
-	// Check Refresh Token
-	val, err := redisClient.Get(context.Background(), "j_quants_api_refresh_token").Result()
-	assert.NoError(t, err)
-	assert.Equal(t, refreshToken, val)
+			err := runner.Run(context.Background(), tt.args.cmdArgs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 
-	// Check ID Token
-	val, err = redisClient.Get(context.Background(), "j_quants_api_id_token").Result()
-	assert.NoError(t, err)
-	assert.Equal(t, idToken, val)
+			if tt.check != nil {
+				tt.check(t)
+			}
+		})
+	}
 }

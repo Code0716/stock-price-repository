@@ -35,81 +35,113 @@ func TestE2E_UpdateStockBrands(t *testing.T) {
 		Addr: mr.Addr(),
 	})
 
-	// 3. Setup Mocks
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockStockAPI := mock_gateway.NewMockStockAPIClient(ctrl)
-	mockSlackAPI := mock_gateway.NewMockSlackAPIClient(ctrl)
-
-	// 4. Setup Dependencies
-	// Repositories
-	stockBrandRepo := database.NewStockBrandRepositoryImpl(db)
-	sbDailyRepo := database.NewStockBrandsDailyPriceRepositoryImpl(db)
-	analyzeRepo := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(db)
-	sbDailyAnalyzeRepo := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db)
-	tx := database.NewTransaction(db)
-
-	// Interactor
-	interactor := usecase.NewStockBrandInteractor(
-		tx,
-		stockBrandRepo,
-		sbDailyRepo,
-		analyzeRepo,
-		sbDailyAnalyzeRepo,
-		mockStockAPI,
-		redisClient,
-	)
-
-	// Commands
-	updateCmd := commands.NewUpdateStockBrandsV1Command(interactor)
-
-	runner := helper.NewTestRunner(helper.TestRunnerOptions{
-		UpdateStockBrandsV1Command: updateCmd,
-		SlackAPIClient:             mockSlackAPI,
-	})
-
-	// 5. Define Test Data & Expectations
-	expectedBrands := []*gateway.StockBrand{
+	type args struct {
+		cmdArgs []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		setup   func(t *testing.T, mockStockAPI *mock_gateway.MockStockAPIClient, mockSlackAPI *mock_gateway.MockSlackAPIClient)
+		wantErr bool
+		check   func(t *testing.T)
+	}{
 		{
-			Symbol:           "1001",
-			CompanyName:      "Test Company",
-			MarketCode:       "111",
-			MarketCodeName:   "Prime",
-			Sector33Code:     "0050",
-			Sector33CodeName: "Fishery, Agriculture & Forestry",
-			Sector17Code:     "1",
-			Sector17CodeName: "Foods",
+			name: "正常系: 銘柄情報の更新が成功する",
+			args: args{
+				cmdArgs: []string{"main", "update_stock_brands_v1"},
+			},
+			setup: func(t *testing.T, mockStockAPI *mock_gateway.MockStockAPIClient, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
+				expectedBrands := []*gateway.StockBrand{
+					{
+						Symbol:           "1001",
+						CompanyName:      "Test Company",
+						MarketCode:       "111",
+						MarketCodeName:   "Prime",
+						Sector33Code:     "0050",
+						Sector33CodeName: "Fishery, Agriculture & Forestry",
+						Sector17Code:     "1",
+						Sector17CodeName: "Foods",
+					},
+				}
+
+				// Mock Expectations
+				mockStockAPI.EXPECT().GetStockBrands(gomock.Any()).Return(expectedBrands, nil)
+
+				// Slack expectations
+				mockSlackAPI.EXPECT().SendMessageByStrings(
+					gomock.Any(),
+					gateway.SlackChannelNameDevNotification,
+					gomock.Any(),
+					nil,
+					nil,
+				).DoAndReturn(func(ctx context.Context, channelName gateway.SlackChannelName, title string, message, ts *string) (string, error) {
+					assert.Contains(t, title, "command name: update_stock_brands_v1")
+					return "", nil
+				})
+			},
+			wantErr: false,
+			check: func(t *testing.T) {
+				var count int64
+				db.Model(&genModel.StockBrand{}).Count(&count)
+				assert.Equal(t, int64(1), count)
+
+				var brand genModel.StockBrand
+				db.First(&brand)
+				assert.Equal(t, "1001", brand.TickerSymbol)
+				assert.Equal(t, "Test Company", brand.Name)
+			},
 		},
 	}
 
-	// Mock Expectations
-	mockStockAPI.EXPECT().GetStockBrands(gomock.Any()).Return(expectedBrands, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			helper.TruncateAllTables(t, db)
 
-	// Slack expectations
-	mockSlackAPI.EXPECT().SendMessageByStrings(
-		gomock.Any(),
-		gateway.SlackChannelNameDevNotification,
-		gomock.Any(),
-		nil,
-		nil,
-	).DoAndReturn(func(ctx context.Context, channelName gateway.SlackChannelName, title string, message, ts *string) (string, error) {
-		assert.Contains(t, title, "command name: update_stock_brands_v1")
-		return "", nil
-	})
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	// 6. Run Command
-	args := []string{"main", "update_stock_brands_v1"}
-	err = runner.Run(context.Background(), args)
-	assert.NoError(t, err)
+			mockStockAPI := mock_gateway.NewMockStockAPIClient(ctrl)
+			mockSlackAPI := mock_gateway.NewMockSlackAPIClient(ctrl)
 
-	// 7. Verify DB
-	var count int64
-	db.Model(&genModel.StockBrand{}).Count(&count)
-	assert.Equal(t, int64(1), count)
+			if tt.setup != nil {
+				tt.setup(t, mockStockAPI, mockSlackAPI)
+			}
 
-	var brand genModel.StockBrand
-	db.First(&brand)
-	assert.Equal(t, "1001", brand.TickerSymbol)
-	assert.Equal(t, "Test Company", brand.Name)
+			// Repositories
+			stockBrandRepo := database.NewStockBrandRepositoryImpl(db)
+			sbDailyRepo := database.NewStockBrandsDailyPriceRepositoryImpl(db)
+			analyzeRepo := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(db)
+			sbDailyAnalyzeRepo := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db)
+			tx := database.NewTransaction(db)
+
+			// Interactor
+			interactor := usecase.NewStockBrandInteractor(
+				tx,
+				stockBrandRepo,
+				sbDailyRepo,
+				analyzeRepo,
+				sbDailyAnalyzeRepo,
+				mockStockAPI,
+				redisClient,
+			)
+
+			// Commands
+			updateCmd := commands.NewUpdateStockBrandsV1Command(interactor)
+
+			runner := helper.NewTestRunner(helper.TestRunnerOptions{
+				UpdateStockBrandsV1Command: updateCmd,
+				SlackAPIClient:             mockSlackAPI,
+			})
+
+			err := runner.Run(context.Background(), tt.args.cmdArgs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.check != nil {
+				tt.check(t)
+			}
+		})
+	}
 }

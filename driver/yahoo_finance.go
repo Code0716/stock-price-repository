@@ -29,7 +29,7 @@ func (c *StockAPIClient) getStockPriceChart(
 ) (*gateway.StockChartWithRangeAPIResponseInfo, error) {
 	u, err := url.Parse(
 		fmt.Sprintf("%s/v8/finance/chart/%s?interval=%s&range=%s",
-			config.YahooFinance().BaseURL,
+			config.GetYahooFinance().BaseURL,
 			symbol,
 			interval.String(),
 			dateRange.String(),
@@ -47,7 +47,7 @@ func (c *StockAPIClient) getStockPriceChart(
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	req.Header.Set("User-Agent", "SttAppUserAgent/1.0") // 形式変えるとエラーになるのでとりあえずこれに。
-	res, err := c.request.GetHttpClient().Do(req)
+	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`yahoo.finance.api request to: %s`, u.String()))
 	}
@@ -60,7 +60,7 @@ func (c *StockAPIClient) getStockPriceChart(
 	if res.StatusCode != http.StatusOK {
 		// エラー時のResponseが不明なので、log出してエラーを返す。
 		// ハンドリングしたい気持ちはある。
-		return nil, errors.New(fmt.Sprintf(`yahoo.finance.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`yahoo.finance.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response yahooFinanceAPIResponse
@@ -371,10 +371,10 @@ func (c *StockAPIClient) symbolSanitizeToStr(symbol string) string {
 	return tickerSymbol
 }
 
-func (c *StockAPIClient) GetBalanceSheetsBySymbol(ctx context.Context, symbol string) (*gateway.BalanceSheetsInfo, error) {
+func (c *StockAPIClient) GetBalanceSheetsBySymbol(_ context.Context, symbol string) (*gateway.BalanceSheetsInfo, error) {
 	// 時価総額は返していない。
 	// 発行済み株式数*現在値 で計算したほうが正確であったため。
-	cmd := exec.Command(config.YahooFinance().YfinancePyBinaryCMD, fmt.Sprintf("%s.T", symbol))
+	cmd := exec.Command(config.GetYahooFinance().YfinancePyBinaryCMD, fmt.Sprintf("%s.T", symbol))
 	output, err := cmd.Output()
 	// Notfoundのときは処理続けたい
 	if err != nil {

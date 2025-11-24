@@ -6,20 +6,20 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-type ConfigFeatureFlag struct {
+type FeatureFlag struct {
 	// FeatureFlagStartUsingJQuants bool `envconfig:"start_using_j_quants" default:""`
 }
 
-var configFeatureFlag ConfigFeatureFlag
+var featureFlag FeatureFlag
 
 func LoadConfigFeatureFlag() {
 	prefix := ""
-	err := envconfig.Process(prefix, &configFeatureFlag)
+	err := envconfig.Process(prefix, &featureFlag)
 	if err != nil {
 		log.Fatalf("failed to init config: %v", err)
 	}
 }
 
-func FeatureFlag() *ConfigFeatureFlag {
-	return &configFeatureFlag
+func GetFeatureFlag() *FeatureFlag {
+	return &featureFlag
 }

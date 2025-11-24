@@ -32,7 +32,7 @@ func TestStockAPIClient_GetStockBrands(t *testing.T) {
 	})
 
 	// Set config for tests
-	config.JQuants().JQuantsBaseURLV1 = "https://api.jquants.com/v1"
+	config.GetJQuants().JQuantsBaseURLV1 = "https://api.jquants.com/v1"
 
 	type fields struct {
 		request     func(ctrl *gomock.Controller) HTTPRequest
@@ -53,13 +53,13 @@ func TestStockAPIClient_GetStockBrands(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
 							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
 								if req.URL.Path == "/v1/listed/info" {
 									// Anonymous struct in model, so using map for simplicity or defining inline
-									respBody := map[string]interface{}{
-										"info": []map[string]interface{}{
+									respBody := map[string]any{
+										"info": []map[string]any{
 											{
 												"Code":        "10010", // Suffix 0 for trimming test
 												"CompanyName": "Test Company",
@@ -99,9 +99,9 @@ func TestStockAPIClient_GetStockBrands(t *testing.T) {
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
 					// Expect call to get http client for token refresh
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
-							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+							RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
 								// Fail token request
 								return &http.Response{
 									StatusCode: http.StatusInternalServerError,
@@ -144,7 +144,7 @@ func TestStockAPIClient_GetStockBrands(t *testing.T) {
 	}
 }
 
-func TestStockAPIClient_GetAnnounceFinsSchedule(t *testing.T) {
+func TestStockAPIClient_GetAnnounceFinSchedule(t *testing.T) {
 	// miniredis setup
 	s, err := miniredis.Run()
 	if err != nil {
@@ -175,7 +175,7 @@ func TestStockAPIClient_GetAnnounceFinsSchedule(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
 							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
 								if req.URL.Path == "/v1/fins/announcement" {
@@ -227,7 +227,7 @@ func TestStockAPIClient_GetAnnounceFinsSchedule(t *testing.T) {
 				request:     tt.fields.request(ctrl),
 				redisClient: tt.fields.redisClient,
 			}
-			_, err := c.GetAnnounceFinsSchedule(tt.args.ctx)
+			_, err := c.GetAnnounceFinSchedule(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("StockAPIClient.GetAnnounceFinsSchedule() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -269,7 +269,7 @@ func TestStockAPIClient_getDailyPricesBySymbolAndRangeJQ(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
 							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
 								if req.URL.Path == "/v1/prices/daily_quotes" {
@@ -365,7 +365,7 @@ func TestStockAPIClient_getFinancialStatementsJQ(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
 							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
 								if req.URL.Path == "/v1/fins/statements" {
@@ -458,7 +458,7 @@ func TestStockAPIClient_getTradingCalendarsInfo(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
 							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
 								if req.URL.Path == "/v1/markets/trading_calendar" {

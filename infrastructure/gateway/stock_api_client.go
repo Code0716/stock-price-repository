@@ -20,7 +20,7 @@ type StockAPIClient interface {
 	// j-Quants
 	GetOrSetJQuantsAPIIDTokenToRedis(ctx context.Context) (string, error)
 	GetStockBrands(ctx context.Context) ([]*StockBrand, error)
-	GetAnnounceFinsSchedule(ctx context.Context) ([]*AnnounceFinScheduleResponseInfo, error)
+	GetAnnounceFinSchedule(ctx context.Context) ([]*AnnounceFinScheduleResponseInfo, error)
 	GetDailyPricesBySymbolAndRange(ctx context.Context, symbol StockAPISymbol, dateFrom, dateTo time.Time) ([]*StockPrice, error)
 	GetFinancialStatementsBySymbol(ctx context.Context, symbol StockAPISymbol) ([]*FinancialStatementsResponseInfo, error)
 	GetFinancialStatementsByDate(ctx context.Context, date time.Time) ([]*FinancialStatementsResponseInfo, error)

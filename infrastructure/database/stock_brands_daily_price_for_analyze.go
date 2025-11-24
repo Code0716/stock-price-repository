@@ -151,7 +151,7 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) convertToDBModels(daily
 
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) convertToDBModel(dailyPrice *models.StockBrandDailyPriceForAnalyze) *genModel.StockBrandsDailyPriceForAnalyze {
 	open, _ := dailyPrice.Open.Round(4).Float64()
-	close, _ := dailyPrice.Close.Round(4).Float64()
+	closePrice, _ := dailyPrice.Close.Round(4).Float64()
 	high, _ := dailyPrice.High.Round(4).Float64()
 	low, _ := dailyPrice.Low.Round(4).Float64()
 	adjclose, _ := dailyPrice.Adjclose.Round(4).Float64()
@@ -160,7 +160,7 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) convertToDBModel(dailyP
 		TickerSymbol:  dailyPrice.TickerSymbol,
 		Date:          dailyPrice.Date,
 		OpenPrice:     open,
-		ClosePrice:    close,
+		ClosePrice:    closePrice,
 		HighPrice:     high,
 		LowPrice:      low,
 		AdjClosePrice: adjclose,

@@ -29,8 +29,8 @@ func TestSlackAPIClient_SendMessage(t *testing.T) {
 		Addr: s.Addr(),
 	})
 
-	config.Slack().SlackBotBaseUrl = "https://slack.com/api/chat.postMessage"
-	config.Slack().SlackNotificationBotToken = "test-token"
+	config.GetSlack().SlackBotBaseURL = "https://slack.com/api/chat.postMessage"
+	config.GetSlack().SlackNotificationBotToken = "test-token"
 
 	type fields struct {
 		request     func(ctrl *gomock.Controller) HTTPRequest
@@ -52,7 +52,7 @@ func TestSlackAPIClient_SendMessage(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
 							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
 								if req.URL.String() == "https://slack.com/api/chat.postMessage" {
@@ -96,9 +96,9 @@ func TestSlackAPIClient_SendMessage(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
-							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+							RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
 								return &http.Response{
 									StatusCode: http.StatusOK,
 									Body: io.NopCloser(bytes.NewBufferString(`{
@@ -125,9 +125,9 @@ func TestSlackAPIClient_SendMessage(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
-							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+							RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
 								return nil, errors.New("http error")
 							},
 						},
@@ -171,8 +171,8 @@ func TestSlackAPIClient_SendErrMessageNotification(t *testing.T) {
 		Addr: s.Addr(),
 	})
 
-	config.Slack().SlackBotBaseUrl = "https://slack.com/api/chat.postMessage"
-	config.Slack().SlackNotificationBotToken = "test-token"
+	config.GetSlack().SlackBotBaseURL = "https://slack.com/api/chat.postMessage"
+	config.GetSlack().SlackNotificationBotToken = "test-token"
 
 	type fields struct {
 		request     func(ctrl *gomock.Controller) HTTPRequest
@@ -193,9 +193,9 @@ func TestSlackAPIClient_SendErrMessageNotification(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
-							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+							RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
 								return &http.Response{
 									StatusCode: http.StatusOK,
 									Body: io.NopCloser(bytes.NewBufferString(`{
@@ -244,8 +244,8 @@ func TestSlackAPIClient_SendMessageByStrings(t *testing.T) {
 		Addr: s.Addr(),
 	})
 
-	config.Slack().SlackBotBaseUrl = "https://slack.com/api/chat.postMessage"
-	config.Slack().SlackNotificationBotToken = "test-token"
+	config.GetSlack().SlackBotBaseURL = "https://slack.com/api/chat.postMessage"
+	config.GetSlack().SlackNotificationBotToken = "test-token"
 
 	message := "test message"
 	ts := "1234567890.123456"
@@ -275,9 +275,9 @@ func TestSlackAPIClient_SendMessageByStrings(t *testing.T) {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
 					// 1回目: タイトル送信 (スレッド親)
 					// 2回目: メッセージ送信 (スレッド返信)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
-							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+							RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
 								return &http.Response{
 									StatusCode: http.StatusOK,
 									Body: io.NopCloser(bytes.NewBufferString(`{
@@ -308,9 +308,9 @@ func TestSlackAPIClient_SendMessageByStrings(t *testing.T) {
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
 					// 1回目: メッセージ送信 (スレッド返信) のみ
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
-							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+							RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
 								return &http.Response{
 									StatusCode: http.StatusOK,
 									Body: io.NopCloser(bytes.NewBufferString(`{
@@ -341,9 +341,9 @@ func TestSlackAPIClient_SendMessageByStrings(t *testing.T) {
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
 					// 1回目: タイトル送信 (スレッド親) のみ
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
-							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+							RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
 								return &http.Response{
 									StatusCode: http.StatusOK,
 									Body: io.NopCloser(bytes.NewBufferString(`{

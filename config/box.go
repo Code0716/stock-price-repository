@@ -6,20 +6,20 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-type ConfigBOX struct {
+type BOX struct {
 	PrivateKey string `envconfig:"box_private_key" default:""`
 }
 
-var configBOX ConfigBOX
+var box BOX
 
 func LoadConfigBOX() {
 	prefix := ""
-	err := envconfig.Process(prefix, &configBOX)
+	err := envconfig.Process(prefix, &box)
 	if err != nil {
 		log.Fatalf("failed to init config: %v", err)
 	}
 }
 
-func BOX() *ConfigBOX {
-	return &configBOX
+func GetBOX() *BOX {
+	return &box
 }

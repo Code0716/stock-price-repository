@@ -26,14 +26,15 @@ const (
 	jQuantsAPIIDTokenRedisDuration      time.Duration = 24 * time.Hour
 )
 
-func (jc *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockBrand, error) {
-	idToken, err := jc.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
+func (c *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockBrand, error) {
+	idToken, err := c.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetOrSetJQuantsAPIIDTokenToRedis error")
 	}
-	u, err := url.Parse(fmt.Sprintf("%s/listed/info", config.JQuants().JQuantsBaseURLV1))
+
+	u, err := url.Parse(fmt.Sprintf("%s/listed/info", config.GetJQuants().JQuantsBaseURLV1))
 	if err != nil {
-		return nil, errors.Wrap(err, u.String())
+		return nil, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
@@ -46,18 +47,18 @@ func (jc *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockB
 	req.Header.Set("User-Agent", "SttApp/1.0 Go-http-client/1.1 (linux)")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
-	res, err := jc.request.GetHttpClient().Do(req)
+	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 	if res.StatusCode == http.StatusUnauthorized {
 		// IDToken再取得
-		_, err := jc.getNewIDToken(ctx)
+		_, err := c.getNewIDToken(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "getNewIDToken error")
 		}
 		// 再度リクエスト。だめだったらエラーを返す。
-		result, err := jc.GetStockBrands(ctx)
+		result, err := c.GetStockBrands(ctx)
 		return result, err
 	}
 	defer res.Body.Close()
@@ -68,7 +69,7 @@ func (jc *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockB
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsStockBrandsResponse
@@ -76,19 +77,20 @@ func (jc *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockB
 		log.Printf("JSON parse error: %v", err)
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request error to: %s`, u.String()))
 	}
-	responseInfo := jc.jQuantsStockBrandsResponseToResponseInfo(response)
+	responseInfo := c.jQuantsStockBrandsResponseToResponseInfo(response)
 
 	return responseInfo, nil
 }
 
-func (jc *StockAPIClient) GetAnnounceFinsSchedule(ctx context.Context) ([]*gateway.AnnounceFinScheduleResponseInfo, error) {
-	idToken, err := jc.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
+func (c *StockAPIClient) GetAnnounceFinSchedule(ctx context.Context) ([]*gateway.AnnounceFinScheduleResponseInfo, error) {
+	idToken, err := c.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetOrSetJQuantsAPIIDTokenToRedis error")
 	}
-	u, err := url.Parse(fmt.Sprintf("%s/fins/announcement", config.JQuants().JQuantsBaseURLV1))
+
+	u, err := url.Parse(fmt.Sprintf("%s/fins/announcement", config.GetJQuants().JQuantsBaseURLV1))
 	if err != nil {
-		return nil, errors.Wrap(err, u.String())
+		return nil, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
@@ -100,18 +102,18 @@ func (jc *StockAPIClient) GetAnnounceFinsSchedule(ctx context.Context) ([]*gatew
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
-	res, err := jc.request.GetHttpClient().Do(req)
+	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 	if res.StatusCode == http.StatusUnauthorized {
 		// IDToken再取得
-		_, err := jc.getNewIDToken(ctx)
+		_, err := c.getNewIDToken(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "getNewIDToken error")
 		}
 		// 再度リクエスト。だめだったらエラーを返す。
-		result, err := jc.GetAnnounceFinsSchedule(ctx)
+		result, err := c.GetAnnounceFinSchedule(ctx)
 		return result, err
 	}
 	defer res.Body.Close()
@@ -122,7 +124,7 @@ func (jc *StockAPIClient) GetAnnounceFinsSchedule(ctx context.Context) ([]*gatew
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsAnnounceFinsScheduleResponse
@@ -130,7 +132,7 @@ func (jc *StockAPIClient) GetAnnounceFinsSchedule(ctx context.Context) ([]*gatew
 		log.Printf("JSON parse error: %v", err)
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
-	responseInfo := jc.jQuantsAnnounceFinsScheduleResponseToResponseInfo(response)
+	responseInfo := c.jQuantsAnnounceFinsScheduleResponseToResponseInfo(response)
 
 	return responseInfo, nil
 }
@@ -147,7 +149,7 @@ func (c *StockAPIClient) getDailyPricesBySymbolAndRangeJQ(ctx context.Context, s
 	u, err := url.Parse(
 		fmt.Sprintf(
 			"%s/prices/daily_quotes?code=%s&from=%s&to=%s",
-			config.JQuants().JQuantsBaseURLV1,
+			config.GetJQuants().JQuantsBaseURLV1,
 			symbol,
 			util.DatetimeToDateStr(dateFrom),
 			util.DatetimeToDateStr(lastWeekday),
@@ -165,7 +167,7 @@ func (c *StockAPIClient) getDailyPricesBySymbolAndRangeJQ(ctx context.Context, s
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
-	res, err := c.request.GetHttpClient().Do(req)
+	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
@@ -187,7 +189,7 @@ func (c *StockAPIClient) getDailyPricesBySymbolAndRangeJQ(ctx context.Context, s
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsDailyQuotesResponse
@@ -211,13 +213,13 @@ func (c *StockAPIClient) getLastWeekday(t time.Time) time.Time {
 	}
 }
 
-func (jc *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol string, date *time.Time) ([]*gateway.FinancialStatementsResponseInfo, error) {
-	idToken, err := jc.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
+func (c *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol string, date *time.Time) ([]*gateway.FinancialStatementsResponseInfo, error) {
+	idToken, err := c.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetOrSetJQuantsAPIIDTokenToRedis error")
 	}
 
-	u, err := url.Parse(fmt.Sprintf("%s/fins/statements?code=%s", config.JQuants().JQuantsBaseURLV1, symbol))
+	u, err := url.Parse(fmt.Sprintf("%s/fins/statements?code=%s", config.GetJQuants().JQuantsBaseURLV1, symbol))
 	if err != nil {
 		return nil, errors.Wrap(err, u.String())
 	}
@@ -225,7 +227,7 @@ func (jc *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol s
 	if date != nil {
 		u, err = url.Parse(
 			fmt.Sprintf("%s/fins/statements?date=%s",
-				config.JQuants().JQuantsBaseURLV1,
+				config.GetJQuants().JQuantsBaseURLV1,
 				util.DatetimeToDateStr(
 					util.FromPtrGenerics(date),
 				),
@@ -245,18 +247,18 @@ func (jc *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol s
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
-	res, err := jc.request.GetHttpClient().Do(req)
+	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 	if res.StatusCode == http.StatusUnauthorized {
 		// IDToken再取得
-		_, err := jc.getNewIDToken(ctx)
+		_, err := c.getNewIDToken(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "getNewIDToken error")
 		}
 		// 再度リクエスト。だめだったらエラーを返す。
-		result, err := jc.getFinancialStatementsJQ(ctx, symbol, date)
+		result, err := c.getFinancialStatementsJQ(ctx, symbol, date)
 		return result, err
 	}
 	defer res.Body.Close()
@@ -267,7 +269,7 @@ func (jc *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol s
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsFinancialStatementsResponse
@@ -275,7 +277,7 @@ func (jc *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol s
 		log.Printf("JSON parse error: %v", err)
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request error to: %s`, u.String()))
 	}
-	responseInfo := jc.jQuantsFinancialStatementsToGatewayModels(response)
+	responseInfo := c.jQuantsFinancialStatementsToGatewayModels(response)
 
 	return responseInfo, nil
 }
@@ -288,7 +290,7 @@ func (c *StockAPIClient) getTradingCalendarsInfo(ctx context.Context, filter gat
 
 	u, err := url.Parse(fmt.Sprintf(
 		"%s/markets/trading_calendar?from=%s&to=%s",
-		config.JQuants().JQuantsBaseURLV1,
+		config.GetJQuants().JQuantsBaseURLV1,
 		util.DatetimeToDateStr(filter.From),
 		util.DatetimeToDateStr(filter.To),
 	),
@@ -306,7 +308,7 @@ func (c *StockAPIClient) getTradingCalendarsInfo(ctx context.Context, filter gat
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
 
-	res, err := c.request.GetHttpClient().Do(req)
+	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
@@ -328,7 +330,7 @@ func (c *StockAPIClient) getTradingCalendarsInfo(ctx context.Context, filter gat
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response TradingCalendarsResponse

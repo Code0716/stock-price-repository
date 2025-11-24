@@ -42,19 +42,19 @@ func (m *MockStockAPIClient) EXPECT() *MockStockAPIClientMockRecorder {
 	return m.recorder
 }
 
-// GetAnnounceFinsSchedule mocks base method.
-func (m *MockStockAPIClient) GetAnnounceFinsSchedule(ctx context.Context) ([]*gateway.AnnounceFinScheduleResponseInfo, error) {
+// GetAnnounceFinSchedule mocks base method.
+func (m *MockStockAPIClient) GetAnnounceFinSchedule(ctx context.Context) ([]*gateway.AnnounceFinScheduleResponseInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAnnounceFinsSchedule", ctx)
+	ret := m.ctrl.Call(m, "GetAnnounceFinSchedule", ctx)
 	ret0, _ := ret[0].([]*gateway.AnnounceFinScheduleResponseInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAnnounceFinsSchedule indicates an expected call of GetAnnounceFinsSchedule.
-func (mr *MockStockAPIClientMockRecorder) GetAnnounceFinsSchedule(ctx any) *gomock.Call {
+// GetAnnounceFinSchedule indicates an expected call of GetAnnounceFinSchedule.
+func (mr *MockStockAPIClientMockRecorder) GetAnnounceFinSchedule(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnnounceFinsSchedule", reflect.TypeOf((*MockStockAPIClient)(nil).GetAnnounceFinsSchedule), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnnounceFinSchedule", reflect.TypeOf((*MockStockAPIClient)(nil).GetAnnounceFinSchedule), ctx)
 }
 
 // GetBalanceSheetsBySymbol mocks base method.

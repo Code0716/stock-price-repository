@@ -50,7 +50,7 @@ func (c *StockAPIClient) GetIndexPriceChart(ctx context.Context, symbol gateway.
 }
 
 // 現在値の取得
-func (c *StockAPIClient) GetCurrentStockPriceBySymbol(ctx context.Context, symbol gateway.StockAPISymbol, date time.Time) ([]*gateway.StockPrice, error) {
+func (c *StockAPIClient) GetCurrentStockPriceBySymbol(ctx context.Context, symbol gateway.StockAPISymbol, _ time.Time) ([]*gateway.StockPrice, error) {
 	// j-Quants 場中の値段は取得できないようだ。
 	// 無理して使わなくていいと思う
 	return c.getCurrentStockPriceBySymbolYF(ctx, symbol.String())

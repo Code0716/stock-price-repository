@@ -12,7 +12,7 @@ import (
 )
 
 // NewDBConn initializes DB connection.
-func NewDBConn() (conn *sql.DB, close func(), err error) {
+func NewDBConn() (conn *sql.DB, cleanup func(), err error) {
 	dsn, err := BuildMySQLConnectionString()
 	if err != nil {
 		return nil, nil, err
@@ -23,19 +23,19 @@ func NewDBConn() (conn *sql.DB, close func(), err error) {
 		return nil, nil, err
 	}
 
-	close = func() {
+	cleanup = func() {
 		if err := sqlDB.Close(); err != nil {
 			panic(err)
 		}
 	}
 
-	return sqlDB, close, nil
+	return sqlDB, cleanup, nil
 }
 
 // BuildMySQLConnectionString builds mysql connection string.
 func BuildMySQLConnectionString() (string, error) {
 	mysqlCfg := mysql.NewConfig()
-	dbConfig := config.Database()
+	dbConfig := config.GetDatabase()
 
 	mysqlCfg.DBName = dbConfig.DBName
 	mysqlCfg.Net = "tcp"

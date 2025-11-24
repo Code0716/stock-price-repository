@@ -55,14 +55,14 @@ func (ni *DjiRepositoryImpl) DjiStockAverageDailyPricesToGenModel(averageDailyPr
 	var averageDailyPricesGne []*genModel.DjiStockAverageDailyStockPrice
 	for _, v := range averageDailyPrices {
 		open, _ := v.Open.Round(4).Float64()
-		close, _ := v.Close.Round(4).Float64()
+		closePrice, _ := v.Close.Round(4).Float64()
 		high, _ := v.High.Round(4).Float64()
 		low, _ := v.Low.Round(4).Float64()
 		Adjclose, _ := v.Adjclose.Round(4).Float64()
 		averageDailyPricesGne = append(averageDailyPricesGne, &genModel.DjiStockAverageDailyStockPrice{
 			Date:          v.Date,
 			OpenPrice:     open,
-			ClosePrice:    close,
+			ClosePrice:    closePrice,
 			HighPrice:     high,
 			LowPrice:      low,
 			AdjClosePrice: Adjclose,

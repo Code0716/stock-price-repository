@@ -167,14 +167,14 @@ type ISector17AverageDailyPriceDo interface {
 	Find() ([]*gen_model.Sector17AverageDailyPrice, error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*gen_model.Sector17AverageDailyPrice, err error)
 	FindInBatches(result *[]*gen_model.Sector17AverageDailyPrice, batchSize int, fc func(tx gen.Dao, batch int) error) error
-	Pluck(column field.Expr, dest interface{}) error
+	Pluck(column field.Expr, dest any) error
 	Delete(...*gen_model.Sector17AverageDailyPrice) (info gen.ResultInfo, err error)
-	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	Update(column field.Expr, value any) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	Updates(value interface{}) (info gen.ResultInfo, err error)
-	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	Updates(value any) (info gen.ResultInfo, err error)
+	UpdateColumn(column field.Expr, value any) (info gen.ResultInfo, err error)
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumns(value any) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
 	Attrs(attrs ...field.AssignExpr) ISector17AverageDailyPriceDo
 	Assign(attrs ...field.AssignExpr) ISector17AverageDailyPriceDo
@@ -183,11 +183,11 @@ type ISector17AverageDailyPriceDo interface {
 	FirstOrInit() (*gen_model.Sector17AverageDailyPrice, error)
 	FirstOrCreate() (*gen_model.Sector17AverageDailyPrice, error)
 	FindByPage(offset int, limit int) (result []*gen_model.Sector17AverageDailyPrice, count int64, err error)
-	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
+	ScanByPage(result any, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
-	Scan(result interface{}) (err error)
-	Returning(value interface{}, columns ...string) ISector17AverageDailyPriceDo
+	Scan(result any) (err error)
+	Returning(value any, columns ...string) ISector17AverageDailyPriceDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
@@ -216,7 +216,7 @@ func (s sector17AverageDailyPriceDo) Clauses(conds ...clause.Expression) ISector
 	return s.withDO(s.DO.Clauses(conds...))
 }
 
-func (s sector17AverageDailyPriceDo) Returning(value interface{}, columns ...string) ISector17AverageDailyPriceDo {
+func (s sector17AverageDailyPriceDo) Returning(value any, columns ...string) ISector17AverageDailyPriceDo {
 	return s.withDO(s.DO.Returning(value, columns...))
 }
 
@@ -399,7 +399,7 @@ func (s sector17AverageDailyPriceDo) FindByPage(offset int, limit int) (result [
 	return
 }
 
-func (s sector17AverageDailyPriceDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
+func (s sector17AverageDailyPriceDo) ScanByPage(result any, offset int, limit int) (count int64, err error) {
 	count, err = s.Count()
 	if err != nil {
 		return
@@ -409,7 +409,7 @@ func (s sector17AverageDailyPriceDo) ScanByPage(result interface{}, offset int, 
 	return
 }
 
-func (s sector17AverageDailyPriceDo) Scan(result interface{}) (err error) {
+func (s sector17AverageDailyPriceDo) Scan(result any) (err error) {
 	return s.DO.Scan(result)
 }
 

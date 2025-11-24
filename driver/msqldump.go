@@ -28,8 +28,8 @@ func NewMySQLDumpClient(
 }
 
 // ExportTableAllは、指定されたテーブルの全データをエクスポートする。
-func (c *MySQLDumpClient) ExportTableAll(ctx context.Context, fileName, tableName string) error {
-	dbConfig := config.Database()
+func (c *MySQLDumpClient) ExportTableAll(_ context.Context, fileName, tableName string) error {
+	dbConfig := config.GetDatabase()
 	cmd := exec.Command("mysqldump",
 		"-u"+dbConfig.User,
 		"-p"+dbConfig.Passwd,
@@ -57,7 +57,7 @@ func (c *MySQLDumpClient) ExportTableAll(ctx context.Context, fileName, tableNam
 }
 
 // ExportDailyStockPriceByYear 各銘柄の日足を年ごとにexportする
-func (c *MySQLDumpClient) ExportDailyStockPriceByYear(ctx context.Context, year int) error {
+func (c *MySQLDumpClient) ExportDailyStockPriceByYear(_ context.Context, year int) error {
 	if year < 0 {
 		return errors.New("year must be a positive integer")
 	}
@@ -71,7 +71,7 @@ func (c *MySQLDumpClient) ExportDailyStockPriceByYear(ctx context.Context, year 
 
 // exportDailyStockPriceByYearは、指定された年の日足データをエクスポートする。
 func (c *MySQLDumpClient) exportDailyStockPriceByYear(year int) error {
-	dbConfig := config.Database()
+	dbConfig := config.GetDatabase()
 	where := fmt.Sprintf("YEAR(date) = %d", year)
 
 	tableName := gateway.MySQLDumpTableNameStockBrandsDailyPrice

@@ -109,12 +109,12 @@ func (c *SlackAPIClient) SendMessageByStrings(ctx context.Context, channelName g
 }
 
 func (c *SlackAPIClient) sendMessage(ctx context.Context, channelName gateway.SlackChannelName, message string, replytimestamp *string) (*slackResponse, error) {
-	u, err := url.Parse(config.Slack().SlackBotBaseUrl)
+	u, err := url.Parse(config.GetSlack().SlackBotBaseURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
 	values := url.Values{}
-	values.Set("token", config.Slack().SlackNotificationBotToken)
+	values.Set("token", config.GetSlack().SlackNotificationBotToken)
 	values.Set("channel", channelName.String())
 	values.Set("text", message)
 	if replytimestamp != nil {
@@ -127,7 +127,7 @@ func (c *SlackAPIClient) sendMessage(ctx context.Context, channelName gateway.Sl
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	client := c.request.GetHttpClient()
+	client := c.request.GetHTTPClient()
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "")

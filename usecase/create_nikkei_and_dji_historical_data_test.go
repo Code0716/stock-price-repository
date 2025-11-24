@@ -86,7 +86,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 				},
 				nikkeiRepository: func(ctrl *gomock.Controller) *mock_repositories.MockNikkeiRepository {
 					mock := mock_repositories.NewMockNikkeiRepository(ctrl)
-					mock.EXPECT().CreateNikkeiStockAverageDailyPrices(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, prices models.IndexStockAverageDailyPrices) error {
+					mock.EXPECT().CreateNikkeiStockAverageDailyPrices(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, prices models.IndexStockAverageDailyPrices) error {
 						if len(prices) != 1 {
 							return errors.New("unexpected length")
 						}
@@ -99,7 +99,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 				},
 				djiRepository: func(ctrl *gomock.Controller) *mock_repositories.MockDjiRepository {
 					mock := mock_repositories.NewMockDjiRepository(ctrl)
-					mock.EXPECT().CreateDjiStockAverageDailyPrices(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, prices models.IndexStockAverageDailyPrices) error {
+					mock.EXPECT().CreateDjiStockAverageDailyPrices(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, prices models.IndexStockAverageDailyPrices) error {
 						if len(prices) != 1 {
 							return errors.New("unexpected length")
 						}

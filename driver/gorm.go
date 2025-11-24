@@ -23,7 +23,7 @@ func NewGorm(conn *sql.DB) (*gorm.DB, error) {
 			Logger: gormLogger.New(
 				log.New(os.Stdout, "\r\n", log.LstdFlags),
 				gormLogger.Config{
-					LogLevel: logLevelToGormLogLevel(config.App().AppLogLevel),
+					LogLevel: logLevelToGormLogLevel(config.GetApp().AppLogLevel),
 				}),
 			NamingStrategy: schema.NamingStrategy{
 				SingularTable: true,

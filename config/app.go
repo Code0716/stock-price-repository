@@ -6,22 +6,22 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-type ConfigApp struct {
+type App struct {
 	AppEnv      string `envconfig:"app_env" default:"local"`
 	AppLogLevel string `envconfig:"app_log_level" default:"debug"`
 	AppTimezone string `envconfig:"app_timezone" default:"Asia/Tokyo"`
 }
 
-var configApp ConfigApp
+var app App
 
 func LoadConfigApp() {
 	prefix := ""
-	err := envconfig.Process(prefix, &configApp)
+	err := envconfig.Process(prefix, &app)
 	if err != nil {
 		log.Fatalf("failed to init config: %v", err)
 	}
 }
 
-func App() *ConfigApp {
-	return &configApp
+func GetApp() *App {
+	return &app
 }

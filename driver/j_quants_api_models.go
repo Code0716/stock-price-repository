@@ -289,7 +289,7 @@ type TradingCalendar struct {
 	HolidayDivision string `json:"HolidayDivision"`
 }
 
-func (jc *StockAPIClient) jQuantsAnnounceFinsScheduleResponseToResponseInfo(
+func (c *StockAPIClient) jQuantsAnnounceFinsScheduleResponseToResponseInfo(
 	response jQuantsAnnounceFinsScheduleResponse,
 ) []*gateway.AnnounceFinScheduleResponseInfo {
 	var announcements []*gateway.AnnounceFinScheduleResponseInfo
@@ -302,7 +302,7 @@ func (jc *StockAPIClient) jQuantsAnnounceFinsScheduleResponseToResponseInfo(
 
 		announcements = append(announcements, &gateway.AnnounceFinScheduleResponseInfo{
 			Date:          date,
-			Code:          jc.trimSuffixZero(v.Code),
+			Code:          c.trimSuffixZero(v.Code),
 			CompanyName:   v.CompanyName,
 			FiscalYear:    v.FiscalYear,
 			SectorName:    v.SectorName,

@@ -81,7 +81,7 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 	end := time.Now()
 	timeTakenMessage := fmt.Sprintf(
 		"env: %s*\n*command name: %s*\n*time taken: %v",
-		config.App().AppEnv,
+		config.GetApp().AppEnv,
 		commandName,
 		end.Sub(start),
 	)

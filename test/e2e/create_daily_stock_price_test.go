@@ -75,7 +75,7 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 					gateway.StockAPISymbol("1234"),
 					gomock.Any(), // from
 					gomock.Any(), // to
-				).DoAndReturn(func(ctx context.Context, symbol gateway.StockAPISymbol, from, to time.Time) ([]*gateway.StockPrice, error) {
+				).DoAndReturn(func(_ context.Context, symbol gateway.StockAPISymbol, _, to time.Time) ([]*gateway.StockPrice, error) {
 					// Return some dummy prices
 					return []*gateway.StockPrice{
 						{

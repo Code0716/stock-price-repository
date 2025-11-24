@@ -1,6 +1,6 @@
 package models
 
-var SECTOR_33_CODES = map[string]string{
+var Sector33Codes = map[string]string{
 	"0050": "水産・農林業",
 	"1050": "鉱業",
 	"2050": "建設業",

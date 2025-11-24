@@ -155,14 +155,14 @@ type INikkeiStockAverageDailyPriceDo interface {
 	Find() ([]*gen_model.NikkeiStockAverageDailyPrice, error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*gen_model.NikkeiStockAverageDailyPrice, err error)
 	FindInBatches(result *[]*gen_model.NikkeiStockAverageDailyPrice, batchSize int, fc func(tx gen.Dao, batch int) error) error
-	Pluck(column field.Expr, dest interface{}) error
+	Pluck(column field.Expr, dest any) error
 	Delete(...*gen_model.NikkeiStockAverageDailyPrice) (info gen.ResultInfo, err error)
-	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	Update(column field.Expr, value any) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	Updates(value interface{}) (info gen.ResultInfo, err error)
-	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	Updates(value any) (info gen.ResultInfo, err error)
+	UpdateColumn(column field.Expr, value any) (info gen.ResultInfo, err error)
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumns(value any) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
 	Attrs(attrs ...field.AssignExpr) INikkeiStockAverageDailyPriceDo
 	Assign(attrs ...field.AssignExpr) INikkeiStockAverageDailyPriceDo
@@ -171,11 +171,11 @@ type INikkeiStockAverageDailyPriceDo interface {
 	FirstOrInit() (*gen_model.NikkeiStockAverageDailyPrice, error)
 	FirstOrCreate() (*gen_model.NikkeiStockAverageDailyPrice, error)
 	FindByPage(offset int, limit int) (result []*gen_model.NikkeiStockAverageDailyPrice, count int64, err error)
-	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
+	ScanByPage(result any, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
-	Scan(result interface{}) (err error)
-	Returning(value interface{}, columns ...string) INikkeiStockAverageDailyPriceDo
+	Scan(result any) (err error)
+	Returning(value any, columns ...string) INikkeiStockAverageDailyPriceDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
@@ -204,7 +204,7 @@ func (n nikkeiStockAverageDailyPriceDo) Clauses(conds ...clause.Expression) INik
 	return n.withDO(n.DO.Clauses(conds...))
 }
 
-func (n nikkeiStockAverageDailyPriceDo) Returning(value interface{}, columns ...string) INikkeiStockAverageDailyPriceDo {
+func (n nikkeiStockAverageDailyPriceDo) Returning(value any, columns ...string) INikkeiStockAverageDailyPriceDo {
 	return n.withDO(n.DO.Returning(value, columns...))
 }
 
@@ -387,7 +387,7 @@ func (n nikkeiStockAverageDailyPriceDo) FindByPage(offset int, limit int) (resul
 	return
 }
 
-func (n nikkeiStockAverageDailyPriceDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
+func (n nikkeiStockAverageDailyPriceDo) ScanByPage(result any, offset int, limit int) (count int64, err error) {
 	count, err = n.Count()
 	if err != nil {
 		return
@@ -397,7 +397,7 @@ func (n nikkeiStockAverageDailyPriceDo) ScanByPage(result interface{}, offset in
 	return
 }
 
-func (n nikkeiStockAverageDailyPriceDo) Scan(result interface{}) (err error) {
+func (n nikkeiStockAverageDailyPriceDo) Scan(result any) (err error) {
 	return n.DO.Scan(result)
 }
 

@@ -1,0 +1,10 @@
+golangci-lint run
+di/wire_gen.go:11:2: could not import github.com/Code0716/stock-price-repository/driver (-: # github.com/Code0716/stock-price-repository/driver
+driver/stock_api.go:26:9: cannot use &StockAPIClient{…} (value of type *StockAPIClient) as gateway.StockAPIClient value in return statement: *StockAPIClient does not implement gateway.StockAPIClient (missing method GetAnnounceFinsSchedule)) (typecheck)
+	"github.com/Code0716/stock-price-repository/driver"
+	^
+driver/db.go:1: : # github.com/Code0716/stock-price-repository/driver [github.com/Code0716/stock-price-repository/driver.test]
+driver/stock_api.go:26:9: cannot use &StockAPIClient{…} (value of type *StockAPIClient) as gateway.StockAPIClient value in return statement: *StockAPIClient does not implement gateway.StockAPIClient (missing method GetAnnounceFinsSchedule)
+driver/j_quants_api_test.go:230:16: c.GetAnnounceFinsSchedule undefined (type *StockAPIClient has no field or method GetAnnounceFinsSchedule) (typecheck)
+//go:generate mockgen -source=$GOFILE -package=mock_$GOPACKAGE -destination=../mock/$GOPACKAGE/$GOFILE
+make: *** [lint] Error 1

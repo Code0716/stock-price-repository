@@ -66,7 +66,7 @@ func TestHTTPRequestImpl_Get(t *testing.T) {
 				ctx:    context.Background(),
 				values: nil,
 			},
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 			},
 			want:    []byte{},

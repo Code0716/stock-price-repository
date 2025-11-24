@@ -12,7 +12,7 @@ import (
 )
 
 func OpenRedis() *redis.Client {
-	c := config.Redis()
+	c := config.GetRedis()
 
 	numRedisConnPerCPU := c.RedisNumConnsPerCPU
 	poolSize := runtime.GOMAXPROCS(0) * numRedisConnPerCPU

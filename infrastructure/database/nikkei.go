@@ -56,7 +56,7 @@ func (ni *NikkeiRepositoryImpl) nikkeiStockAverageDailyPricesToGenModel(averageD
 	var averageDailyPricesGne []*genModel.NikkeiStockAverageDailyPrice
 	for _, v := range averageDailyPrices {
 		open, _ := v.Open.Round(4).Float64()
-		close, _ := v.Close.Round(4).Float64()
+		closePrice, _ := v.Close.Round(4).Float64()
 		high, _ := v.High.Round(4).Float64()
 		low, _ := v.Low.Round(4).Float64()
 		adjclose, _ := v.Adjclose.Round(4).Float64()
@@ -67,7 +67,7 @@ func (ni *NikkeiRepositoryImpl) nikkeiStockAverageDailyPricesToGenModel(averageD
 		averageDailyPricesGne = append(averageDailyPricesGne, &genModel.NikkeiStockAverageDailyPrice{
 			Date:          newDatetime,
 			OpenPrice:     open,
-			ClosePrice:    close,
+			ClosePrice:    closePrice,
 			HighPrice:     high,
 			LowPrice:      low,
 			AdjClosePrice: adjclose,

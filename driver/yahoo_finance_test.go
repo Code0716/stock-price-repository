@@ -30,7 +30,7 @@ func TestStockAPIClient_GetStockPriceChart(t *testing.T) {
 		Addr: s.Addr(),
 	})
 
-	config.YahooFinance().BaseURL = "https://query1.finance.yahoo.com"
+	config.GetYahooFinance().BaseURL = "https://query1.finance.yahoo.com"
 
 	type fields struct {
 		request     func(ctrl *gomock.Controller) HTTPRequest
@@ -53,23 +53,23 @@ func TestStockAPIClient_GetStockPriceChart(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
 							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
 								if req.URL.Path == "/v8/finance/chart/1001.T" {
-									respBody := map[string]interface{}{
-										"chart": map[string]interface{}{
-											"result": []map[string]interface{}{
+									respBody := map[string]any{
+										"chart": map[string]any{
+											"result": []map[string]any{
 												{
-													"meta": map[string]interface{}{
+													"meta": map[string]any{
 														"symbol":          "1001.T",
 														"instrumentType":  "EQUITY",
 														"dataGranularity": "1d",
 														"range":           "1mo",
 													},
 													"timestamp": []int64{1672531200}, // 2023-01-01
-													"indicators": map[string]interface{}{
-														"quote": []map[string]interface{}{
+													"indicators": map[string]any{
+														"quote": []map[string]any{
 															{
 																"open":   []float64{100.0},
 																"high":   []float64{110.0},
@@ -78,7 +78,7 @@ func TestStockAPIClient_GetStockPriceChart(t *testing.T) {
 																"volume": []int64{1000},
 															},
 														},
-														"adjclose": []map[string]interface{}{
+														"adjclose": []map[string]any{
 															{
 																"adjclose": []float64{105.0},
 															},
@@ -143,7 +143,7 @@ func TestStockAPIClient_GetIndexPriceChart(t *testing.T) {
 		Addr: s.Addr(),
 	})
 
-	config.YahooFinance().BaseURL = "https://query1.finance.yahoo.com"
+	config.GetYahooFinance().BaseURL = "https://query1.finance.yahoo.com"
 
 	type fields struct {
 		request     func(ctrl *gomock.Controller) HTTPRequest
@@ -166,23 +166,23 @@ func TestStockAPIClient_GetIndexPriceChart(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
 							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
 								if req.URL.Path == "/v8/finance/chart/^N225" {
-									respBody := map[string]interface{}{
-										"chart": map[string]interface{}{
-											"result": []map[string]interface{}{
+									respBody := map[string]any{
+										"chart": map[string]any{
+											"result": []map[string]any{
 												{
-													"meta": map[string]interface{}{
+													"meta": map[string]any{
 														"symbol":          "^N225",
 														"instrumentType":  "INDEX",
 														"dataGranularity": "1d",
 														"range":           "1mo",
 													},
 													"timestamp": []int64{1672531200},
-													"indicators": map[string]interface{}{
-														"quote": []map[string]interface{}{
+													"indicators": map[string]any{
+														"quote": []map[string]any{
 															{
 																"open":   []float64{26000.0},
 																"high":   []float64{26500.0},
@@ -191,7 +191,7 @@ func TestStockAPIClient_GetIndexPriceChart(t *testing.T) {
 																"volume": []int64{100000},
 															},
 														},
-														"adjclose": []map[string]interface{}{
+														"adjclose": []map[string]any{
 															{
 																"adjclose": []float64{26000.0},
 															},
@@ -256,7 +256,7 @@ func TestStockAPIClient_GetWeeklyIndexPriceChart(t *testing.T) {
 		Addr: s.Addr(),
 	})
 
-	config.YahooFinance().BaseURL = "https://query1.finance.yahoo.com"
+	config.GetYahooFinance().BaseURL = "https://query1.finance.yahoo.com"
 
 	type fields struct {
 		request     func(ctrl *gomock.Controller) HTTPRequest
@@ -278,7 +278,7 @@ func TestStockAPIClient_GetWeeklyIndexPriceChart(t *testing.T) {
 			fields: fields{
 				request: func(ctrl *gomock.Controller) HTTPRequest {
 					mock := mock_driver.NewMockHTTPRequest(ctrl)
-					mock.EXPECT().GetHttpClient().Return(&http.Client{
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
 						Transport: &MockRoundTripper{
 							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
 								// Weekly chart request
@@ -303,19 +303,19 @@ func TestStockAPIClient_GetWeeklyIndexPriceChart(t *testing.T) {
 										adjCloses[i] = 26000.0
 									}
 
-									respBody := map[string]interface{}{
-										"chart": map[string]interface{}{
-											"result": []map[string]interface{}{
+									respBody := map[string]any{
+										"chart": map[string]any{
+											"result": []map[string]any{
 												{
-													"meta": map[string]interface{}{
+													"meta": map[string]any{
 														"symbol":          "^N225",
 														"instrumentType":  "INDEX",
 														"dataGranularity": "1wk",
 														"range":           "3mo",
 													},
 													"timestamp": timestamps,
-													"indicators": map[string]interface{}{
-														"quote": []map[string]interface{}{
+													"indicators": map[string]any{
+														"quote": []map[string]any{
 															{
 																"open":   opens,
 																"high":   highs,
@@ -324,7 +324,7 @@ func TestStockAPIClient_GetWeeklyIndexPriceChart(t *testing.T) {
 																"volume": volumes,
 															},
 														},
-														"adjclose": []map[string]interface{}{
+														"adjclose": []map[string]any{
 															{
 																"adjclose": adjCloses,
 															},
@@ -342,19 +342,19 @@ func TestStockAPIClient_GetWeeklyIndexPriceChart(t *testing.T) {
 								}
 								// Daily chart request (for current price)
 								if req.URL.Path == "/v8/finance/chart/^N225" && req.URL.Query().Get("interval") == "1d" {
-									respBody := map[string]interface{}{
-										"chart": map[string]interface{}{
-											"result": []map[string]interface{}{
+									respBody := map[string]any{
+										"chart": map[string]any{
+											"result": []map[string]any{
 												{
-													"meta": map[string]interface{}{
+													"meta": map[string]any{
 														"symbol":          "^N225",
 														"instrumentType":  "INDEX",
 														"dataGranularity": "1d",
 														"range":           "1d",
 													},
 													"timestamp": []int64{time.Now().Unix()},
-													"indicators": map[string]interface{}{
-														"quote": []map[string]interface{}{
+													"indicators": map[string]any{
+														"quote": []map[string]any{
 															{
 																"open":   []float64{26100.0},
 																"high":   []float64{26600.0},
@@ -363,7 +363,7 @@ func TestStockAPIClient_GetWeeklyIndexPriceChart(t *testing.T) {
 																"volume": []int64{100000},
 															},
 														},
-														"adjclose": []map[string]interface{}{
+														"adjclose": []map[string]any{
 															{
 																"adjclose": []float64{26100.0},
 															},

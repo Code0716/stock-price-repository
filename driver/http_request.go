@@ -14,7 +14,7 @@ import (
 type HTTPRequest interface {
 	Get(ctx context.Context, url string, values *url.Values) ([]byte, error)
 	Post(ctx context.Context, url string, values url.Values) ([]byte, error)
-	GetHttpClient() *http.Client
+	GetHTTPClient() *http.Client
 }
 
 type HTTPRequestImpl struct{}
@@ -23,15 +23,14 @@ func NewHTTPRequest() HTTPRequest {
 	return &HTTPRequestImpl{}
 }
 
-var sharedHttpClientInstance *http.Client = newHttpClient()
+var sharedHTTPClientInstance = newHTTPClient()
 
-func newHttpClient() *http.Client {
-
+func newHTTPClient() *http.Client {
 	return &http.Client{}
 }
 
-func (r HTTPRequestImpl) GetHttpClient() *http.Client {
-	return sharedHttpClientInstance
+func (r HTTPRequestImpl) GetHTTPClient() *http.Client {
+	return sharedHTTPClientInstance
 }
 
 func (r HTTPRequestImpl) Get(ctx context.Context, url string, values *url.Values) ([]byte, error) {
@@ -43,7 +42,7 @@ func (r HTTPRequestImpl) Get(ctx context.Context, url string, values *url.Values
 		req.URL.RawQuery = values.Encode()
 	}
 
-	client := r.GetHttpClient()
+	client := r.GetHTTPClient()
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
@@ -65,7 +64,7 @@ func (r HTTPRequestImpl) Post(ctx context.Context, url string, values url.Values
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := r.GetHttpClient()
+	client := r.GetHTTPClient()
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "")

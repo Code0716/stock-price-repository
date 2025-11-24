@@ -18,20 +18,20 @@ import (
 )
 
 // idTokenは24時間有効
-func (jc *StockAPIClient) GetOrSetJQuantsAPIIDTokenToRedis(ctx context.Context) (string, error) {
-	idToken, err := jc.redisClient.Get(ctx, jQuantsAPIIDTokenRedisKey).Result()
+func (c *StockAPIClient) GetOrSetJQuantsAPIIDTokenToRedis(ctx context.Context) (string, error) {
+	idToken, err := c.redisClient.Get(ctx, jQuantsAPIIDTokenRedisKey).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return "", errors.Wrap(err, "redisClient.Get error")
 	}
 
 	if errors.Is(err, redis.Nil) {
 		// refreshTokenの取得
-		refreshToken, err := jc.getOrSetJQuantsAPIRefreshTokenToRedis(ctx)
+		refreshToken, err := c.getOrSetJQuantsAPIRefreshTokenToRedis(ctx)
 		if err != nil {
 			return "", errors.Wrap(err, "GetOrSetJQuantsAPIRefreshTokenToRedis error")
 		}
 
-		idToken, err = jc.setIDToken(ctx, refreshToken)
+		idToken, err = c.setIDToken(ctx, refreshToken)
 		if err != nil {
 			return "", errors.Wrap(err, "setIDToken error")
 		}
@@ -41,14 +41,14 @@ func (jc *StockAPIClient) GetOrSetJQuantsAPIIDTokenToRedis(ctx context.Context) 
 }
 
 // refreshTokenは一週間有効
-func (jc *StockAPIClient) getOrSetJQuantsAPIRefreshTokenToRedis(ctx context.Context) (string, error) {
-	refreshToken, err := jc.redisClient.Get(ctx, jQuantsAPIRefreshTokenRedisKey).Result()
+func (c *StockAPIClient) getOrSetJQuantsAPIRefreshTokenToRedis(ctx context.Context) (string, error) {
+	refreshToken, err := c.redisClient.Get(ctx, jQuantsAPIRefreshTokenRedisKey).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return "", errors.Wrap(err, "redisClient.Get error")
 	}
 
 	if errors.Is(err, redis.Nil) {
-		refreshToken, err = jc.setRefreshToken(ctx)
+		refreshToken, err = c.setRefreshToken(ctx)
 		if err != nil {
 			return "", errors.Wrap(err, "setRefreshToken error")
 		}
@@ -57,8 +57,8 @@ func (jc *StockAPIClient) getOrSetJQuantsAPIRefreshTokenToRedis(ctx context.Cont
 }
 
 // idTokenをRedisにセット
-func (jc *StockAPIClient) setJQuantsAPIIDTokenToRedis(ctx context.Context, idToken string) error {
-	err := jc.redisClient.SetEx(ctx, jQuantsAPIIDTokenRedisKey, idToken, jQuantsAPIIDTokenRedisDuration).Err()
+func (c *StockAPIClient) setJQuantsAPIIDTokenToRedis(ctx context.Context, idToken string) error {
+	err := c.redisClient.SetEx(ctx, jQuantsAPIIDTokenRedisKey, idToken, jQuantsAPIIDTokenRedisDuration).Err()
 	if err != nil {
 		return errors.Wrap(err, "setJQuantsAPIIDTokenToRedis error")
 	}
@@ -66,36 +66,36 @@ func (jc *StockAPIClient) setJQuantsAPIIDTokenToRedis(ctx context.Context, idTok
 }
 
 // refreshTokenをRedisにセット
-func (jc *StockAPIClient) setJQuantsAPIRefreshTokenToRedis(ctx context.Context, refreshToken string) error {
-	err := jc.redisClient.SetEx(ctx, jQuantsAPIRefreshTokenRedisKey, refreshToken, jQuantsAPIRefreshTokenRedisDuration).Err()
+func (c *StockAPIClient) setJQuantsAPIRefreshTokenToRedis(ctx context.Context, refreshToken string) error {
+	err := c.redisClient.SetEx(ctx, jQuantsAPIRefreshTokenRedisKey, refreshToken, jQuantsAPIRefreshTokenRedisDuration).Err()
 	if err != nil {
 		return errors.Wrap(err, "setJQuantsAPIRefreshTokenToRedis error")
 	}
 	return nil
 }
 
-func (jc *StockAPIClient) getNewIDToken(ctx context.Context) (string, error) {
-	refreshToken, err := jc.setRefreshToken(ctx)
+func (c *StockAPIClient) getNewIDToken(ctx context.Context) (string, error) {
+	refreshToken, err := c.setRefreshToken(ctx)
 	if err != nil {
 		return "", errors.Wrap(err, "setRefreshToken error")
 	}
 
-	idToken, err := jc.setIDToken(ctx, refreshToken)
+	idToken, err := c.setIDToken(ctx, refreshToken)
 	if err != nil {
 		return "", errors.Wrap(err, "setIDToken error")
 	}
 	return idToken, nil
 }
 
-func (jc *StockAPIClient) setRefreshToken(ctx context.Context) (string, error) {
-	u, err := url.Parse(fmt.Sprintf("%s/token/auth_user", config.JQuants().JQuantsBaseURLV1))
+func (c *StockAPIClient) setRefreshToken(ctx context.Context) (string, error) {
+	u, err := url.Parse(fmt.Sprintf("%s/token/auth_user", config.GetJQuants().JQuantsBaseURLV1))
 	if err != nil {
 		return "", errors.Wrap(err, "JQuantsAPIClient.GetRefreshToken error")
 	}
 
 	b := jQuantsAPIClientRefreshTokenRequest{
-		Mailaddress: config.JQuants().JQuantsMailaddress,
-		Password:    config.JQuants().JQuantsPassword,
+		Mailaddress: config.GetJQuants().JQuantsMailaddress,
+		Password:    config.GetJQuants().JQuantsPassword,
 	}
 
 	body, err := json.Marshal(b)
@@ -110,7 +110,7 @@ func (jc *StockAPIClient) setRefreshToken(ctx context.Context) (string, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
-	res, err := jc.request.GetHttpClient().Do(req)
+	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return "", errors.Wrap(err, fmt.Sprintf(`j-quants.api request to request to: %s`, u.String()))
 	}
@@ -122,7 +122,7 @@ func (jc *StockAPIClient) setRefreshToken(ctx context.Context) (string, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return "", fmt.Errorf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsAPIClientRefreshTokenResponse
@@ -131,15 +131,15 @@ func (jc *StockAPIClient) setRefreshToken(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 
-	err = jc.setJQuantsAPIRefreshTokenToRedis(ctx, response.RefreshToken)
+	err = c.setJQuantsAPIRefreshTokenToRedis(ctx, response.RefreshToken)
 	if err != nil {
 		return "", errors.Wrap(err, "setRefreshToken error")
 	}
 	return response.RefreshToken, nil
 }
 
-func (jc *StockAPIClient) setIDToken(ctx context.Context, refreshToken string) (string, error) {
-	u, err := url.Parse(fmt.Sprintf("%s/token/auth_refresh?refreshtoken=%s", config.JQuants().JQuantsBaseURLV1, refreshToken))
+func (c *StockAPIClient) setIDToken(ctx context.Context, refreshToken string) (string, error) {
+	u, err := url.Parse(fmt.Sprintf("%s/token/auth_refresh?refreshtoken=%s", config.GetJQuants().JQuantsBaseURLV1, refreshToken))
 	if err != nil {
 		return "", errors.Wrap(err, "JQuantsAPIClient.getIDToken error")
 	}
@@ -151,7 +151,7 @@ func (jc *StockAPIClient) setIDToken(ctx context.Context, refreshToken string) (
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
-	res, err := jc.request.GetHttpClient().Do(req)
+	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return "", errors.Wrap(err, fmt.Sprintf(`j-quants.api request to request to: %s/token/auth_refresh?refreshtoken=`, u.Host))
 	}
@@ -163,7 +163,7 @@ func (jc *StockAPIClient) setIDToken(ctx context.Context, refreshToken string) (
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String()))
+		return "", fmt.Errorf(`j-quants.api  status error status: %d, url: %s`, res.StatusCode, u.String())
 	}
 
 	var response jQuantsAPIClientIDTokenResponse
@@ -172,7 +172,7 @@ func (jc *StockAPIClient) setIDToken(ctx context.Context, refreshToken string) (
 		return "", errors.Wrap(err, fmt.Sprintf(`j-quants.api  request to: %s`, u.String()))
 	}
 
-	err = jc.setJQuantsAPIIDTokenToRedis(ctx, response.IDToken)
+	err = c.setJQuantsAPIIDTokenToRedis(ctx, response.IDToken)
 	if err != nil {
 		return "", errors.Wrap(err, "setJQuantsAPIIDTokenToRedis error")
 	}

@@ -60,7 +60,7 @@ func TestAnalyzeStockBrandPriceHistoryRepositoryImpl_CreateOrUpdate(t *testing.T
 				},
 			},
 			wantErr: false,
-			check: func(t *testing.T) {
+			check: func(_ *testing.T) {
 				// 確認用のFindメソッドがないため、直接DBを確認するか、エラーがないことで判断
 				// ここではエラーがないことと、DeleteByStockBrandIDsで削除できることで間接的に確認
 			},
@@ -81,7 +81,7 @@ func TestAnalyzeStockBrandPriceHistoryRepositoryImpl_CreateOrUpdate(t *testing.T
 				},
 			},
 			wantErr: false,
-			check: func(t *testing.T) {
+			check: func(_ *testing.T) {
 			},
 		},
 	}

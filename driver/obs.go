@@ -7,7 +7,7 @@ type OBSHello struct {
 	Op int `json:"op"`
 	D  struct {
 		ObsWebSocketVersion string `json:"obsWebSocketVersion"`
-		RpcVersion          int
+		RPCVersion          int
 		Authentication      struct {
 			Challenge string
 			Salt      string
@@ -19,7 +19,7 @@ type OBSHello struct {
 type OBSIdentify struct {
 	Op int `json:"op"`
 	D  struct {
-		RpcVersion     int    `json:"rpcVersion"`
+		RPCVersion     int    `json:"rpcVersion"`
 		Authentication string `json:"authentication"`
 	} `json:"d"`
 }
@@ -32,5 +32,5 @@ type OBSRequest struct {
 
 type OBSRequestData struct {
 	RequestType string `json:"requestType"`
-	RequestId   string `json:"requestId"`
+	RequestID   string `json:"requestId"`
 }

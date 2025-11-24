@@ -74,7 +74,7 @@ func TestE2E_UpdateStockBrands(t *testing.T) {
 					gomock.Any(),
 					nil,
 					nil,
-				).DoAndReturn(func(ctx context.Context, channelName gateway.SlackChannelName, title string, message, ts *string) (string, error) {
+				).DoAndReturn(func(_ context.Context, _ gateway.SlackChannelName, title string, _, _ *string) (string, error) {
 					assert.Contains(t, title, "command name: update_stock_brands_v1")
 					return "", nil
 				})

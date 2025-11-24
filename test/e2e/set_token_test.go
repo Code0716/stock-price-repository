@@ -41,7 +41,7 @@ func TestE2E_SetJQuantsAPITokenToRedis(t *testing.T) {
 			args: args{
 				cmdArgs: []string{"main", "set_j_quants_api_token_to_redis_v1"},
 			},
-			setup: func(t *testing.T, mockStockAPI *mock_gateway.MockStockAPIClient, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
+			setup: func(_ *testing.T, mockStockAPI *mock_gateway.MockStockAPIClient, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
 				refreshToken := "test-refresh-token"
 				idToken := "test-id-token"
 

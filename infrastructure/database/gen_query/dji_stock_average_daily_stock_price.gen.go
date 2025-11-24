@@ -155,14 +155,14 @@ type IDjiStockAverageDailyStockPriceDo interface {
 	Find() ([]*gen_model.DjiStockAverageDailyStockPrice, error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*gen_model.DjiStockAverageDailyStockPrice, err error)
 	FindInBatches(result *[]*gen_model.DjiStockAverageDailyStockPrice, batchSize int, fc func(tx gen.Dao, batch int) error) error
-	Pluck(column field.Expr, dest interface{}) error
+	Pluck(column field.Expr, dest any) error
 	Delete(...*gen_model.DjiStockAverageDailyStockPrice) (info gen.ResultInfo, err error)
-	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	Update(column field.Expr, value any) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	Updates(value interface{}) (info gen.ResultInfo, err error)
-	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	Updates(value any) (info gen.ResultInfo, err error)
+	UpdateColumn(column field.Expr, value any) (info gen.ResultInfo, err error)
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumns(value any) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
 	Attrs(attrs ...field.AssignExpr) IDjiStockAverageDailyStockPriceDo
 	Assign(attrs ...field.AssignExpr) IDjiStockAverageDailyStockPriceDo
@@ -171,11 +171,11 @@ type IDjiStockAverageDailyStockPriceDo interface {
 	FirstOrInit() (*gen_model.DjiStockAverageDailyStockPrice, error)
 	FirstOrCreate() (*gen_model.DjiStockAverageDailyStockPrice, error)
 	FindByPage(offset int, limit int) (result []*gen_model.DjiStockAverageDailyStockPrice, count int64, err error)
-	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
+	ScanByPage(result any, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
-	Scan(result interface{}) (err error)
-	Returning(value interface{}, columns ...string) IDjiStockAverageDailyStockPriceDo
+	Scan(result any) (err error)
+	Returning(value any, columns ...string) IDjiStockAverageDailyStockPriceDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
@@ -204,7 +204,7 @@ func (d djiStockAverageDailyStockPriceDo) Clauses(conds ...clause.Expression) ID
 	return d.withDO(d.DO.Clauses(conds...))
 }
 
-func (d djiStockAverageDailyStockPriceDo) Returning(value interface{}, columns ...string) IDjiStockAverageDailyStockPriceDo {
+func (d djiStockAverageDailyStockPriceDo) Returning(value any, columns ...string) IDjiStockAverageDailyStockPriceDo {
 	return d.withDO(d.DO.Returning(value, columns...))
 }
 
@@ -387,7 +387,7 @@ func (d djiStockAverageDailyStockPriceDo) FindByPage(offset int, limit int) (res
 	return
 }
 
-func (d djiStockAverageDailyStockPriceDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
+func (d djiStockAverageDailyStockPriceDo) ScanByPage(result any, offset int, limit int) (count int64, err error) {
 	count, err = d.Count()
 	if err != nil {
 		return
@@ -397,7 +397,7 @@ func (d djiStockAverageDailyStockPriceDo) ScanByPage(result interface{}, offset 
 	return
 }
 
-func (d djiStockAverageDailyStockPriceDo) Scan(result interface{}) (err error) {
+func (d djiStockAverageDailyStockPriceDo) Scan(result any) (err error) {
 	return d.DO.Scan(result)
 }
 

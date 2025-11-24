@@ -50,7 +50,7 @@ func TestE2E_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 			args: args{
 				cmdArgs: []string{"main", "create_nikkei_and_dji_historical_data_v1"},
 			},
-			setup: func(t *testing.T, mockStockAPI *mock_gateway.MockStockAPIClient, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
+			setup: func(_ *testing.T, mockStockAPI *mock_gateway.MockStockAPIClient, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
 				// Setup Expectations
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
 

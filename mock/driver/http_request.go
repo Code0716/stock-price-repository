@@ -57,18 +57,18 @@ func (mr *MockHTTPRequestMockRecorder) Get(ctx, arg1, values any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockHTTPRequest)(nil).Get), ctx, arg1, values)
 }
 
-// GetHttpClient mocks base method.
-func (m *MockHTTPRequest) GetHttpClient() *http.Client {
+// GetHTTPClient mocks base method.
+func (m *MockHTTPRequest) GetHTTPClient() *http.Client {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHttpClient")
+	ret := m.ctrl.Call(m, "GetHTTPClient")
 	ret0, _ := ret[0].(*http.Client)
 	return ret0
 }
 
-// GetHttpClient indicates an expected call of GetHttpClient.
-func (mr *MockHTTPRequestMockRecorder) GetHttpClient() *gomock.Call {
+// GetHTTPClient indicates an expected call of GetHTTPClient.
+func (mr *MockHTTPRequestMockRecorder) GetHTTPClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHttpClient", reflect.TypeOf((*MockHTTPRequest)(nil).GetHttpClient))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHTTPClient", reflect.TypeOf((*MockHTTPRequest)(nil).GetHTTPClient))
 }
 
 // Post mocks base method.

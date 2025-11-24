@@ -6,21 +6,21 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-type ConfigSlack struct {
-	SlackBotBaseUrl           string `envconfig:"slack_bot_base_url" default:""`
+type Slack struct {
+	SlackBotBaseURL           string `envconfig:"slack_bot_base_url" default:""`
 	SlackNotificationBotToken string `envconfig:"slack_notification_bot_token" default:""`
 }
 
-var configSlack ConfigSlack
+var slack Slack
 
 func LoadConfigSlack() {
 	prefix := ""
-	err := envconfig.Process(prefix, &configSlack)
+	err := envconfig.Process(prefix, &slack)
 	if err != nil {
 		log.Fatalf("failed to init config: %v", err)
 	}
 }
 
-func Slack() *ConfigSlack {
-	return &configSlack
+func GetSlack() *Slack {
+	return &slack
 }

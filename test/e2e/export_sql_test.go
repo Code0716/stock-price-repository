@@ -30,7 +30,7 @@ func TestE2E_ExportSQL(t *testing.T) {
 			args: args{
 				cmdArgs: []string{"main", "export_stock_brands_daily_stock_price_to_sql_v1"},
 			},
-			setup: func(t *testing.T, mockMySQLDump *mock_gateway.MockMySQLDumpClient, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
+			setup: func(_ *testing.T, mockMySQLDump *mock_gateway.MockMySQLDumpClient, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
 				// Setup Expectations
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
 
@@ -60,7 +60,7 @@ func TestE2E_ExportSQL(t *testing.T) {
 				}
 			},
 			wantErr: false,
-			check:   func(t *testing.T) {},
+			check:   func(_ *testing.T) {},
 		},
 	}
 

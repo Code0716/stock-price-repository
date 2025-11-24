@@ -175,14 +175,14 @@ type IStockBrandsDailyPriceDo interface {
 	Find() ([]*gen_model.StockBrandsDailyPrice, error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*gen_model.StockBrandsDailyPrice, err error)
 	FindInBatches(result *[]*gen_model.StockBrandsDailyPrice, batchSize int, fc func(tx gen.Dao, batch int) error) error
-	Pluck(column field.Expr, dest interface{}) error
+	Pluck(column field.Expr, dest any) error
 	Delete(...*gen_model.StockBrandsDailyPrice) (info gen.ResultInfo, err error)
-	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	Update(column field.Expr, value any) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	Updates(value interface{}) (info gen.ResultInfo, err error)
-	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	Updates(value any) (info gen.ResultInfo, err error)
+	UpdateColumn(column field.Expr, value any) (info gen.ResultInfo, err error)
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumns(value any) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
 	Attrs(attrs ...field.AssignExpr) IStockBrandsDailyPriceDo
 	Assign(attrs ...field.AssignExpr) IStockBrandsDailyPriceDo
@@ -191,11 +191,11 @@ type IStockBrandsDailyPriceDo interface {
 	FirstOrInit() (*gen_model.StockBrandsDailyPrice, error)
 	FirstOrCreate() (*gen_model.StockBrandsDailyPrice, error)
 	FindByPage(offset int, limit int) (result []*gen_model.StockBrandsDailyPrice, count int64, err error)
-	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
+	ScanByPage(result any, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
-	Scan(result interface{}) (err error)
-	Returning(value interface{}, columns ...string) IStockBrandsDailyPriceDo
+	Scan(result any) (err error)
+	Returning(value any, columns ...string) IStockBrandsDailyPriceDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
@@ -224,7 +224,7 @@ func (s stockBrandsDailyPriceDo) Clauses(conds ...clause.Expression) IStockBrand
 	return s.withDO(s.DO.Clauses(conds...))
 }
 
-func (s stockBrandsDailyPriceDo) Returning(value interface{}, columns ...string) IStockBrandsDailyPriceDo {
+func (s stockBrandsDailyPriceDo) Returning(value any, columns ...string) IStockBrandsDailyPriceDo {
 	return s.withDO(s.DO.Returning(value, columns...))
 }
 
@@ -407,7 +407,7 @@ func (s stockBrandsDailyPriceDo) FindByPage(offset int, limit int) (result []*ge
 	return
 }
 
-func (s stockBrandsDailyPriceDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
+func (s stockBrandsDailyPriceDo) ScanByPage(result any, offset int, limit int) (count int64, err error) {
 	count, err = s.Count()
 	if err != nil {
 		return
@@ -417,7 +417,7 @@ func (s stockBrandsDailyPriceDo) ScanByPage(result interface{}, offset int, limi
 	return
 }
 
-func (s stockBrandsDailyPriceDo) Scan(result interface{}) (err error) {
+func (s stockBrandsDailyPriceDo) Scan(result any) (err error) {
 	return s.DO.Scan(result)
 }
 

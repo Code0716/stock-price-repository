@@ -6,7 +6,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-type ConfigDatabase struct {
+type Database struct {
 	Dialect          string `envconfig:"stock_price_repository_mysql_dialect" default:""`
 	Host             string `envconfig:"stock_price_repository_mysql_host" default:""`
 	DBName           string `envconfig:"stock_price_repository_mysql_dbname" default:""`
@@ -20,16 +20,16 @@ type ConfigDatabase struct {
 	ExportBackupPath string `envconfig:"stock_price_repository_mysql_backup_path" default:""`
 }
 
-var configDatabase ConfigDatabase
+var database Database
 
 func LoadConfigDatabase() {
 	prefix := ""
-	err := envconfig.Process(prefix, &configDatabase)
+	err := envconfig.Process(prefix, &database)
 	if err != nil {
 		log.Fatalf("failed to init config: %v", err)
 	}
 }
 
-func Database() *ConfigDatabase {
-	return &configDatabase
+func GetDatabase() *Database {
+	return &database
 }

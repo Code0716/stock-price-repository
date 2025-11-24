@@ -75,7 +75,7 @@ func TestE2E_CreateHistoricalDailyStockPrices(t *testing.T) {
 					gateway.StockAPISymbol("9999"),
 					gomock.Any(), // from (5 years ago)
 					gomock.Any(), // to (now)
-				).DoAndReturn(func(ctx context.Context, symbol gateway.StockAPISymbol, from, to time.Time) ([]*gateway.StockPrice, error) {
+				).DoAndReturn(func(_ context.Context, symbol gateway.StockAPISymbol, _, to time.Time) ([]*gateway.StockPrice, error) {
 					return []*gateway.StockPrice{
 						{
 							Date:            to.AddDate(0, 0, -1),

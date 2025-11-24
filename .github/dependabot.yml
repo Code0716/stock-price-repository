@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # 1. Go Modulesの依存関係をチェック
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      
+  # 2. GitHub Actionsのバージョンをチェック
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

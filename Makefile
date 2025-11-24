@@ -19,6 +19,7 @@ install-build-tools:
 install-dev-tools:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	go install github.com/air-verse/air@latest
+	go install golang.org/x/vuln/cmd/govulncheck@latest
 
 di:
 	cd di && wire gen
@@ -41,7 +42,7 @@ mock:
 	rm -rf ./mock
 	go generate ./...
 
-test:  test-unit  test-e2e
+test: test-unit test-e2e vuln-check
 
 test-unit: 
 	ENVCODE=unit go test -v -race -coverprofile=cover.out $(shell go list ./... | grep -vE "(test|gen)/")
@@ -50,6 +51,9 @@ test-unit:
 
 test-e2e:
 	ENVCODE=e2e go test -v -race ./test/e2e/...
+
+vuln-check:
+	govulncheck ./...
 
 up:
 	docker compose up -d

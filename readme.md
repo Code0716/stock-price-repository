@@ -152,3 +152,5 @@ Clean Architecture に基づいたディレクトリ構成になっています�
   - **`gateway/`**: 外部 API (Yahoo, j-Quants) クライアント。
 - **`models/`**: ドメインエンティティ。
 - **`config/`**: 設定読み込み。
+
+かしこ。

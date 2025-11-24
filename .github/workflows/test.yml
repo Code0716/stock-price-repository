@@ -15,10 +15,21 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.0'
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Install mockgen
+        run: go install go.uber.org/mock/mockgen@latest
+
+      - name: Generate mocks
+        run: make mock
+
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           version: latest
+          args: --timeout=5m --config=.golangci.ci.yml
 
   test:
     runs-on: ubuntu-latest

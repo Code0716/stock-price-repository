@@ -32,15 +32,11 @@ linters:
           disabled: true
   exclusions:
     generated: lax
-    paths:
-      - di/wire_gen.go
-      - _gorm_gen
-      - infrastructure/database/gen_model
-      - infrastructure/database/gen_query
-      - mock
-      - third_party
-      - builtin
-      - examples
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
       - linters:
           - dupl
@@ -51,17 +47,32 @@ linters:
       - linters:
           - revive
         path: util/.*
-        text: 'avoid meaningless package names'
+        text: avoid meaningless package names
       - linters:
           - errcheck
-        text: "Error return value of `.*\\.Close` is not checked"
+        text: Error return value of `.*\.Close` is not checked
       - linters:
           - errcheck
-        text: "Error return value of `.*\\.Write` is not checked"
+        text: Error return value of `.*\.Write` is not checked
       - linters:
           - errcheck
-        text: "Error return value of `.*\\.Set` is not checked"
+        text: Error return value of `.*\.Set` is not checked
+    paths:
+      - di/wire_gen.go
+      - _gorm_gen
+      - infrastructure/database/gen_model
+      - infrastructure/database/gen_query
+      - mock
+      - third_party
+      - builtin
+      - examples
+      - third_party$
+      - builtin$
+      - examples$
 formatters:
-  settings:
-    goimports:
-      local-prefixes: github.com/Code0716/stock-price-repository
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

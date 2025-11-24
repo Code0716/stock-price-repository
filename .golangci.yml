@@ -1,7 +1,7 @@
-version: "2"
+version: '2'
 
 run:
-  go: "1.25"
+  go: '1.24'
   timeout: 5m
 
 linters:
@@ -57,7 +57,7 @@ linters:
       - linters:
           - revive
         path: util/.*
-        text: "avoid meaningless package names"
+        text: 'avoid meaningless package names'
       - linters:
           - errcheck
         text: "Error return value of `.*\\.Close` is not checked"

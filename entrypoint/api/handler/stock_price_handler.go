@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/Code0716/stock-price-repository/driver"
+	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/usecase"
 	"github.com/Code0716/stock-price-repository/util"
 	"go.uber.org/zap"
@@ -56,7 +57,19 @@ func (h *StockPriceHandler) GetDailyPrices(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	prices, err := h.usecase.GetDailyStockPrices(r.Context(), symbol, from, to)
+	// ソート順の取得（デフォルトは昇順）
+	var sortOrder *models.SortOrder
+	orderParam := h.httpServer.GetQueryParam(r, "order")
+	if orderParam != "" {
+		if orderParam != string(models.SortOrderAsc) && orderParam != string(models.SortOrderDesc) {
+			http.Error(w, "orderはascまたはdescである必要があります", http.StatusBadRequest)
+			return
+		}
+		order := models.SortOrder(orderParam)
+		sortOrder = &order
+	}
+
+	prices, err := h.usecase.GetDailyStockPricesWithOrder(r.Context(), symbol, from, to, sortOrder)
 	if err != nil {
 		h.logger.Error("failed to get daily stock prices", zap.Error(err))
 		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)

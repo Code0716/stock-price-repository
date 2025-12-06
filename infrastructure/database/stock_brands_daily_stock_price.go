@@ -95,9 +95,10 @@ func (si *StockBrandsDailyPriceRepositoryImpl) ListDailyPricesBySymbol(ctx conte
 	}
 	q := tx.WithContext(ctx).
 		StockBrandsDailyPrice.
-		Where(tx.StockBrandsDailyPrice.
-			TickerSymbol.
-			Eq(filter.TickerSymbol),
+		Where(
+			tx.StockBrandsDailyPrice.
+				TickerSymbol.
+				Eq(filter.TickerSymbol),
 		)
 
 	if filter.DateFrom != nil {
@@ -121,6 +122,13 @@ func (si *StockBrandsDailyPriceRepositoryImpl) ListDailyPricesBySymbol(ctx conte
 			filter.DateTo.Location(),
 		)
 		q = q.Where(tx.StockBrandsDailyPrice.Date.Lte(dateOnlyTo))
+	}
+
+	// ソート順の適用（デフォルトは昇順）
+	if filter.DateOrder != nil && *filter.DateOrder == models.SortOrderDesc {
+		q = q.Order(tx.StockBrandsDailyPrice.Date.Desc())
+	} else {
+		q = q.Order(tx.StockBrandsDailyPrice.Date)
 	}
 
 	rdbDailyPrices, err := q.Find()

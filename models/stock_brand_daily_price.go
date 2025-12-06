@@ -51,11 +51,22 @@ func NewStockBrandDailyPrice(
 	}
 }
 
+// SortOrder ソート順を表す型
+type SortOrder string
+
+const (
+	// SortOrderAsc 昇順
+	SortOrderAsc SortOrder = "asc"
+	// SortOrderDesc 降順
+	SortOrderDesc SortOrder = "desc"
+)
+
 // ListDailyPricesBySymbolFilter 期間中の日足をsymbolから取得する。
 type ListDailyPricesBySymbolFilter struct {
 	TickerSymbol string
 	DateFrom     *time.Time
 	DateTo       *time.Time
+	DateOrder    *SortOrder // 日付のソート順（nilの場合は昇順）
 }
 
 // ListRangePricesBySymbolsFilter 期間中の日足を複数のsymbolから取得する。

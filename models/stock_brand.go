@@ -12,17 +12,17 @@ const (
 )
 
 type StockBrand struct {
-	ID               string    // ID
-	TickerSymbol     string    // 証券コード
-	Name             string    // 銘柄名
-	MarketCode       string    // 市場コード
-	MarketName       string    // 市場名
-	Sector33Code     string    // 33業種コード
-	Sector33CodeName string    // 33業種区分
-	Sector17Code     string    // 17業種コード
-	Sector17CodeName string    // 17業種区分
-	CreatedAt        time.Time // created_at
-	UpdatedAt        time.Time // deleted_at
+	ID               string    `json:"id"`
+	TickerSymbol     string    `json:"tickerSymbol"`
+	Name             string    `json:"name"`
+	MarketCode       string    `json:"marketCode"`
+	MarketName       string    `json:"marketName"`
+	Sector33Code     string    `json:"sector33Code"`
+	Sector33CodeName string    `json:"sector33CodeName"`
+	Sector17Code     string    `json:"sector17Code"`
+	Sector17CodeName string    `json:"sector17CodeName"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
 type StockBrandWithVolumeAverage struct {

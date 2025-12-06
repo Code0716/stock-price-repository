@@ -16,16 +16,16 @@ const (
 )
 
 type AnalyzeStockBrandPriceHistory struct {
-	ID           string          // uuid
-	StockBrandID string          // 銘柄IDs
-	Name         string          // 銘柄名
-	TickerSymbol string          // 証券コード
-	TradePrice   decimal.Decimal // トレード金額
-	CurrentPrice decimal.Decimal // 現在値
-	Action       string          // 売り/買いの別
-	Method       string          // 分析方法
-	Memo         *string         // メモ
-	CreatedAt    time.Time       // created_at
+	ID           string          `json:"id"`
+	StockBrandID string          `json:"stockBrandId"`
+	Name         string          `json:"name"`
+	TickerSymbol string          `json:"tickerSymbol"`
+	TradePrice   decimal.Decimal `json:"tradePrice"`
+	CurrentPrice decimal.Decimal `json:"currentPrice"`
+	Action       string          `json:"action"`
+	Method       string          `json:"method"`
+	Memo         *string         `json:"memo"`
+	CreatedAt    time.Time       `json:"createdAt"`
 }
 
 func NewAnalyzeStockBrandPriceHistory(

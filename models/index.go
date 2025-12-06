@@ -9,15 +9,15 @@ import (
 
 type IndexStockAverageDailyPrices []*IndexStockAverageDailyPrice
 type IndexStockAverageDailyPrice struct {
-	Date      time.Time
-	High      decimal.Decimal
-	Low       decimal.Decimal
-	Open      decimal.Decimal
-	Close     decimal.Decimal
-	Volume    int64
-	Adjclose  decimal.Decimal
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Date      time.Time       `json:"date"`
+	High      decimal.Decimal `json:"high"`
+	Low       decimal.Decimal `json:"low"`
+	Open      decimal.Decimal `json:"open"`
+	Close     decimal.Decimal `json:"close"`
+	Volume    int64           `json:"volume"`
+	Adjclose  decimal.Decimal `json:"adjClose"`
+	CreatedAt time.Time       `json:"createdAt"`
+	UpdatedAt time.Time       `json:"updatedAt"`
 }
 
 func NewIndexStockAverageDailyPrice(

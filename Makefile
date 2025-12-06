@@ -55,10 +55,6 @@ test-e2e:
 vuln-check:
 	govulncheck ./...
 
-up:
-	docker compose up -d
-	# air -c .air.toml
-
 cli:
 	go run entrypoint/cli/main.go ${command}
 

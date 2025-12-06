@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,8 +16,10 @@ import (
 
 func main() {
 	config.LoadEnvConfig()
-
-	logger, _ := zap.NewProduction()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize logger: %v", err))
+	}
 	defer func() { _ = logger.Sync() }()
 
 	ctx := context.Background()

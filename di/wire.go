@@ -33,6 +33,7 @@ var driverSet = wire.NewSet(
 	driver.OpenRedis,
 	driver.NewStockAPIClient,
 	driver.NewMySQLDumpClient,
+	driver.NewLogger,
 )
 
 var cliSet = wire.NewSet(

@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"go.uber.org/zap"
 
 	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/entrypoint/api/handler"
@@ -65,7 +66,7 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 	)
 
 	httpServer := driver.NewHTTPServer()
-	h := handler.NewStockPriceHandler(interactor, httpServer)
+	h := handler.NewStockPriceHandler(interactor, httpServer, zap.NewNop())
 	mux := router.NewRouter(h)
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
@@ -190,7 +191,7 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 			query:      "",
 			wantStatus: http.StatusBadRequest,
 			check: func(t *testing.T, body []byte) {
-				assert.Contains(t, string(body), "symbol is required")
+				assert.Contains(t, string(body), "シンボルは必須です")
 			},
 		},
 		{
@@ -199,7 +200,7 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 			query:      "?symbol=1301&from=invalid",
 			wantStatus: http.StatusBadRequest,
 			check: func(t *testing.T, body []byte) {
-				assert.Contains(t, string(body), "invalid from date format")
+				assert.Contains(t, string(body), "fromの日付形式が不正です")
 			},
 		},
 	}

@@ -80,7 +80,12 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	slackAPIClient := driver.NewSlackAPIClient(httpRequest, client)
 	stockBrandsDailyPriceInteractor := usecase.NewStockBrandsDailyPriceInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client, slackAPIClient)
 	httpServer := driver.NewHTTPServer()
-	stockPriceHandler := handler.NewStockPriceHandler(stockBrandsDailyPriceInteractor, httpServer)
+	logger, err := driver.NewLogger()
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	stockPriceHandler := handler.NewStockPriceHandler(stockBrandsDailyPriceInteractor, httpServer, logger)
 	serveMux := router.NewRouter(stockPriceHandler)
 	return serveMux, func() {
 		cleanup()
@@ -91,7 +96,7 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 
 var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewExportSQLInteractor)
 
-var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient)
+var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewLogger)
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewExportStockBrandsAndDailyPriceToSQLV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command)
 

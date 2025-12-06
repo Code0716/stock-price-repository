@@ -191,6 +191,9 @@ func TestHTTPServerImpl_ParseJSONBody(t *testing.T) {
 			}
 
 			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(bodyBytes))
+			// ParseJSONBody内でCloseされなくなったため、呼び出し元でCloseする
+			defer req.Body.Close()
+
 			var got TestStruct
 			err := h.ParseJSONBody(req, &got)
 

@@ -1,3 +1,4 @@
+//go:generate mockgen -source=$GOFILE -package=mock_$GOPACKAGE -destination=../mock/$GOPACKAGE/$GOFILE
 package driver
 
 import (
@@ -45,6 +46,5 @@ func (h *HTTPServerImpl) GetQueryParamDate(r *http.Request, key string, layout s
 }
 
 func (h *HTTPServerImpl) ParseJSONBody(r *http.Request, v interface{}) error {
-	defer r.Body.Close()
 	return json.NewDecoder(r.Body).Decode(v)
 }

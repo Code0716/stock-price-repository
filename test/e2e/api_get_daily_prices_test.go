@@ -203,6 +203,133 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 				assert.Contains(t, string(body), "fromの日付形式が不正です")
 			},
 		},
+		{
+			name: "Success: Sort order ascending (default)",
+			setup: func(t *testing.T) {
+				brand := &models.StockBrand{
+					ID:           "1",
+					TickerSymbol: "1301",
+					Name:         "Test Brand",
+					MarketName:   "Prime",
+					CreatedAt:    time.Now(),
+					UpdatedAt:    time.Now(),
+				}
+				err := stockBrandRepo.UpsertStockBrands(context.Background(), []*models.StockBrand{brand})
+				require.NoError(t, err)
+
+				prices := []*models.StockBrandDailyPrice{
+					{
+						ID:           "5",
+						StockBrandID: "1",
+						TickerSymbol: "1301",
+						Date:         time.Date(2023, 1, 3, 0, 0, 0, 0, time.UTC),
+						Open:         decimal.NewFromInt(130),
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+					{
+						ID:           "6",
+						StockBrandID: "1",
+						TickerSymbol: "1301",
+						Date:         time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+						Open:         decimal.NewFromInt(100),
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+					{
+						ID:           "7",
+						StockBrandID: "1",
+						TickerSymbol: "1301",
+						Date:         time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+						Open:         decimal.NewFromInt(110),
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+				}
+				err = dailyPriceRepo.CreateStockBrandDailyPrice(context.Background(), prices)
+				require.NoError(t, err)
+			},
+			query:      "?symbol=1301",
+			wantStatus: http.StatusOK,
+			check: func(t *testing.T, body []byte) {
+				var res []*models.StockBrandDailyPrice
+				err := json.Unmarshal(body, &res)
+				assert.NoError(t, err)
+				require.Len(t, res, 3)
+				// 昇順で返されることを確認
+				assert.Equal(t, "2023-01-01", res[0].Date.Format("2006-01-02"))
+				assert.Equal(t, "2023-01-02", res[1].Date.Format("2006-01-02"))
+				assert.Equal(t, "2023-01-03", res[2].Date.Format("2006-01-02"))
+			},
+		},
+		{
+			name: "Success: Sort order descending",
+			setup: func(t *testing.T) {
+				brand := &models.StockBrand{
+					ID:           "1",
+					TickerSymbol: "1301",
+					Name:         "Test Brand",
+					MarketName:   "Prime",
+					CreatedAt:    time.Now(),
+					UpdatedAt:    time.Now(),
+				}
+				err := stockBrandRepo.UpsertStockBrands(context.Background(), []*models.StockBrand{brand})
+				require.NoError(t, err)
+
+				prices := []*models.StockBrandDailyPrice{
+					{
+						ID:           "8",
+						StockBrandID: "1",
+						TickerSymbol: "1301",
+						Date:         time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+						Open:         decimal.NewFromInt(100),
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+					{
+						ID:           "9",
+						StockBrandID: "1",
+						TickerSymbol: "1301",
+						Date:         time.Date(2023, 1, 3, 0, 0, 0, 0, time.UTC),
+						Open:         decimal.NewFromInt(130),
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+					{
+						ID:           "10",
+						StockBrandID: "1",
+						TickerSymbol: "1301",
+						Date:         time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+						Open:         decimal.NewFromInt(110),
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+				}
+				err = dailyPriceRepo.CreateStockBrandDailyPrice(context.Background(), prices)
+				require.NoError(t, err)
+			},
+			query:      "?symbol=1301&order=desc",
+			wantStatus: http.StatusOK,
+			check: func(t *testing.T, body []byte) {
+				var res []*models.StockBrandDailyPrice
+				err := json.Unmarshal(body, &res)
+				assert.NoError(t, err)
+				require.Len(t, res, 3)
+				// 降順で返されることを確認
+				assert.Equal(t, "2023-01-03", res[0].Date.Format("2006-01-02"))
+				assert.Equal(t, "2023-01-02", res[1].Date.Format("2006-01-02"))
+				assert.Equal(t, "2023-01-01", res[2].Date.Format("2006-01-02"))
+			},
+		},
+		{
+			name:       "Error: Invalid order parameter",
+			setup:      func(t *testing.T) {},
+			query:      "?symbol=1301&order=invalid",
+			wantStatus: http.StatusBadRequest,
+			check: func(t *testing.T, body []byte) {
+				assert.Contains(t, string(body), "orderはascまたはdescである必要があります")
+			},
+		},
 	}
 
 	for _, tt := range tests {

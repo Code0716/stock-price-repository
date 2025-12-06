@@ -95,9 +95,10 @@ func (si *StockBrandsDailyPriceRepositoryImpl) ListDailyPricesBySymbol(ctx conte
 	}
 	q := tx.WithContext(ctx).
 		StockBrandsDailyPrice.
-		Where(tx.StockBrandsDailyPrice.
-			TickerSymbol.
-			Eq(filter.TickerSymbol),
+		Where(
+			tx.StockBrandsDailyPrice.
+				TickerSymbol.
+				Eq(filter.TickerSymbol),
 		)
 
 	if filter.DateFrom != nil {

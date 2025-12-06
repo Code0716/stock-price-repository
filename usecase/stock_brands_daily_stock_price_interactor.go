@@ -47,12 +47,3 @@ func NewStockBrandsDailyPriceInteractor(
 		slackAPIClient,
 	}
 }
-
-func (u *stockBrandsDailyStockPriceInteractorImpl) GetDailyStockPrices(ctx context.Context, symbol string, from, to *time.Time) ([]*models.StockBrandDailyPrice, error) {
-	filter := models.ListDailyPricesBySymbolFilter{
-		TickerSymbol: symbol,
-		DateFrom:     from,
-		DateTo:       to,
-	}
-	return u.stockBrandsDailyStockPriceRepository.ListDailyPricesBySymbol(ctx, filter)
-}

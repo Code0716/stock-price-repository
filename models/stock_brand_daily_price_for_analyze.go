@@ -8,17 +8,17 @@ import (
 
 // StockBrandDailyPriceForAnalyze
 type StockBrandDailyPriceForAnalyze struct {
-	ID           string
-	TickerSymbol string
-	Date         time.Time
-	High         decimal.Decimal
-	Low          decimal.Decimal
-	Open         decimal.Decimal
-	Close        decimal.Decimal
-	Volume       int64
-	Adjclose     decimal.Decimal
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID           string          `json:"id"`
+	TickerSymbol string          `json:"tickerSymbol"`
+	Date         time.Time       `json:"date"`
+	High         decimal.Decimal `json:"high"`
+	Low          decimal.Decimal `json:"low"`
+	Open         decimal.Decimal `json:"open"`
+	Close        decimal.Decimal `json:"close"`
+	Volume       int64           `json:"volume"`
+	Adjclose     decimal.Decimal `json:"adjClose"`
+	CreatedAt    time.Time       `json:"createdAt"`
+	UpdatedAt    time.Time       `json:"updatedAt"`
 }
 
 func NewStockBrandDailyPriceForAnalyze(

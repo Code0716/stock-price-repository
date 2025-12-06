@@ -47,5 +47,7 @@ func (h *StockPriceHandler) GetDailyPrices(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(prices)
+	if err := json.NewEncoder(w).Encode(prices); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

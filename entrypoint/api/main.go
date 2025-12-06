@@ -17,7 +17,7 @@ func main() {
 	config.LoadEnvConfig()
 
 	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	defer func() { _ = logger.Sync() }()
 
 	ctx := context.Background()
 

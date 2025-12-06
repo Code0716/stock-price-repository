@@ -89,4 +89,4 @@ build:
 	cd entrypoint/cli && GOARCH=arm GOOS=linux GOARM=7 go build -o spr-cli
 
 api:
-	air
+	air -c .air.toml

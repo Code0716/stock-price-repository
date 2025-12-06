@@ -8,6 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
+	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/repositories"
 )
 
@@ -24,6 +25,7 @@ type stockBrandsDailyStockPriceInteractorImpl struct {
 type StockBrandsDailyPriceInteractor interface {
 	CreateDailyStockPrice(ctx context.Context, now time.Time) error
 	CreateHistoricalDailyStockPrices(ctx context.Context, now time.Time) error
+	GetDailyStockPrices(ctx context.Context, symbol string, from, to *time.Time) ([]*models.StockBrandDailyPrice, error)
 }
 
 func NewStockBrandsDailyPriceInteractor(
@@ -44,4 +46,13 @@ func NewStockBrandsDailyPriceInteractor(
 		redisClient,
 		slackAPIClient,
 	}
+}
+
+func (u *stockBrandsDailyStockPriceInteractorImpl) GetDailyStockPrices(ctx context.Context, symbol string, from, to *time.Time) ([]*models.StockBrandDailyPrice, error) {
+	filter := models.ListDailyPricesBySymbolFilter{
+		TickerSymbol: symbol,
+		DateFrom:     from,
+		DateTo:       to,
+	}
+	return u.stockBrandsDailyStockPriceRepository.ListDailyPricesBySymbol(ctx, filter)
 }

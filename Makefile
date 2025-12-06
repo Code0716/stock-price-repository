@@ -1,5 +1,5 @@
 .PHONY: install-tools install-build-tools install-dev-tools \
-	di deps lint gen gorm-gen mock test test-e2e up cli \
+	di deps lint gen gorm-gen mock test test-e2e up cli api \
 	migrate-file migrate-up migrate-down migrate-down-all \
 	down docker-down volume-down format build
 
@@ -55,10 +55,6 @@ test-e2e:
 vuln-check:
 	govulncheck ./...
 
-up:
-	docker compose up -d
-	# air -c .air.toml
-
 cli:
 	go run entrypoint/cli/main.go ${command}
 
@@ -87,3 +83,6 @@ format:
 
 build:
 	cd entrypoint/cli && GOARCH=arm GOOS=linux GOARM=7 go build -o spr-cli
+
+api:
+	air -c .air.toml

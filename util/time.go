@@ -7,8 +7,8 @@ import (
 
 const (
 	DatetimeLayout       string = "2006-01-02 15:04:05"
-	dateLayout           string = "2006-01-02"
-	dateLayoutAsFileName string = "20060102"
+	DateLayout           string = "2006-01-02"
+	DateLayoutAsFileName string = "20060102"
 )
 
 func UnixToDatetime(timestamp int64) time.Time {
@@ -21,7 +21,7 @@ func IsSameDay(today, now time.Time) bool {
 }
 
 func FormatStringToDate(timeStr string) (time.Time, error) {
-	date, err := time.Parse(dateLayout, timeStr)
+	date, err := time.Parse(DateLayout, timeStr)
 	if err != nil {
 		log.Printf("time.Parse:%v", err)
 		return time.Time{}, err
@@ -34,9 +34,9 @@ func DatetimeToDate(datetime time.Time) time.Time {
 }
 
 func DatetimeToDateStr(datetime time.Time) string {
-	return datetime.Format(dateLayout)
+	return datetime.Format(DateLayout)
 }
 
 func DatetimeToFileNameDateStr(datetime time.Time) string {
-	return datetime.Format(dateLayoutAsFileName)
+	return datetime.Format(DateLayoutAsFileName)
 }

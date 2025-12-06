@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 	time "time"
 
+	models "github.com/Code0716/stock-price-repository/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -67,4 +68,19 @@ func (m *MockStockBrandsDailyPriceInteractor) CreateHistoricalDailyStockPrices(c
 func (mr *MockStockBrandsDailyPriceInteractorMockRecorder) CreateHistoricalDailyStockPrices(ctx, now any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateHistoricalDailyStockPrices", reflect.TypeOf((*MockStockBrandsDailyPriceInteractor)(nil).CreateHistoricalDailyStockPrices), ctx, now)
+}
+
+// GetDailyStockPrices mocks base method.
+func (m *MockStockBrandsDailyPriceInteractor) GetDailyStockPrices(ctx context.Context, symbol string, from, to *time.Time) ([]*models.StockBrandDailyPrice, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDailyStockPrices", ctx, symbol, from, to)
+	ret0, _ := ret[0].([]*models.StockBrandDailyPrice)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDailyStockPrices indicates an expected call of GetDailyStockPrices.
+func (mr *MockStockBrandsDailyPriceInteractorMockRecorder) GetDailyStockPrices(ctx, symbol, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDailyStockPrices", reflect.TypeOf((*MockStockBrandsDailyPriceInteractor)(nil).GetDailyStockPrices), ctx, symbol, from, to)
 }

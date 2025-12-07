@@ -89,7 +89,13 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 var grpcSet = wire.NewSet(
 	server.NewStockServiceServer,
 	usecase.NewGetHighVolumeStockBrandsUseCase,
+	wire.Struct(new(GrpcServerComponents), "*"),
 )
+
+type GrpcServerComponents struct {
+	Server *server.StockServiceServer
+	Logger *zap.Logger
+}
 
 var grpcDriverSet = wire.NewSet(
 	driver.NewGorm,
@@ -100,9 +106,10 @@ var grpcDriverSet = wire.NewSet(
 	driver.OpenRedis,
 	driver.NewStockAPIClient,
 	driver.NewMySQLDumpClient,
+	driver.NewLogger,
 )
 
-func InitializeStockServiceServer(ctx context.Context, logger *zap.Logger) (*server.StockServiceServer, func(), error) {
+func InitializeStockServiceServer(ctx context.Context) (*GrpcServerComponents, func(), error) {
 	wire.Build(
 		grpcSet,
 		databaseSet,

@@ -97,7 +97,7 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	}, nil
 }
 
-func InitializeStockServiceServer(ctx context.Context, logger *zap.Logger) (*server.StockServiceServer, func(), error) {
+func InitializeStockServiceServer(ctx context.Context) (*GrpcServerComponents, func(), error) {
 	db, cleanup, err := driver.NewDBConn()
 	if err != nil {
 		return nil, nil, err
@@ -110,7 +110,16 @@ func InitializeStockServiceServer(ctx context.Context, logger *zap.Logger) (*ser
 	highVolumeStockBrandRepository := database.NewHighVolumeStockBrandRepositoryImpl(gormDB)
 	getHighVolumeStockBrandsUseCase := usecase.NewGetHighVolumeStockBrandsUseCase(highVolumeStockBrandRepository)
 	stockServiceServer := server.NewStockServiceServer(getHighVolumeStockBrandsUseCase)
-	return stockServiceServer, func() {
+	logger, err := driver.NewLogger()
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	grpcServerComponents := &GrpcServerComponents{
+		Server: stockServiceServer,
+		Logger: logger,
+	}
+	return grpcServerComponents, func() {
 		cleanup()
 	}, nil
 }
@@ -127,6 +136,11 @@ var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRep
 
 var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, router.NewRouter)
 
-var grpcSet = wire.NewSet(server.NewStockServiceServer, usecase.NewGetHighVolumeStockBrandsUseCase)
+var grpcSet = wire.NewSet(server.NewStockServiceServer, usecase.NewGetHighVolumeStockBrandsUseCase, wire.Struct(new(GrpcServerComponents), "*"))
 
-var grpcDriverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient)
+type GrpcServerComponents struct {
+	Server *server.StockServiceServer
+	Logger *zap.Logger
+}
+
+var grpcDriverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewLogger)

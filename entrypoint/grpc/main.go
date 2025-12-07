@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -23,22 +22,16 @@ func main() {
 
 	// Load configuration
 	config.LoadEnvConfig()
-	logger, err := zap.NewProduction()
-	if err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
-	}
-	defer func() {
-		if err := logger.Sync(); err != nil {
-			log.Printf("Failed to sync logger: %v", err)
-		}
-	}()
 
 	// Initialize dependencies
-	stockServiceServer, cleanup, err := di.InitializeStockServiceServer(ctx, logger)
+	components, cleanup, err := di.InitializeStockServiceServer(ctx)
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("Failed to initialize gRPC server: %v", err))
+		log.Fatalf("Failed to initialize gRPC server: %v", err)
 	}
 	defer cleanup()
+
+	stockServiceServer := components.Server
+	logger := components.Logger
 
 	// Create gRPC server
 	grpcServer := grpc.NewServer()
@@ -55,23 +48,30 @@ func main() {
 	port := getPort()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
-		logger.Fatal(fmt.Sprintf("Failed to listen: %v", err))
+		logger.Error(fmt.Sprintf("Failed to listen: %v", err))
+		return
 	}
 
 	logger.Info(fmt.Sprintf("gRPC server listening on port %s", port))
 
 	// Graceful shutdown
+	errCh := make(chan error, 1)
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
-			logger.Fatal(fmt.Sprintf("Failed to serve: %v", err))
+			errCh <- err
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
 
-	logger.Info("Shutting down gRPC server...")
+	select {
+	case <-quit:
+		logger.Info("Shutting down gRPC server...")
+	case err := <-errCh:
+		logger.Error(fmt.Sprintf("Failed to serve: %v", err))
+	}
+
 	grpcServer.GracefulStop()
 	logger.Info("gRPC server stopped")
 }

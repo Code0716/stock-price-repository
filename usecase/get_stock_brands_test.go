@@ -1,0 +1,259 @@
+package usecase
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+
+	mock_repositories "github.com/Code0716/stock-price-repository/mock/repositories"
+	"github.com/Code0716/stock-price-repository/models"
+	"github.com/Code0716/stock-price-repository/repositories"
+)
+
+func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
+	type fields struct {
+		stockBrandRepository func(ctrl *gomock.Controller) repositories.StockBrandRepository
+	}
+	type args struct {
+		ctx             context.Context
+		symbolFrom      string
+		limit           int
+		onlyMainMarkets bool
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *models.PaginatedStockBrands
+		wantErr bool
+	}{
+		{
+			name: "正常系: 全件取得",
+			fields: fields{
+				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
+					m := mock_repositories.NewMockStockBrandRepository(ctrl)
+					m.EXPECT().FindAll(gomock.Any()).Return([]*models.StockBrand{
+						{
+							ID:           "1",
+							TickerSymbol: "1234",
+							Name:         "テスト銘柄1",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "2",
+							TickerSymbol: "5678",
+							Name:         "テスト銘柄2",
+							MarketCode:   "112",
+						},
+					}, nil)
+					return m
+				},
+			},
+			args: args{
+				ctx:             context.Background(),
+				symbolFrom:      "",
+				limit:           0,
+				onlyMainMarkets: false,
+			},
+			want: &models.PaginatedStockBrands{
+				Brands: []*models.StockBrand{
+					{
+						ID:           "1",
+						TickerSymbol: "1234",
+						Name:         "テスト銘柄1",
+						MarketCode:   "111",
+					},
+					{
+						ID:           "2",
+						TickerSymbol: "5678",
+						Name:         "テスト銘柄2",
+						MarketCode:   "112",
+					},
+				},
+				NextCursor: nil,
+				Limit:      0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "正常系: ページネーション付き取得",
+			fields: fields{
+				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
+					m := mock_repositories.NewMockStockBrandRepository(ctrl)
+					// limit+1件取得するため11件を期待
+					m.EXPECT().FindFromSymbol(gomock.Any(), gomock.Eq("1000"), gomock.Eq(11)).Return([]*models.StockBrand{
+						{
+							ID:           "1",
+							TickerSymbol: "1234",
+							Name:         "テスト銘柄1",
+							MarketCode:   "111",
+						},
+					}, nil)
+					return m
+				},
+			},
+			args: args{
+				ctx:             context.Background(),
+				symbolFrom:      "1000",
+				limit:           10,
+				onlyMainMarkets: false,
+			},
+			want: &models.PaginatedStockBrands{
+				Brands: []*models.StockBrand{
+					{
+						ID:           "1",
+						TickerSymbol: "1234",
+						Name:         "テスト銘柄1",
+						MarketCode:   "111",
+					},
+				},
+				NextCursor: nil,
+				Limit:      10,
+			},
+			wantErr: false,
+		},
+		{
+			name: "正常系: 主要市場のみフィルタリング",
+			fields: fields{
+				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
+					m := mock_repositories.NewMockStockBrandRepository(ctrl)
+					m.EXPECT().FindAllMainMarkets(gomock.Any()).Return([]*models.StockBrand{
+						{
+							ID:           "1",
+							TickerSymbol: "1234",
+							Name:         "テスト銘柄1",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "3",
+							TickerSymbol: "9012",
+							Name:         "テスト銘柄3",
+							MarketCode:   "113",
+						},
+					}, nil)
+					return m
+				},
+			},
+			args: args{
+				ctx:             context.Background(),
+				symbolFrom:      "",
+				limit:           0,
+				onlyMainMarkets: true,
+			},
+			want: &models.PaginatedStockBrands{
+				Brands: []*models.StockBrand{
+					{
+						ID:           "1",
+						TickerSymbol: "1234",
+						Name:         "テスト銘柄1",
+						MarketCode:   "111",
+					},
+					{
+						ID:           "3",
+						TickerSymbol: "9012",
+						Name:         "テスト銘柄3",
+						MarketCode:   "113",
+					},
+				},
+				NextCursor: nil,
+				Limit:      0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "正常系: ページネーション + 主要市場フィルタリング",
+			fields: fields{
+				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
+					m := mock_repositories.NewMockStockBrandRepository(ctrl)
+					// limit+1件取得するため11件を期待
+					m.EXPECT().FindFromSymbolMainMarkets(gomock.Any(), gomock.Eq("1000"), gomock.Eq(11)).Return([]*models.StockBrand{
+						{
+							ID:           "1",
+							TickerSymbol: "1234",
+							Name:         "テスト銘柄1",
+							MarketCode:   "111",
+						},
+					}, nil)
+					return m
+				},
+			},
+			args: args{
+				ctx:             context.Background(),
+				symbolFrom:      "1000",
+				limit:           10,
+				onlyMainMarkets: true,
+			},
+			want: &models.PaginatedStockBrands{
+				Brands: []*models.StockBrand{
+					{
+						ID:           "1",
+						TickerSymbol: "1234",
+						Name:         "テスト銘柄1",
+						MarketCode:   "111",
+					},
+				},
+				NextCursor: nil,
+				Limit:      10,
+			},
+			wantErr: false,
+		},
+		{
+			name: "異常系: FindAllがエラーを返す",
+			fields: fields{
+				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
+					m := mock_repositories.NewMockStockBrandRepository(ctrl)
+					m.EXPECT().FindAll(gomock.Any()).Return(nil, errors.New("db error"))
+					return m
+				},
+			},
+			args: args{
+				ctx:             context.Background(),
+				symbolFrom:      "",
+				limit:           0,
+				onlyMainMarkets: false,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "異常系: FindFromSymbolがエラーを返す",
+			fields: fields{
+				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
+					m := mock_repositories.NewMockStockBrandRepository(ctrl)
+					// limit+1件取得するため11件を期待
+					m.EXPECT().FindFromSymbol(gomock.Any(), gomock.Eq("1000"), gomock.Eq(11)).Return(nil, errors.New("db error"))
+					return m
+				},
+			},
+			args: args{
+				ctx:             context.Background(),
+				symbolFrom:      "1000",
+				limit:           10,
+				onlyMainMarkets: false,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			r := tt.fields.stockBrandRepository(ctrl)
+			si := NewStockBrandInteractor(nil, r, nil, nil, nil, nil, nil)
+
+			got, err := si.GetStockBrands(tt.args.ctx, tt.args.symbolFrom, tt.args.limit, tt.args.onlyMainMarkets)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("StockBrandInteractorImpl.GetStockBrands() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

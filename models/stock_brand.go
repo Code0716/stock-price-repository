@@ -25,6 +25,13 @@ type StockBrand struct {
 	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
+// PaginatedStockBrands ページネーション付き銘柄一覧
+type PaginatedStockBrands struct {
+	Brands     []*StockBrand
+	NextCursor *string
+	Limit      int
+}
+
 type StockBrandWithVolumeAverage struct {
 	Name          string
 	TickerSymbol  string

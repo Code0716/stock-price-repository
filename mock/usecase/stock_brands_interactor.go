@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 	time "time"
 
+	models "github.com/Code0716/stock-price-repository/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -39,6 +40,21 @@ func NewMockStockBrandInteractor(ctrl *gomock.Controller) *MockStockBrandInterac
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockStockBrandInteractor) EXPECT() *MockStockBrandInteractorMockRecorder {
 	return m.recorder
+}
+
+// GetStockBrands mocks base method.
+func (m *MockStockBrandInteractor) GetStockBrands(ctx context.Context, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStockBrands", ctx, symbolFrom, limit, onlyMainMarkets)
+	ret0, _ := ret[0].(*models.PaginatedStockBrands)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStockBrands indicates an expected call of GetStockBrands.
+func (mr *MockStockBrandInteractorMockRecorder) GetStockBrands(ctx, symbolFrom, limit, onlyMainMarkets any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStockBrands", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetStockBrands), ctx, symbolFrom, limit, onlyMainMarkets)
 }
 
 // UpdateStockBrands mocks base method.

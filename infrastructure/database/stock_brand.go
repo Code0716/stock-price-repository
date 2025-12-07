@@ -86,20 +86,74 @@ func (si *StockBrandRepositoryImpl) UpsertStockBrands(ctx context.Context, stock
 	return nil
 }
 
+// FindAllMainMarkets retrieves all stock brands from main markets (111, 112, 113).
+func (si *StockBrandRepositoryImpl) FindAllMainMarkets(ctx context.Context) ([]*models.StockBrand, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	resultRow, err := tx.StockBrand.WithContext(ctx).
+		Where(tx.StockBrand.DeletedAt.IsNull()).
+		Where(tx.StockBrand.MarketCode.In(stockBrandMarketCodePrime, stockBrandMarketCodeStandard, stockBrandMarketCodeGrowth)).
+		Order(tx.StockBrand.TickerSymbol).
+		Find()
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindAllMainMarkets error")
+	}
+	if err != nil {
+		return nil, nil
+	}
+
+	result := make([]*models.StockBrand, 0, len(resultRow))
+	for _, v := range resultRow {
+		result = append(result, si.convertToDomainModel(v))
+	}
+	return result, nil
+}
+
 func (si *StockBrandRepositoryImpl) FindFromSymbol(ctx context.Context, symbol string, limit int) ([]*models.StockBrand, error) {
 	tx, ok := GetTxQuery(ctx)
 	if !ok {
 		tx = si.query
 	}
 
-	resultRow, err := tx.StockBrand.Where(
-		tx.StockBrand.TickerSymbol.Gt(symbol),
-	).Where(
-		tx.StockBrand.MarketCode.In(stockBrandMarketCodePrime, stockBrandMarketCodeStandard, stockBrandMarketCodeGrowth),
-	).Limit(limit).
+	resultRow, err := tx.StockBrand.WithContext(ctx).
+		Where(tx.StockBrand.TickerSymbol.Gt(symbol)).
+		Where(tx.StockBrand.DeletedAt.IsNull()).
+		Order(tx.StockBrand.TickerSymbol).
+		Limit(limit).
 		Find()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindBySymbol error")
+		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindFromSymbol error")
+	}
+	if err != nil {
+		return nil, nil
+	}
+
+	result := make([]*models.StockBrand, 0, len(resultRow))
+	for _, v := range resultRow {
+		result = append(result, si.convertToDomainModel(v))
+	}
+	return result, nil
+}
+
+// FindFromSymbolMainMarkets retrieves stock brands from main markets starting from the specified symbol.
+func (si *StockBrandRepositoryImpl) FindFromSymbolMainMarkets(ctx context.Context, symbol string, limit int) ([]*models.StockBrand, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	resultRow, err := tx.StockBrand.WithContext(ctx).
+		Where(tx.StockBrand.TickerSymbol.Gt(symbol)).
+		Where(tx.StockBrand.DeletedAt.IsNull()).
+		Where(tx.StockBrand.MarketCode.In(stockBrandMarketCodePrime, stockBrandMarketCodeStandard, stockBrandMarketCodeGrowth)).
+		Order(tx.StockBrand.TickerSymbol).
+		Limit(limit).
+		Find()
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindFromSymbolMainMarkets error")
 	}
 	if err != nil {
 		return nil, nil

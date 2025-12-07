@@ -72,6 +72,21 @@ func (mr *MockStockBrandRepositoryMockRecorder) FindAll(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAll", reflect.TypeOf((*MockStockBrandRepository)(nil).FindAll), ctx)
 }
 
+// FindAllMainMarkets mocks base method.
+func (m *MockStockBrandRepository) FindAllMainMarkets(ctx context.Context) ([]*models.StockBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindAllMainMarkets", ctx)
+	ret0, _ := ret[0].([]*models.StockBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindAllMainMarkets indicates an expected call of FindAllMainMarkets.
+func (mr *MockStockBrandRepositoryMockRecorder) FindAllMainMarkets(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllMainMarkets", reflect.TypeOf((*MockStockBrandRepository)(nil).FindAllMainMarkets), ctx)
+}
+
 // FindDelistingStockBrandsFromUpdateTime mocks base method.
 func (m *MockStockBrandRepository) FindDelistingStockBrandsFromUpdateTime(ctx context.Context, now time.Time) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -100,6 +115,21 @@ func (m *MockStockBrandRepository) FindFromSymbol(ctx context.Context, symbolFro
 func (mr *MockStockBrandRepositoryMockRecorder) FindFromSymbol(ctx, symbolFrom, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFromSymbol", reflect.TypeOf((*MockStockBrandRepository)(nil).FindFromSymbol), ctx, symbolFrom, limit)
+}
+
+// FindFromSymbolMainMarkets mocks base method.
+func (m *MockStockBrandRepository) FindFromSymbolMainMarkets(ctx context.Context, symbolFrom string, limit int) ([]*models.StockBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindFromSymbolMainMarkets", ctx, symbolFrom, limit)
+	ret0, _ := ret[0].([]*models.StockBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindFromSymbolMainMarkets indicates an expected call of FindFromSymbolMainMarkets.
+func (mr *MockStockBrandRepositoryMockRecorder) FindFromSymbolMainMarkets(ctx, symbolFrom, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFromSymbolMainMarkets", reflect.TypeOf((*MockStockBrandRepository)(nil).FindFromSymbolMainMarkets), ctx, symbolFrom, limit)
 }
 
 // UpsertStockBrands mocks base method.

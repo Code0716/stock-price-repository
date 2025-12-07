@@ -66,8 +66,9 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 	)
 
 	httpServer := driver.NewHTTPServer()
-	h := handler.NewStockPriceHandler(interactor, httpServer, zap.NewNop())
-	mux := router.NewRouter(h)
+	stockPriceHandler := handler.NewStockPriceHandler(interactor, httpServer, zap.NewNop())
+	// StockBrandHandlerはこのテストでは使用しないためnilを渡す
+	mux := router.NewRouter(stockPriceHandler, nil)
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
 

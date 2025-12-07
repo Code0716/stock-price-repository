@@ -1,7 +1,7 @@
 .PHONY: install-tools install-build-tools install-dev-tools \
-	di deps lint gen gorm-gen mock test test-e2e up cli api \
+	di deps lint gen gorm-gen mock test test-e2e up cli \
 	migrate-file migrate-up migrate-down migrate-down-all \
-	down docker-down volume-down format build up
+	down docker-down volume-down format build 
 
 ## Init .env file
 # .PHONY: init

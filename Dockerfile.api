@@ -11,9 +11,9 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy Air config
-COPY .air.grpc.toml ./
+COPY .air.toml ./
 
-EXPOSE 50051
+EXPOSE 8080
 
 # Use Air for hot reload
-CMD ["air", "-c", ".air.grpc.toml"]
+CMD ["air", "-c", ".air.toml"]

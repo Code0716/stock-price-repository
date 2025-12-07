@@ -1,5 +1,5 @@
 .PHONY: install-tools install-build-tools install-dev-tools \
-	di deps lint gen gorm-gen mock test test-e2e up cli \
+	di deps lint gen gorm-gen mock test test-e2e up down-servers cli \
 	migrate-file migrate-up migrate-down migrate-down-all \
 	down docker-down volume-down format build \
 	proto-setup proto-pull proto-gen proto-clean \
@@ -89,6 +89,10 @@ build:
 up:
 	@echo "Starting API and gRPC servers with Docker Compose..."
 	docker compose up api grpc-server
+
+stop:
+	@echo "Stopping API and gRPC servers..."
+	docker compose stop api grpc-server
 
 api:
 	@echo "Starting API server with hot reload on port 8080..."

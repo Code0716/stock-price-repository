@@ -46,7 +46,7 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandsDailyPriceInteractor {
 					m := mock_usecase.NewMockStockBrandsDailyPriceInteractor(ctrl)
 					m.EXPECT().
-						GetDailyStockPrices(gomock.Any(), "1234", &date, &date).
+						GetDailyStockPricesWithOrder(gomock.Any(), "1234", &date, &date, nil).
 						Return([]*models.StockBrandDailyPrice{
 							{
 								StockBrandID: "1",
@@ -66,6 +66,7 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
 					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "order").Return("") // orderパラメータはなし
 					return m
 				},
 			},
@@ -185,7 +186,7 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandsDailyPriceInteractor {
 					m := mock_usecase.NewMockStockBrandsDailyPriceInteractor(ctrl)
 					m.EXPECT().
-						GetDailyStockPrices(gomock.Any(), "1234", &date, &date).
+						GetDailyStockPricesWithOrder(gomock.Any(), "1234", &date, &date, nil).
 						Return(nil, errors.New("db error"))
 					return m
 				},
@@ -194,6 +195,7 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
 					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "order").Return("") // orderパラメータはなし
 					return m
 				},
 			},
@@ -202,6 +204,67 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 			},
 			wantStatusCode: http.StatusInternalServerError,
 			wantBody:       "内部サーバーエラー\n",
+		},
+		{
+			name: "正常系: ソート順を降順で指定",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandsDailyPriceInteractor {
+					m := mock_usecase.NewMockStockBrandsDailyPriceInteractor(ctrl)
+					descOrder := models.SortOrderDesc
+					m.EXPECT().
+						GetDailyStockPricesWithOrder(gomock.Any(), "1234", &date, &date, &descOrder).
+						Return([]*models.StockBrandDailyPrice{
+							{
+								StockBrandID: "1",
+								Date:         date,
+								Open:         decimal.NewFromInt(100),
+								Close:        decimal.NewFromInt(105),
+							},
+						}, nil)
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "order").Return("desc")
+					return m
+				},
+			},
+			args: args{
+				req: httptest.NewRequest(http.MethodGet, "/daily-prices?symbol=1234&from=2023-10-01&to=2023-10-01&order=desc", nil),
+			},
+			wantStatusCode: http.StatusOK,
+			wantBody: []*models.StockBrandDailyPrice{
+				{
+					StockBrandID: "1",
+					Date:         date,
+					Open:         decimal.NewFromInt(100),
+					Close:        decimal.NewFromInt(105),
+				},
+			},
+		},
+		{
+			name: "異常系: ソート順の値が不正",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandsDailyPriceInteractor {
+					return mock_usecase.NewMockStockBrandsDailyPriceInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "order").Return("invalid")
+					return m
+				},
+			},
+			args: args{
+				req: httptest.NewRequest(http.MethodGet, "/daily-prices?symbol=1234&from=2023-10-01&to=2023-10-01&order=invalid", nil),
+			},
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "orderはascまたはdescである必要があります\n",
 		},
 	}
 

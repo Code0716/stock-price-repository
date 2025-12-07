@@ -222,10 +222,11 @@ func TestStockBrandsDailyPriceRepositoryImpl_ListDailyPricesBySymbol(t *testing.
 	require.NoError(t, err)
 
 	tests := []struct {
-		name    string
-		filter  models.ListDailyPricesBySymbolFilter
-		wantLen int
-		wantErr bool
+		name       string
+		filter     models.ListDailyPricesBySymbolFilter
+		wantLen    int
+		wantErr    bool
+		checkOrder func(t *testing.T, prices []*models.StockBrandDailyPrice)
 	}{
 		{
 			name: "全件取得_正常系",
@@ -244,6 +245,50 @@ func TestStockBrandsDailyPriceRepositoryImpl_ListDailyPricesBySymbol(t *testing.
 			wantLen: 1,
 			wantErr: false,
 		},
+		{
+			name: "ソート順_昇順（デフォルト）",
+			filter: models.ListDailyPricesBySymbolFilter{
+				TickerSymbol: "1001",
+			},
+			wantLen: 2,
+			wantErr: false,
+			checkOrder: func(t *testing.T, prices []*models.StockBrandDailyPrice) {
+				require.Len(t, prices, 2)
+				// 昇順であることを確認（yesterday < today）
+				assert.True(t, prices[0].Date.Before(prices[1].Date) || prices[0].Date.Equal(prices[1].Date),
+					"日付が昇順になっていません: %v >= %v", prices[0].Date, prices[1].Date)
+			},
+		},
+		{
+			name: "ソート順_降順指定",
+			filter: models.ListDailyPricesBySymbolFilter{
+				TickerSymbol: "1001",
+				DateOrder:    func() *models.SortOrder { o := models.SortOrderDesc; return &o }(),
+			},
+			wantLen: 2,
+			wantErr: false,
+			checkOrder: func(t *testing.T, prices []*models.StockBrandDailyPrice) {
+				require.Len(t, prices, 2)
+				// 降順であることを確認（today > yesterday）
+				assert.True(t, prices[0].Date.After(prices[1].Date) || prices[0].Date.Equal(prices[1].Date),
+					"日付が降順になっていません: %v <= %v", prices[0].Date, prices[1].Date)
+			},
+		},
+		{
+			name: "ソート順_昇順明示指定",
+			filter: models.ListDailyPricesBySymbolFilter{
+				TickerSymbol: "1001",
+				DateOrder:    func() *models.SortOrder { o := models.SortOrderAsc; return &o }(),
+			},
+			wantLen: 2,
+			wantErr: false,
+			checkOrder: func(t *testing.T, prices []*models.StockBrandDailyPrice) {
+				require.Len(t, prices, 2)
+				// 昇順であることを確認（yesterday < today）
+				assert.True(t, prices[0].Date.Before(prices[1].Date) || prices[0].Date.Equal(prices[1].Date),
+					"日付が昇順になっていません: %v >= %v", prices[0].Date, prices[1].Date)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -254,6 +299,9 @@ func TestStockBrandsDailyPriceRepositoryImpl_ListDailyPricesBySymbol(t *testing.
 			} else {
 				assert.NoError(t, err)
 				assert.Len(t, got, tt.wantLen)
+				if tt.checkOrder != nil {
+					tt.checkOrder(t, got)
+				}
 			}
 		})
 	}

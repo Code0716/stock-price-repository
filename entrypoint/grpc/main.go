@@ -32,6 +32,11 @@ func main() {
 
 	stockServiceServer := components.Server
 	logger := components.Logger
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			log.Printf("Failed to sync logger: %v", err)
+		}
+	}()
 
 	// Create gRPC server
 	grpcServer := grpc.NewServer()
@@ -48,7 +53,7 @@ func main() {
 	port := getPort()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to listen: %v", err))
+		logger.Error(fmt.Sprintf("Failed to listen on port %s: %v", port, err))
 		return
 	}
 

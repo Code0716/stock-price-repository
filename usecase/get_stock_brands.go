@@ -51,8 +51,9 @@ func (si *stockBrandInteractorImpl) GetStockBrands(ctx context.Context, symbolFr
 	// limitが指定されている場合、次ページの有無を判定
 	if limit > 0 && len(brands) > limit {
 		// limit+1件取得しているので、limit件を超えていれば次ページあり
-		lastBrand := brands[limit-1]
-		result.NextCursor = &lastBrand.TickerSymbol
+		// 次のページの最初の銘柄（limit番目）のシンボルをカーソルに設定
+		nextBrand := brands[limit]
+		result.NextCursor = &nextBrand.TickerSymbol
 		result.Brands = brands[:limit]
 	}
 

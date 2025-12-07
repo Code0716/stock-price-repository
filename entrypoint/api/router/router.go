@@ -8,7 +8,11 @@ import (
 
 func NewRouter(stockPriceHandler *handler.StockPriceHandler, stockBrandHandler *handler.StockBrandHandler) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/daily-prices", stockPriceHandler.GetDailyPrices)
-	mux.HandleFunc("/stock-brands", stockBrandHandler.GetStockBrands)
+	if stockPriceHandler != nil {
+		mux.HandleFunc("/daily-prices", stockPriceHandler.GetDailyPrices)
+	}
+	if stockBrandHandler != nil {
+		mux.HandleFunc("/stock-brands", stockBrandHandler.GetStockBrands)
+	}
 	return mux
 }

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/Code0716/stock-price-repository/driver"
@@ -11,8 +10,6 @@ import (
 	"github.com/Code0716/stock-price-repository/util"
 	"go.uber.org/zap"
 )
-
-var symbolRegex = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 
 // getDailyPricesParams GetDailyPricesのリクエストパラメータ
 type getDailyPricesParams struct {
@@ -50,7 +47,7 @@ func (h *StockPriceHandler) validateGetDailyPricesParams(r *http.Request) (*getD
 		return nil, &validationError{message: "シンボルが長すぎます"}
 	}
 
-	if !symbolRegex.MatchString(params.symbol) {
+	if !alphanumericRequiredRegex.MatchString(params.symbol) {
 		return nil, &validationError{message: "シンボルは英数字である必要があります"}
 	}
 

@@ -139,14 +139,14 @@ type IHighVolumeStockBrandDo interface {
 	Find() ([]*gen_model.HighVolumeStockBrand, error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*gen_model.HighVolumeStockBrand, err error)
 	FindInBatches(result *[]*gen_model.HighVolumeStockBrand, batchSize int, fc func(tx gen.Dao, batch int) error) error
-	Pluck(column field.Expr, dest any) error
+	Pluck(column field.Expr, dest interface{}) error
 	Delete(...*gen_model.HighVolumeStockBrand) (info gen.ResultInfo, err error)
-	Update(column field.Expr, value any) (info gen.ResultInfo, err error)
+	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	Updates(value any) (info gen.ResultInfo, err error)
-	UpdateColumn(column field.Expr, value any) (info gen.ResultInfo, err error)
+	Updates(value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	UpdateColumns(value any) (info gen.ResultInfo, err error)
+	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
 	Attrs(attrs ...field.AssignExpr) IHighVolumeStockBrandDo
 	Assign(attrs ...field.AssignExpr) IHighVolumeStockBrandDo
@@ -155,11 +155,11 @@ type IHighVolumeStockBrandDo interface {
 	FirstOrInit() (*gen_model.HighVolumeStockBrand, error)
 	FirstOrCreate() (*gen_model.HighVolumeStockBrand, error)
 	FindByPage(offset int, limit int) (result []*gen_model.HighVolumeStockBrand, count int64, err error)
-	ScanByPage(result any, offset int, limit int) (count int64, err error)
+	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
-	Scan(result any) (err error)
-	Returning(value any, columns ...string) IHighVolumeStockBrandDo
+	Scan(result interface{}) (err error)
+	Returning(value interface{}, columns ...string) IHighVolumeStockBrandDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
@@ -188,7 +188,7 @@ func (h highVolumeStockBrandDo) Clauses(conds ...clause.Expression) IHighVolumeS
 	return h.withDO(h.DO.Clauses(conds...))
 }
 
-func (h highVolumeStockBrandDo) Returning(value any, columns ...string) IHighVolumeStockBrandDo {
+func (h highVolumeStockBrandDo) Returning(value interface{}, columns ...string) IHighVolumeStockBrandDo {
 	return h.withDO(h.DO.Returning(value, columns...))
 }
 
@@ -371,7 +371,7 @@ func (h highVolumeStockBrandDo) FindByPage(offset int, limit int) (result []*gen
 	return
 }
 
-func (h highVolumeStockBrandDo) ScanByPage(result any, offset int, limit int) (count int64, err error) {
+func (h highVolumeStockBrandDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
 	count, err = h.Count()
 	if err != nil {
 		return
@@ -381,7 +381,7 @@ func (h highVolumeStockBrandDo) ScanByPage(result any, offset int, limit int) (c
 	return
 }
 
-func (h highVolumeStockBrandDo) Scan(result any) (err error) {
+func (h highVolumeStockBrandDo) Scan(result interface{}) (err error) {
 	return h.DO.Scan(result)
 }
 

@@ -92,6 +92,66 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 							Name:         "テスト銘柄1",
 							MarketCode:   "111",
 						},
+						{
+							ID:           "2",
+							TickerSymbol: "1235",
+							Name:         "テスト銘柄2",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "3",
+							TickerSymbol: "1236",
+							Name:         "テスト銘柄3",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "4",
+							TickerSymbol: "1237",
+							Name:         "テスト銘柄4",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "5",
+							TickerSymbol: "1238",
+							Name:         "テスト銘柄5",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "6",
+							TickerSymbol: "1239",
+							Name:         "テスト銘柄6",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "7",
+							TickerSymbol: "1240",
+							Name:         "テスト銘柄7",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "8",
+							TickerSymbol: "1241",
+							Name:         "テスト銘柄8",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "9",
+							TickerSymbol: "1242",
+							Name:         "テスト銘柄9",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "10",
+							TickerSymbol: "1243",
+							Name:         "テスト銘柄10",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "11",
+							TickerSymbol: "1244",
+							Name:         "テスト銘柄11",
+							MarketCode:   "111",
+						},
 					}, nil)
 					return m
 				},
@@ -102,18 +162,75 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 				limit:           10,
 				onlyMainMarkets: false,
 			},
-			want: &models.PaginatedStockBrands{
-				Brands: []*models.StockBrand{
-					{
-						ID:           "1",
-						TickerSymbol: "1234",
-						Name:         "テスト銘柄1",
-						MarketCode:   "111",
+			want: func() *models.PaginatedStockBrands {
+				nextCursor := "1244"
+				return &models.PaginatedStockBrands{
+					Brands: []*models.StockBrand{
+						{
+							ID:           "1",
+							TickerSymbol: "1234",
+							Name:         "テスト銘柄1",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "2",
+							TickerSymbol: "1235",
+							Name:         "テスト銘柄2",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "3",
+							TickerSymbol: "1236",
+							Name:         "テスト銘柄3",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "4",
+							TickerSymbol: "1237",
+							Name:         "テスト銘柄4",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "5",
+							TickerSymbol: "1238",
+							Name:         "テスト銘柄5",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "6",
+							TickerSymbol: "1239",
+							Name:         "テスト銘柄6",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "7",
+							TickerSymbol: "1240",
+							Name:         "テスト銘柄7",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "8",
+							TickerSymbol: "1241",
+							Name:         "テスト銘柄8",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "9",
+							TickerSymbol: "1242",
+							Name:         "テスト銘柄9",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "10",
+							TickerSymbol: "1243",
+							Name:         "テスト銘柄10",
+							MarketCode:   "111",
+						},
 					},
-				},
-				NextCursor: nil,
-				Limit:      10,
-			},
+					NextCursor: &nextCursor,
+					Limit:      10,
+				}
+			}(),
 			wantErr: false,
 		},
 		{
@@ -177,6 +294,66 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 							Name:         "テスト銘柄1",
 							MarketCode:   "111",
 						},
+						{
+							ID:           "2",
+							TickerSymbol: "1235",
+							Name:         "テスト銘柄2",
+							MarketCode:   "112",
+						},
+						{
+							ID:           "3",
+							TickerSymbol: "1236",
+							Name:         "テスト銘柄3",
+							MarketCode:   "113",
+						},
+						{
+							ID:           "4",
+							TickerSymbol: "1237",
+							Name:         "テスト銘柄4",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "5",
+							TickerSymbol: "1238",
+							Name:         "テスト銘柄5",
+							MarketCode:   "112",
+						},
+						{
+							ID:           "6",
+							TickerSymbol: "1239",
+							Name:         "テスト銘柄6",
+							MarketCode:   "113",
+						},
+						{
+							ID:           "7",
+							TickerSymbol: "1240",
+							Name:         "テスト銘柄7",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "8",
+							TickerSymbol: "1241",
+							Name:         "テスト銘柄8",
+							MarketCode:   "112",
+						},
+						{
+							ID:           "9",
+							TickerSymbol: "1242",
+							Name:         "テスト銘柄9",
+							MarketCode:   "113",
+						},
+						{
+							ID:           "10",
+							TickerSymbol: "1243",
+							Name:         "テスト銘柄10",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "11",
+							TickerSymbol: "1244",
+							Name:         "テスト銘柄11",
+							MarketCode:   "112",
+						},
 					}, nil)
 					return m
 				},
@@ -187,18 +364,75 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 				limit:           10,
 				onlyMainMarkets: true,
 			},
-			want: &models.PaginatedStockBrands{
-				Brands: []*models.StockBrand{
-					{
-						ID:           "1",
-						TickerSymbol: "1234",
-						Name:         "テスト銘柄1",
-						MarketCode:   "111",
+			want: func() *models.PaginatedStockBrands {
+				nextCursor := "1244"
+				return &models.PaginatedStockBrands{
+					Brands: []*models.StockBrand{
+						{
+							ID:           "1",
+							TickerSymbol: "1234",
+							Name:         "テスト銘柄1",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "2",
+							TickerSymbol: "1235",
+							Name:         "テスト銘柄2",
+							MarketCode:   "112",
+						},
+						{
+							ID:           "3",
+							TickerSymbol: "1236",
+							Name:         "テスト銘柄3",
+							MarketCode:   "113",
+						},
+						{
+							ID:           "4",
+							TickerSymbol: "1237",
+							Name:         "テスト銘柄4",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "5",
+							TickerSymbol: "1238",
+							Name:         "テスト銘柄5",
+							MarketCode:   "112",
+						},
+						{
+							ID:           "6",
+							TickerSymbol: "1239",
+							Name:         "テスト銘柄6",
+							MarketCode:   "113",
+						},
+						{
+							ID:           "7",
+							TickerSymbol: "1240",
+							Name:         "テスト銘柄7",
+							MarketCode:   "111",
+						},
+						{
+							ID:           "8",
+							TickerSymbol: "1241",
+							Name:         "テスト銘柄8",
+							MarketCode:   "112",
+						},
+						{
+							ID:           "9",
+							TickerSymbol: "1242",
+							Name:         "テスト銘柄9",
+							MarketCode:   "113",
+						},
+						{
+							ID:           "10",
+							TickerSymbol: "1243",
+							Name:         "テスト銘柄10",
+							MarketCode:   "111",
+						},
 					},
-				},
-				NextCursor: nil,
-				Limit:      10,
-			},
+					NextCursor: &nextCursor,
+					Limit:      10,
+				}
+			}(),
 			wantErr: false,
 		},
 		{
@@ -234,6 +468,43 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 				symbolFrom:      "1000",
 				limit:           10,
 				onlyMainMarkets: false,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "異常系: FindAllMainMarketsがエラーを返す",
+			fields: fields{
+				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
+					m := mock_repositories.NewMockStockBrandRepository(ctrl)
+					m.EXPECT().FindAllMainMarkets(gomock.Any()).Return(nil, errors.New("db error"))
+					return m
+				},
+			},
+			args: args{
+				ctx:             context.Background(),
+				symbolFrom:      "",
+				limit:           0,
+				onlyMainMarkets: true,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "異常系: FindFromSymbolMainMarketsがエラーを返す",
+			fields: fields{
+				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
+					m := mock_repositories.NewMockStockBrandRepository(ctrl)
+					// limit+1件取得するため11件を期待
+					m.EXPECT().FindFromSymbolMainMarkets(gomock.Any(), gomock.Eq("1000"), gomock.Eq(11)).Return(nil, errors.New("db error"))
+					return m
+				},
+			},
+			args: args{
+				ctx:             context.Background(),
+				symbolFrom:      "1000",
+				limit:           10,
+				onlyMainMarkets: true,
 			},
 			want:    nil,
 			wantErr: true,

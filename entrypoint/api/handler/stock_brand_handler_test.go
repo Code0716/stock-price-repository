@@ -82,6 +82,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 			name: "正常系: ページネーション付き取得",
 			fields: fields{
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
+					nextCursor := "5678"
 					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
 					m.EXPECT().
 						GetStockBrands(gomock.Any(), "1000", 10, false).
@@ -94,7 +95,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 									MarketCode:   "111",
 								},
 							},
-							NextCursor: nil,
+							NextCursor: &nextCursor,
 							Limit:      10,
 						}, nil)
 					return m
@@ -111,20 +112,23 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				req: httptest.NewRequest(http.MethodGet, "/stock-brands?symbol_from=1000&limit=10", nil),
 			},
 			wantStatusCode: http.StatusOK,
-			wantBody: &GetStockBrandsResponse{
-				StockBrands: []*models.StockBrand{
-					{
-						ID:           "1",
-						TickerSymbol: "1234",
-						Name:         "テスト銘柄1",
-						MarketCode:   "111",
+			wantBody: func() *GetStockBrandsResponse {
+				nextCursor := "5678"
+				return &GetStockBrandsResponse{
+					StockBrands: []*models.StockBrand{
+						{
+							ID:           "1",
+							TickerSymbol: "1234",
+							Name:         "テスト銘柄1",
+							MarketCode:   "111",
+						},
 					},
-				},
-				Pagination: &PaginationInfo{
-					Limit:      10,
-					NextCursor: nil,
-				},
-			},
+					Pagination: &PaginationInfo{
+						Limit:      10,
+						NextCursor: &nextCursor,
+					},
+				}
+			}(),
 		},
 		{
 			name: "正常系: 主要市場のみフィルタリング",
@@ -304,6 +308,54 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				req: httptest.NewRequest(http.MethodGet, "/stock-brands", nil),
+			},
+			wantStatusCode: http.StatusInternalServerError,
+			wantBody:       "内部サーバーエラー\n",
+		},
+		{
+			name: "異常系: FindAllMainMarketsがエラーを返す",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
+					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
+					m.EXPECT().
+						GetStockBrands(gomock.Any(), "", 0, true).
+						Return(nil, errors.New("db error"))
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("true")
+					return m
+				},
+			},
+			args: args{
+				req: httptest.NewRequest(http.MethodGet, "/stock-brands?only_main_markets=true", nil),
+			},
+			wantStatusCode: http.StatusInternalServerError,
+			wantBody:       "内部サーバーエラー\n",
+		},
+		{
+			name: "異常系: FindFromSymbolMainMarketsがエラーを返す",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
+					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
+					m.EXPECT().
+						GetStockBrands(gomock.Any(), "1301", 0, true).
+						Return(nil, errors.New("db error"))
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("1301")
+					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("true")
+					return m
+				},
+			},
+			args: args{
+				req: httptest.NewRequest(http.MethodGet, "/stock-brands?symbol_from=1301&only_main_markets=true", nil),
 			},
 			wantStatusCode: http.StatusInternalServerError,
 			wantBody:       "内部サーバーエラー\n",

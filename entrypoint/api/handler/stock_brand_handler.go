@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"regexp"
 	"strconv"
 
 	"github.com/Code0716/stock-price-repository/driver"
@@ -10,8 +9,6 @@ import (
 	"github.com/Code0716/stock-price-repository/usecase"
 	"go.uber.org/zap"
 )
-
-var symbolFromRegex = regexp.MustCompile(`^[a-zA-Z0-9]*$`)
 
 // validationError バリデーションエラー
 type validationError struct {
@@ -65,7 +62,7 @@ func (h *StockBrandHandler) validateGetStockBrandsParams(r *http.Request) (*getS
 		if len(params.symbolFrom) > 10 {
 			return nil, &validationError{message: "symbol_fromが長すぎます"}
 		}
-		if !symbolFromRegex.MatchString(params.symbolFrom) {
+		if !alphanumericOptionalRegex.MatchString(params.symbolFrom) {
 			return nil, &validationError{message: "symbol_fromは英数字である必要があります"}
 		}
 	}

@@ -367,6 +367,67 @@ func TestE2E_GetStockBrands(t *testing.T) {
 				assert.Contains(t, string(body), "only_main_marketsはtrue/falseである必要があります")
 			},
 		},
+		{
+			name: "正常系: ページネーション - 次ページあり（NextCursor設定）",
+			setup: func(t *testing.T) {
+				brands := []*models.StockBrand{
+					{
+						ID:           "1",
+						TickerSymbol: "1301",
+						Name:         "極洋",
+						MarketCode:   "111",
+						MarketName:   "プライム",
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+					{
+						ID:           "2",
+						TickerSymbol: "1332",
+						Name:         "日本水産",
+						MarketCode:   "111",
+						MarketName:   "プライム",
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+					{
+						ID:           "3",
+						TickerSymbol: "1333",
+						Name:         "マルハニチロ",
+						MarketCode:   "111",
+						MarketName:   "プライム",
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+					{
+						ID:           "4",
+						TickerSymbol: "1334",
+						Name:         "テスト銘柄",
+						MarketCode:   "111",
+						MarketName:   "プライム",
+						CreatedAt:    time.Now(),
+						UpdatedAt:    time.Now(),
+					},
+				}
+				err := stockBrandRepo.UpsertStockBrands(context.Background(), brands)
+				require.NoError(t, err)
+			},
+			query:      "?limit=2",
+			wantStatus: http.StatusOK,
+			check: func(t *testing.T, body []byte) {
+				var res handler.GetStockBrandsResponse
+				err := json.Unmarshal(body, &res)
+				assert.NoError(t, err)
+				require.Len(t, res.StockBrands, 2)
+				assert.Equal(t, "1301", res.StockBrands[0].TickerSymbol)
+				assert.Equal(t, "1332", res.StockBrands[1].TickerSymbol)
+				// ページネーション情報の確認
+				require.NotNil(t, res.Pagination)
+				assert.Equal(t, 2, res.Pagination.Limit)
+				// 次のページがあるのでnext_cursorが設定される（limit番目の銘柄のシンボル）
+				require.NotNil(t, res.Pagination.NextCursor)
+				assert.Equal(t, "1333", *res.Pagination.NextCursor)
+			},
+		},
 	}
 
 	for _, tt := range tests {

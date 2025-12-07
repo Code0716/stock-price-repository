@@ -60,14 +60,14 @@ func TestStockServiceServer_GetHighVolumeStockBrands(t *testing.T) {
 					{
 						StockBrandId:  "uuid-1",
 						TickerSymbol:  "1001",
-					CompanyName:   "Test Brand 1",
+						CompanyName:   "Test Brand 1",
 						VolumeAverage: 1000000,
 						CreatedAt:     now.Format("2006-01-02T15:04:05Z07:00"),
 					},
 					{
 						StockBrandId:  "uuid-2",
 						TickerSymbol:  "1002",
-					CompanyName:   "Test Brand 2",
+						CompanyName:   "Test Brand 2",
 						VolumeAverage: 2000000,
 						CreatedAt:     now.Format("2006-01-02T15:04:05Z07:00"),
 					},
@@ -96,6 +96,146 @@ func TestStockServiceServer_GetHighVolumeStockBrands(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "正常系: limit指定でページネーション情報が返される（次ページあり）",
+			fields: fields{
+				getHighVolumeStockBrandsUseCase: func(ctrl *gomock.Controller) *mock_usecase.MockGetHighVolumeStockBrandsUseCase {
+					mock := mock_usecase.NewMockGetHighVolumeStockBrandsUseCase(ctrl)
+					nextCursor := "1002"
+					mock.EXPECT().
+						ExecuteWithPagination(gomock.Any(), gomock.Eq(""), gomock.Eq(int(2))).
+						Return(&models.PaginatedHighVolumeStockBrands{
+							Brands: []*models.HighVolumeStockBrand{
+								models.NewHighVolumeStockBrand("uuid-1", "1001", "Test Brand 1", 1000000, now),
+								models.NewHighVolumeStockBrand("uuid-2", "1002", "Test Brand 2", 2000000, now),
+							},
+							NextCursor: &nextCursor,
+							Limit:      2,
+						}, nil)
+					return mock
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.GetHighVolumeStockBrandsRequest{
+					Limit: 2,
+				},
+			},
+			want: &pb.GetHighVolumeStockBrandsResponse{
+				Brands: []*pb.HighVolumeStockBrand{
+					{
+						StockBrandId:  "uuid-1",
+						TickerSymbol:  "1001",
+						CompanyName:   "Test Brand 1",
+						VolumeAverage: 1000000,
+						CreatedAt:     now.Format("2006-01-02T15:04:05Z07:00"),
+					},
+					{
+						StockBrandId:  "uuid-2",
+						TickerSymbol:  "1002",
+						CompanyName:   "Test Brand 2",
+						VolumeAverage: 2000000,
+						CreatedAt:     now.Format("2006-01-02T15:04:05Z07:00"),
+					},
+				},
+				Pagination: &pb.PaginationInfo{
+					NextCursor: "1002",
+					Limit:      2,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "正常系: symbol_from指定でカーソルベースページネーションが動作",
+			fields: fields{
+				getHighVolumeStockBrandsUseCase: func(ctrl *gomock.Controller) *mock_usecase.MockGetHighVolumeStockBrandsUseCase {
+					mock := mock_usecase.NewMockGetHighVolumeStockBrandsUseCase(ctrl)
+					nextCursor := "1004"
+					mock.EXPECT().
+						ExecuteWithPagination(gomock.Any(), gomock.Eq("1002"), gomock.Eq(int(2))).
+						Return(&models.PaginatedHighVolumeStockBrands{
+							Brands: []*models.HighVolumeStockBrand{
+								models.NewHighVolumeStockBrand("uuid-3", "1003", "Test Brand 3", 3000000, now),
+								models.NewHighVolumeStockBrand("uuid-4", "1004", "Test Brand 4", 4000000, now),
+							},
+							NextCursor: &nextCursor,
+							Limit:      2,
+						}, nil)
+					return mock
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.GetHighVolumeStockBrandsRequest{
+					SymbolFrom: "1002",
+					Limit:      2,
+				},
+			},
+			want: &pb.GetHighVolumeStockBrandsResponse{
+				Brands: []*pb.HighVolumeStockBrand{
+					{
+						StockBrandId:  "uuid-3",
+						TickerSymbol:  "1003",
+						CompanyName:   "Test Brand 3",
+						VolumeAverage: 3000000,
+						CreatedAt:     now.Format("2006-01-02T15:04:05Z07:00"),
+					},
+					{
+						StockBrandId:  "uuid-4",
+						TickerSymbol:  "1004",
+						CompanyName:   "Test Brand 4",
+						VolumeAverage: 4000000,
+						CreatedAt:     now.Format("2006-01-02T15:04:05Z07:00"),
+					},
+				},
+				Pagination: &pb.PaginationInfo{
+					NextCursor: "1004",
+					Limit:      2,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "正常系: 最後のページでNextCursorが空文字列",
+			fields: fields{
+				getHighVolumeStockBrandsUseCase: func(ctrl *gomock.Controller) *mock_usecase.MockGetHighVolumeStockBrandsUseCase {
+					mock := mock_usecase.NewMockGetHighVolumeStockBrandsUseCase(ctrl)
+					mock.EXPECT().
+						ExecuteWithPagination(gomock.Any(), gomock.Eq("1002"), gomock.Eq(int(2))).
+						Return(&models.PaginatedHighVolumeStockBrands{
+							Brands: []*models.HighVolumeStockBrand{
+								models.NewHighVolumeStockBrand("uuid-3", "1003", "Test Brand 3", 3000000, now),
+							},
+							NextCursor: nil, // 最後のページなのでnil
+							Limit:      2,
+						}, nil)
+					return mock
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.GetHighVolumeStockBrandsRequest{
+					SymbolFrom: "1002",
+					Limit:      2,
+				},
+			},
+			want: &pb.GetHighVolumeStockBrandsResponse{
+				Brands: []*pb.HighVolumeStockBrand{
+					{
+						StockBrandId:  "uuid-3",
+						TickerSymbol:  "1003",
+						CompanyName:   "Test Brand 3",
+						VolumeAverage: 3000000,
+						CreatedAt:     now.Format("2006-01-02T15:04:05Z07:00"),
+					},
+				},
+				Pagination: &pb.PaginationInfo{
+					NextCursor: "", // 空文字列
+					Limit:      2,
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "異常系: ユースケースエラー",
 			fields: fields{
 				getHighVolumeStockBrandsUseCase: func(ctrl *gomock.Controller) *mock_usecase.MockGetHighVolumeStockBrandsUseCase {
@@ -109,6 +249,27 @@ func TestStockServiceServer_GetHighVolumeStockBrands(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				req: &pb.GetHighVolumeStockBrandsRequest{},
+			},
+			want:    nil,
+			wantErr: true,
+			errCode: codes.Internal,
+		},
+		{
+			name: "異常系: limitが負の値の場合はエラー",
+			fields: fields{
+				getHighVolumeStockBrandsUseCase: func(ctrl *gomock.Controller) *mock_usecase.MockGetHighVolumeStockBrandsUseCase {
+					mock := mock_usecase.NewMockGetHighVolumeStockBrandsUseCase(ctrl)
+					mock.EXPECT().
+						ExecuteWithPagination(gomock.Any(), gomock.Eq(""), gomock.Eq(int(-1))).
+						Return(nil, errors.New("limit must be non-negative"))
+					return mock
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: &pb.GetHighVolumeStockBrandsRequest{
+					Limit: -1,
+				},
 			},
 			want:    nil,
 			wantErr: true,
@@ -160,6 +321,24 @@ func TestStockServiceServer_GetHighVolumeStockBrands(t *testing.T) {
 					brand.VolumeAverage != tt.want.Brands[i].VolumeAverage ||
 					brand.CreatedAt != tt.want.Brands[i].CreatedAt {
 					t.Errorf("GetHighVolumeStockBrands() brand[%d] = %v, want %v", i, brand, tt.want.Brands[i])
+				}
+			}
+
+			// Paginationフィールドの検証
+			if tt.want.Pagination == nil {
+				if got.Pagination != nil {
+					t.Errorf("GetHighVolumeStockBrands() pagination = %v, want nil", got.Pagination)
+				}
+			} else {
+				if got.Pagination == nil {
+					t.Errorf("GetHighVolumeStockBrands() pagination = nil, want %v", tt.want.Pagination)
+					return
+				}
+				if got.Pagination.NextCursor != tt.want.Pagination.NextCursor {
+					t.Errorf("GetHighVolumeStockBrands() pagination.NextCursor = %v, want %v", got.Pagination.NextCursor, tt.want.Pagination.NextCursor)
+				}
+				if got.Pagination.Limit != tt.want.Pagination.Limit {
+					t.Errorf("GetHighVolumeStockBrands() pagination.Limit = %v, want %v", got.Pagination.Limit, tt.want.Pagination.Limit)
 				}
 			}
 		})

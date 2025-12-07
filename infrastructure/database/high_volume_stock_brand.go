@@ -41,22 +41,27 @@ func (r *HighVolumeStockBrandRepositoryImpl) FindWithPagination(
 	symbolFrom string,
 	limit int,
 ) ([]*models.HighVolumeStockBrand, error) {
+	// Validate limit parameter
+	if limit < 0 {
+		return nil, errors.New("limit must be non-negative")
+	}
+
 	tx, ok := GetTxQuery(ctx)
 	if !ok {
 		tx = r.query
 	}
 
-	// Get the underlying *gorm.DB from query
-	db := tx.HighVolumeStockBrand.UnderlyingDB()
+	// Build GORM Gen query
+	hvb := tx.HighVolumeStockBrand.As("hvb")
+	sb := tx.StockBrand.As("sb")
 
-	// Build JOIN query using raw GORM
-	query := db.WithContext(ctx).Table("high_volume_stock_brands hvb").
-		Select("hvb.stock_brand_id, hvb.ticker_symbol, hvb.volume_average, hvb.created_at, sb.name").
-		Joins("LEFT JOIN stock_brand sb ON hvb.stock_brand_id = sb.id")
+	query := hvb.WithContext(ctx).
+		Select(hvb.StockBrandID, hvb.TickerSymbol, hvb.VolumeAverage, hvb.CreatedAt, sb.Name).
+		LeftJoin(sb, hvb.StockBrandID.EqCol(sb.ID))
 
 	// Apply cursor condition
 	if symbolFrom != "" {
-		query = query.Where("hvb.ticker_symbol > ?", symbolFrom)
+		query = query.Where(hvb.TickerSymbol.Gt(symbolFrom))
 	}
 
 	// Apply limit
@@ -66,11 +71,10 @@ func (r *HighVolumeStockBrandRepositoryImpl) FindWithPagination(
 
 	// Order and execute
 	var resultRows []HighVolumeStockBrandWithName
-	if err := query.Order("hvb.ticker_symbol").Find(&resultRows).Error; err != nil {
+	if err := query.Order(hvb.TickerSymbol).Scan(&resultRows); err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.Wrap(err, "HighVolumeStockBrandRepositoryImpl.FindWithPagination error")
 		}
-		return []*models.HighVolumeStockBrand{}, nil
 	}
 
 	if len(resultRows) == 0 {

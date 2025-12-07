@@ -227,6 +227,90 @@ func TestHighVolumeStockBrandRepositoryImpl_FindWithPagination(t *testing.T) {
 			wantCount:  0,
 			wantErr:    false,
 		},
+		{
+			name: "正常系: limit=2で3件以上のデータが存在する場合、3件取得できる（次ページ判定用）",
+			setup: func(t *testing.T) {
+				stockBrand1 := &genModel.StockBrand{
+					ID:           uuid.New().String(),
+					TickerSymbol: "4001",
+					Name:         "Brand J",
+					MarketCode:   "111",
+					MarketName:   "Prime",
+					CreatedAt:    now,
+					UpdatedAt:    now,
+				}
+				stockBrand2 := &genModel.StockBrand{
+					ID:           uuid.New().String(),
+					TickerSymbol: "4002",
+					Name:         "Brand K",
+					MarketCode:   "111",
+					MarketName:   "Prime",
+					CreatedAt:    now,
+					UpdatedAt:    now,
+				}
+				stockBrand3 := &genModel.StockBrand{
+					ID:           uuid.New().String(),
+					TickerSymbol: "4003",
+					Name:         "Brand L",
+					MarketCode:   "111",
+					MarketName:   "Prime",
+					CreatedAt:    now,
+					UpdatedAt:    now,
+				}
+				stockBrand4 := &genModel.StockBrand{
+					ID:           uuid.New().String(),
+					TickerSymbol: "4004",
+					Name:         "Brand M",
+					MarketCode:   "111",
+					MarketName:   "Prime",
+					CreatedAt:    now,
+					UpdatedAt:    now,
+				}
+				err := query.StockBrand.Create(stockBrand1, stockBrand2, stockBrand3, stockBrand4)
+				require.NoError(t, err)
+
+				hvStockBrand1 := &genModel.HighVolumeStockBrand{
+					StockBrandID:  stockBrand1.ID,
+					TickerSymbol:  stockBrand1.TickerSymbol,
+					VolumeAverage: 1000000,
+					CreatedAt:     now,
+				}
+				hvStockBrand2 := &genModel.HighVolumeStockBrand{
+					StockBrandID:  stockBrand2.ID,
+					TickerSymbol:  stockBrand2.TickerSymbol,
+					VolumeAverage: 2000000,
+					CreatedAt:     now,
+				}
+				hvStockBrand3 := &genModel.HighVolumeStockBrand{
+					StockBrandID:  stockBrand3.ID,
+					TickerSymbol:  stockBrand3.TickerSymbol,
+					VolumeAverage: 3000000,
+					CreatedAt:     now,
+				}
+				hvStockBrand4 := &genModel.HighVolumeStockBrand{
+					StockBrandID:  stockBrand4.ID,
+					TickerSymbol:  stockBrand4.TickerSymbol,
+					VolumeAverage: 4000000,
+					CreatedAt:     now,
+				}
+				err = query.HighVolumeStockBrand.Create(hvStockBrand1, hvStockBrand2, hvStockBrand3, hvStockBrand4)
+				require.NoError(t, err)
+			},
+			symbolFrom: "",
+			limit:      3, // limit+1=4件取得する（実際は4件存在）
+			wantCount:  3,
+			wantFirst:  "4001",
+			wantLast:   "4003",
+			wantErr:    false,
+		},
+		{
+			name:       "異常系: limitが負の値の場合はエラー",
+			setup:      func(t *testing.T) {},
+			symbolFrom: "",
+			limit:      -1,
+			wantCount:  0,
+			wantErr:    true,
+		},
 	}
 
 	for _, tt := range tests {

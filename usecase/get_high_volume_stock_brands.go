@@ -42,6 +42,11 @@ func (u *getHighVolumeStockBrandsInteractor) ExecuteWithPagination(
 	symbolFrom string,
 	limit int,
 ) (*models.PaginatedHighVolumeStockBrands, error) {
+	// Validate limit parameter
+	if limit < 0 {
+		return nil, errors.New("limit must be non-negative")
+	}
+
 	// Fetch limit+1 to determine if there are more pages
 	fetchLimit := limit
 	if limit > 0 {
@@ -60,8 +65,9 @@ func (u *getHighVolumeStockBrandsInteractor) ExecuteWithPagination(
 
 	// Set next cursor if there are more results
 	if limit > 0 && len(brands) > limit {
-		nextBrand := brands[limit]
-		result.NextCursor = &nextBrand.TickerSymbol
+		// NextCursorは現在のページの最後の要素のTickerSymbol
+		lastBrand := brands[limit-1]
+		result.NextCursor = &lastBrand.TickerSymbol
 		result.Brands = brands[:limit] // Trim to requested limit
 	}
 

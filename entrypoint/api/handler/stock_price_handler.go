@@ -1,9 +1,8 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
-	"regexp"
+	"time"
 
 	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/models"
@@ -12,7 +11,13 @@ import (
 	"go.uber.org/zap"
 )
 
-var symbolRegex = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+// getDailyPricesParams GetDailyPricesのリクエストパラメータ
+type getDailyPricesParams struct {
+	symbol    string
+	from      *time.Time
+	to        *time.Time
+	sortOrder *models.SortOrder
+}
 
 type StockPriceHandler struct {
 	usecase    usecase.StockBrandsDailyPriceInteractor
@@ -28,57 +33,70 @@ func NewStockPriceHandler(u usecase.StockBrandsDailyPriceInteractor, h driver.HT
 	}
 }
 
-func (h *StockPriceHandler) GetDailyPrices(w http.ResponseWriter, r *http.Request) {
-	symbol := h.httpServer.GetQueryParam(r, "symbol")
-	if symbol == "" {
-		http.Error(w, "シンボルは必須です", http.StatusBadRequest)
-		return
+// validateGetDailyPricesParams GetDailyPricesのリクエストパラメータをバリデーションする
+func (h *StockPriceHandler) validateGetDailyPricesParams(r *http.Request) (*getDailyPricesParams, error) {
+	params := &getDailyPricesParams{}
+
+	// symbol パラメータの取得とバリデーション
+	params.symbol = h.httpServer.GetQueryParam(r, "symbol")
+	if params.symbol == "" {
+		return nil, &validationError{message: "シンボルは必須です"}
 	}
 
-	if len(symbol) > 10 {
-		http.Error(w, "シンボルが長すぎます", http.StatusBadRequest)
-		return
+	if len(params.symbol) > 10 {
+		return nil, &validationError{message: "シンボルが長すぎます"}
 	}
 
-	if !symbolRegex.MatchString(symbol) {
-		http.Error(w, "シンボルは英数字である必要があります", http.StatusBadRequest)
-		return
+	if !alphanumericRequiredRegex.MatchString(params.symbol) {
+		return nil, &validationError{message: "シンボルは英数字である必要があります"}
 	}
 
+	// from パラメータの取得とバリデーション
 	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
 	if err != nil {
-		http.Error(w, "fromの日付形式が不正です", http.StatusBadRequest)
-		return
+		return nil, &validationError{message: "fromの日付形式が不正です"}
 	}
+	params.from = from
 
+	// to パラメータの取得とバリデーション
 	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
 	if err != nil {
-		http.Error(w, "toの日付形式が不正です", http.StatusBadRequest)
-		return
+		return nil, &validationError{message: "toの日付形式が不正です"}
 	}
+	params.to = to
 
-	// ソート順の取得（デフォルトは昇順）
-	var sortOrder *models.SortOrder
+	// order パラメータの取得とバリデーション
 	orderParam := h.httpServer.GetQueryParam(r, "order")
 	if orderParam != "" {
 		if orderParam != string(models.SortOrderAsc) && orderParam != string(models.SortOrderDesc) {
-			http.Error(w, "orderはascまたはdescである必要があります", http.StatusBadRequest)
-			return
+			return nil, &validationError{message: "orderはascまたはdescである必要があります"}
 		}
 		order := models.SortOrder(orderParam)
-		sortOrder = &order
+		params.sortOrder = &order
 	}
 
-	prices, err := h.usecase.GetDailyStockPricesWithOrder(r.Context(), symbol, from, to, sortOrder)
+	return params, nil
+}
+
+func (h *StockPriceHandler) GetDailyPrices(w http.ResponseWriter, r *http.Request) {
+	// パラメータのバリデーション
+	params, err := h.validateGetDailyPricesParams(r)
+	if err != nil {
+		if verr, ok := err.(*validationError); ok {
+			http.Error(w, verr.message, http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		return
+	}
+
+	// ユースケース呼び出し
+	prices, err := h.usecase.GetDailyStockPricesWithOrder(r.Context(), params.symbol, params.from, params.to, params.sortOrder)
 	if err != nil {
 		h.logger.Error("failed to get daily stock prices", zap.Error(err))
 		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(prices); err != nil {
-		h.logger.Error("failed to encode response", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
-	}
+	respondJSON(w, h.logger, prices)
 }

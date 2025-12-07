@@ -131,14 +131,14 @@ type ISchemaMigrationDo interface {
 	Find() ([]*gen_model.SchemaMigration, error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*gen_model.SchemaMigration, err error)
 	FindInBatches(result *[]*gen_model.SchemaMigration, batchSize int, fc func(tx gen.Dao, batch int) error) error
-	Pluck(column field.Expr, dest any) error
+	Pluck(column field.Expr, dest interface{}) error
 	Delete(...*gen_model.SchemaMigration) (info gen.ResultInfo, err error)
-	Update(column field.Expr, value any) (info gen.ResultInfo, err error)
+	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	Updates(value any) (info gen.ResultInfo, err error)
-	UpdateColumn(column field.Expr, value any) (info gen.ResultInfo, err error)
+	Updates(value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	UpdateColumns(value any) (info gen.ResultInfo, err error)
+	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
 	Attrs(attrs ...field.AssignExpr) ISchemaMigrationDo
 	Assign(attrs ...field.AssignExpr) ISchemaMigrationDo
@@ -147,11 +147,11 @@ type ISchemaMigrationDo interface {
 	FirstOrInit() (*gen_model.SchemaMigration, error)
 	FirstOrCreate() (*gen_model.SchemaMigration, error)
 	FindByPage(offset int, limit int) (result []*gen_model.SchemaMigration, count int64, err error)
-	ScanByPage(result any, offset int, limit int) (count int64, err error)
+	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
-	Scan(result any) (err error)
-	Returning(value any, columns ...string) ISchemaMigrationDo
+	Scan(result interface{}) (err error)
+	Returning(value interface{}, columns ...string) ISchemaMigrationDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
@@ -180,7 +180,7 @@ func (s schemaMigrationDo) Clauses(conds ...clause.Expression) ISchemaMigrationD
 	return s.withDO(s.DO.Clauses(conds...))
 }
 
-func (s schemaMigrationDo) Returning(value any, columns ...string) ISchemaMigrationDo {
+func (s schemaMigrationDo) Returning(value interface{}, columns ...string) ISchemaMigrationDo {
 	return s.withDO(s.DO.Returning(value, columns...))
 }
 
@@ -363,7 +363,7 @@ func (s schemaMigrationDo) FindByPage(offset int, limit int) (result []*gen_mode
 	return
 }
 
-func (s schemaMigrationDo) ScanByPage(result any, offset int, limit int) (count int64, err error) {
+func (s schemaMigrationDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
 	count, err = s.Count()
 	if err != nil {
 		return
@@ -373,7 +373,7 @@ func (s schemaMigrationDo) ScanByPage(result any, offset int, limit int) (count 
 	return
 }
 
-func (s schemaMigrationDo) Scan(result any) (err error) {
+func (s schemaMigrationDo) Scan(result interface{}) (err error) {
 	return s.DO.Scan(result)
 }
 

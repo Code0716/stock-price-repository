@@ -171,14 +171,14 @@ type IStockBrandDo interface {
 	Find() ([]*gen_model.StockBrand, error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*gen_model.StockBrand, err error)
 	FindInBatches(result *[]*gen_model.StockBrand, batchSize int, fc func(tx gen.Dao, batch int) error) error
-	Pluck(column field.Expr, dest any) error
+	Pluck(column field.Expr, dest interface{}) error
 	Delete(...*gen_model.StockBrand) (info gen.ResultInfo, err error)
-	Update(column field.Expr, value any) (info gen.ResultInfo, err error)
+	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	Updates(value any) (info gen.ResultInfo, err error)
-	UpdateColumn(column field.Expr, value any) (info gen.ResultInfo, err error)
+	Updates(value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
-	UpdateColumns(value any) (info gen.ResultInfo, err error)
+	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
 	Attrs(attrs ...field.AssignExpr) IStockBrandDo
 	Assign(attrs ...field.AssignExpr) IStockBrandDo
@@ -187,11 +187,11 @@ type IStockBrandDo interface {
 	FirstOrInit() (*gen_model.StockBrand, error)
 	FirstOrCreate() (*gen_model.StockBrand, error)
 	FindByPage(offset int, limit int) (result []*gen_model.StockBrand, count int64, err error)
-	ScanByPage(result any, offset int, limit int) (count int64, err error)
+	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
-	Scan(result any) (err error)
-	Returning(value any, columns ...string) IStockBrandDo
+	Scan(result interface{}) (err error)
+	Returning(value interface{}, columns ...string) IStockBrandDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
@@ -220,7 +220,7 @@ func (s stockBrandDo) Clauses(conds ...clause.Expression) IStockBrandDo {
 	return s.withDO(s.DO.Clauses(conds...))
 }
 
-func (s stockBrandDo) Returning(value any, columns ...string) IStockBrandDo {
+func (s stockBrandDo) Returning(value interface{}, columns ...string) IStockBrandDo {
 	return s.withDO(s.DO.Returning(value, columns...))
 }
 
@@ -403,7 +403,7 @@ func (s stockBrandDo) FindByPage(offset int, limit int) (result []*gen_model.Sto
 	return
 }
 
-func (s stockBrandDo) ScanByPage(result any, offset int, limit int) (count int64, err error) {
+func (s stockBrandDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
 	count, err = s.Count()
 	if err != nil {
 		return
@@ -413,7 +413,7 @@ func (s stockBrandDo) ScanByPage(result any, offset int, limit int) (count int64
 	return
 }
 
-func (s stockBrandDo) Scan(result any) (err error) {
+func (s stockBrandDo) Scan(result interface{}) (err error) {
 	return s.DO.Scan(result)
 }
 

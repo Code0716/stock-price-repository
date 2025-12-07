@@ -86,7 +86,10 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 		return nil, nil, err
 	}
 	stockPriceHandler := handler.NewStockPriceHandler(stockBrandsDailyPriceInteractor, httpServer, logger)
-	serveMux := router.NewRouter(stockPriceHandler)
+	analyzeStockBrandPriceHistoryRepository := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(gormDB)
+	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, analyzeStockBrandPriceHistoryRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client)
+	stockBrandHandler := handler.NewStockBrandHandler(stockBrandInteractor, httpServer, logger)
+	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler)
 	return serveMux, func() {
 		cleanup()
 	}, nil
@@ -102,4 +105,4 @@ var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands
 
 var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl)
 
-var apiSet = wire.NewSet(handler.NewStockPriceHandler, router.NewRouter)
+var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, router.NewRouter)

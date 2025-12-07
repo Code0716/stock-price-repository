@@ -142,6 +142,79 @@ make api
 
 ### エンドポイント
 
+#### 株価銘柄一覧取得
+
+登録されている株価銘柄の一覧を取得します。
+
+- **URL**: `/stock-brands`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `symbol_from` (任意): 指定した銘柄コードより大きいもののみを取得 (最大 10 文字、英数字のみ)
+  - `limit` (任意): 取得件数の上限 (1〜10000, デフォルト: 全件)
+  - `only_main_markets` (任意): `true` を指定すると主要市場 (プライム・スタンダード・グロース) の銘柄のみ取得 (デフォルト: `false`)
+
+**Example Requests:**
+
+```bash
+# 全銘柄を取得
+curl "http://localhost:8080/stock-brands"
+
+# 主要市場の銘柄のみ取得
+curl "http://localhost:8080/stock-brands?only_main_markets=true"
+
+# 銘柄コード "1301" より大きい銘柄を100件取得
+curl "http://localhost:8080/stock-brands?symbol_from=1301&limit=100"
+
+# 銘柄コード "2000" より大きい主要市場の銘柄を50件取得
+curl "http://localhost:8080/stock-brands?symbol_from=2000&limit=50&only_main_markets=true"
+```
+
+**Response Example:**
+
+```json
+{
+  "stock_brands": [
+    {
+      "ticker_symbol": "1301",
+      "company_name": "極洋",
+      "market_code": "111",
+      "market_code_name": "プライム",
+      "sector_33_code": "3050",
+      "sector_33_name": "水産・農林業",
+      "sector_17_code": "2",
+      "sector_17_name": "食品"
+    }
+  ],
+  "pagination": {
+    "next_cursor": "1400",
+    "limit": 100
+  }
+}
+```
+
+**Pagination:**
+
+`limit` を指定した場合、レスポンスに `pagination` オブジェクトが含まれます。
+
+- `next_cursor`: 次のページを取得するためのカーソル値（最後のページの場合は `null`）
+- `limit`: 指定したリミット値
+
+次のページを取得する場合は、`next_cursor` の値を `symbol_from` パラメータに指定してください。
+
+```bash
+# 最初のページ (100件取得)
+curl "http://localhost:8080/stock-brands?limit=100"
+# => { "stock_brands": [...], "pagination": { "next_cursor": "1400", "limit": 100 } }
+
+# 次のページ (next_cursorを使用)
+curl "http://localhost:8080/stock-brands?symbol_from=1400&limit=100"
+# => { "stock_brands": [...], "pagination": { "next_cursor": "1500", "limit": 100 } }
+
+# 最後のページ (next_cursorがnull)
+curl "http://localhost:8080/stock-brands?symbol_from=9900&limit=100"
+# => { "stock_brands": [...], "pagination": { "next_cursor": null, "limit": 100 } }
+```
+
 #### 日足株価取得
 
 指定した銘柄の日足株価データを取得します。
@@ -152,6 +225,7 @@ make api
   - `symbol` (必須): 銘柄コード (例: `1301`)
   - `from` (任意): 開始日 (YYYY-MM-DD)
   - `to` (任意): 終了日 (YYYY-MM-DD)
+  - `sort` (任意): ソート順 (`asc` or `desc`, デフォルト: `asc`)
 
 **Example Request:**
 

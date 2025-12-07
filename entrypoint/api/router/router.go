@@ -6,8 +6,13 @@ import (
 	"github.com/Code0716/stock-price-repository/entrypoint/api/handler"
 )
 
-func NewRouter(stockPriceHandler *handler.StockPriceHandler) *http.ServeMux {
+func NewRouter(stockPriceHandler *handler.StockPriceHandler, stockBrandHandler *handler.StockBrandHandler) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/daily-prices", stockPriceHandler.GetDailyPrices)
+	if stockPriceHandler != nil {
+		mux.HandleFunc("/daily-prices", stockPriceHandler.GetDailyPrices)
+	}
+	if stockBrandHandler != nil {
+		mux.HandleFunc("/stock-brands", stockBrandHandler.GetStockBrands)
+	}
 	return mux
 }

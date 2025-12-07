@@ -19,6 +19,15 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: Install buf
+        run: go install github.com/bufbuild/buf/cmd/buf@latest
+
+      - name: Clone proto definitions
+        run: make proto-setup
+
+      - name: Generate proto code
+        run: make proto-gen
+
       - name: Install mockgen
         run: go install go.uber.org/mock/mockgen@latest
 
@@ -78,6 +87,15 @@ jobs:
 
       - name: Install dependencies
         run: go mod download
+
+      - name: Install buf
+        run: go install github.com/bufbuild/buf/cmd/buf@latest
+
+      - name: Clone proto definitions
+        run: make proto-setup
+
+      - name: Generate proto code
+        run: make proto-gen
 
       - name: Install mockgen
         run: go install go.uber.org/mock/mockgen@latest

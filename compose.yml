@@ -22,5 +22,28 @@ services:
       - '6379:6379'
     container_name: stock-price-repository-redis
 
+  grpc-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.grpc
+    ports:
+      - '50051:50051'
+    environment:
+      - APP_ENV=local
+      - APP_LOG_LEVEL=debug
+      - APP_TIMEZONE=Asia/Tokyo
+      - GRPC_PORT=50051
+      - STOCK_PRICE_REPOSITORY_MYSQL_HOST=db
+      - STOCK_PRICE_REPOSITORY_MYSQL_PORT=3306
+      - STOCK_PRICE_REPOSITORY_MYSQL_DBNAME=${STOCK_PRICE_REPOSITORY_MYSQL_DBNAME}
+      - STOCK_PRICE_REPOSITORY_MYSQL_USER=${STOCK_PRICE_REPOSITORY_MYSQL_USER}
+      - STOCK_PRICE_REPOSITORY_MYSQL_PASSWORD=${STOCK_PRICE_REPOSITORY_MYSQL_PASSWORD}
+      - REDIS_HOST=redis:6379
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    container_name: stock-price-repository-grpc
+
 volumes:
   db_data:

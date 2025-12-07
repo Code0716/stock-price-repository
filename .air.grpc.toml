@@ -1,0 +1,26 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/grpc-server ./entrypoint/grpc/main.go"
+  bin = "./tmp/grpc-server"
+  full_bin = "APP_ENV=local GRPC_PORT=50051 ./tmp/grpc-server"
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  exclude_dir = ["assets", "tmp", "vendor", "test", "sql", "proto-definitions"]
+  include_dir = []
+  exclude_file = []
+  delay = 1000 # ms
+  stop_on_error = true
+  log = "air_grpc.log"
+
+[log]
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true

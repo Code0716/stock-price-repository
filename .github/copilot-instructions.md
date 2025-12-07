@@ -233,3 +233,40 @@ func TestE2E_CommandName(t *testing.T) {
 - **回答・レビュー言語**: すべての応答、コードの説明、プルリクエストのレビューコメント、コミットメッセージの提案は **日本語** で行ってください。
 - 英語で質問された場合でも、文脈から日本人の開発者であると判断できる場合は日本語で回答してください。
 ````
+
+## gRPCアーキテクチャ
+
+### proto定義の管理
+
+- **別リポジトリ管理**: proto定義は `Code0716/stock-price-proto` で管理。
+- **クローン方式**: `make proto-setup` で `proto-definitions/` にクローン。
+- **gitignore**: `proto-definitions/` はコミット対象外。
+- **生成コード**: `pb/` 配下の生成コードはコミット対象。
+
+### コード生成フロー
+
+1. `make proto-setup`: 初回のみ、proto定義リポジトリをクローン。
+2. `make proto-pull`: 最新のproto定義を取得。
+3. `make proto-gen`: `buf generate` でGoコードを `pb/` に生成。
+4. `make mock`: モックの再生成（proto変更時）。
+
+### gRPCサーバー構成
+
+- **エントリーポイント**: `entrypoint/grpc/main.go`
+- **サービス実装**: `entrypoint/grpc/server/stock_service_server.go`
+- **ポート**: デフォルト50051（環境変数 `GRPC_PORT` で変更可能）
+- **Reflection**: `APP_ENV=local` または `dev` 時のみ有効化。
+- **依存性注入**: `di/wire.go` の `InitializeStockServiceServer` で構築。
+
+### gRPCテスト方針
+
+- **ユニットテスト**: サーバー実装（`*_server_test.go`）でモックを使用。
+- **E2Eテスト**: `test/e2e/grpc_*_test.go` で実DBを使用した統合テスト。
+- **CI/CD**: GitHub Actionsで自動的に `make proto-setup && make proto-gen` を実行。
+
+### gRPCコーディング規則
+
+- **エラーハンドリング**: `google.golang.org/grpc/status` でgRPCステータスコードを返す。
+- **コンテキスト伝播**: 全てのRPCメソッドで `context.Context` を使用。
+- **メッセージ変換**: ドメインモデルとprotobufメッセージの変換は各サーバー実装で行う。
+- **時刻フォーマット**: RFC3339形式（`2006-01-02T15:04:05Z07:00`）で文字列化。

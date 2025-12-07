@@ -1,7 +1,9 @@
 .PHONY: install-tools install-build-tools install-dev-tools \
 	di deps lint gen gorm-gen mock test test-e2e up cli \
 	migrate-file migrate-up migrate-down migrate-down-all \
-	down docker-down volume-down format build
+	down docker-down volume-down format build \
+	proto-setup proto-pull proto-gen proto-clean \
+	grpc-server grpc-server-docker
 
 ## Init .env file
 # .PHONY: init
@@ -85,4 +87,44 @@ build:
 	cd entrypoint/cli && GOARCH=arm GOOS=linux GOARM=7 go build -o spr-cli
 
 up:
+	@echo "Starting API and gRPC servers with Docker Compose..."
+	docker compose up api grpc-server
+
+api:
+	@echo "Starting API server with hot reload on port 8080..."
 	air -c .air.toml
+
+# Proto definitions management
+proto-setup:
+	@if [ -d "proto-definitions" ]; then \
+		echo "proto-definitions already exists. Use 'make proto-pull' to update."; \
+	else \
+		git clone https://github.com/Code0716/stock-price-proto.git proto-definitions; \
+		echo "Proto definitions cloned successfully."; \
+	fi
+
+proto-pull:
+	@if [ ! -d "proto-definitions" ]; then \
+		echo "proto-definitions not found. Run 'make proto-setup' first."; \
+		exit 1; \
+	fi
+	cd proto-definitions && git pull origin main
+
+proto-gen:
+	@if [ ! -d "proto-definitions" ]; then \
+		echo "proto-definitions not found. Run 'make proto-setup' first."; \
+		exit 1; \
+	fi
+	buf generate proto-definitions
+
+proto-clean:
+	rm -rf proto-definitions pb
+
+# gRPC Server
+grpc-server:
+	@echo "Starting gRPC server with hot reload on port 50051..."
+	air -c .air.grpc.toml
+
+grpc-server-docker:
+	@echo "Starting gRPC server with Docker Compose..."
+	docker compose up grpc-server

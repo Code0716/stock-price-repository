@@ -11,6 +11,7 @@ Yahoo Finance や j-Quants API から上場銘柄、日足、日経平均日足�
 - **株価データ収集**: 上場銘柄情報と日足株価を取得。
 - **指数データ**: 日経平均 (Nikkei 225) と NY ダウ (DJI) のヒストリカルデータを収集。
 - **REST API**: 収集した株価データを提供する REST API。
+- **gRPC API**: 高速な gRPC 通信による株価データ提供（高出来高銘柄の取得など）。
 - **データエクスポート**: 保存されたデータを SQL ファイルとしてエクスポート。
 - **トークン管理**: Redis を使用した j-Quants API リフレッシュトークンの管理。
 - **Clean Architecture**: 保守性とテスト容易性を考慮した設計。
@@ -25,6 +26,9 @@ Yahoo Finance や j-Quants API から上場銘柄、日足、日経平均日足�
 - **Dependency Injection**: Google Wire (`github.com/google/wire`)
 - **Logging**: Zap (`go.uber.org/zap`)
 - **Testing**: `go.uber.org/mock` (Mockgen)
+- **gRPC**: `google.golang.org/grpc`, `google.golang.org/protobuf`
+- **Protocol Buffers**: proto 定義は別リポジトリ管理（`stock-price-proto`）
+- **Buf**: protobuf コード生成ツール
 
 ## Prerequisites
 
@@ -55,7 +59,15 @@ Yahoo Finance や j-Quants API から上場銘柄、日足、日経平均日足�
    make up
    ```
 
-4. **マイグレーションの実行**
+4. **proto 定義のセットアップ（gRPC 使用時）**
+   proto 定義をクローンし、gRPC コードを生成します。
+
+   ```bash
+   make proto-setup
+   make proto-gen
+   ```
+
+5. **マイグレーションの実行**
    データベーススキーマを作成します。
    ```bash
    make migrate-up
@@ -256,3 +268,194 @@ Clean Architecture に基づいたディレクトリ構成になっています�
 - **`config/`**: 設定読み込み。
 
 かしこ。
+
+## gRPC Server
+
+### Setup
+
+1. **buf のインストール**
+
+   ```bash
+   go install github.com/bufbuild/buf/cmd/buf@latest
+   ```
+
+2. **proto 定義のクローンとコード生成**
+   ```bash
+   make proto-setup
+   make proto-gen
+   ```
+
+### Running gRPC Server
+
+#### ホットリロード付きでローカル起動（推奨）
+
+```bash
+make grpc-server
+```
+
+コードを変更すると自動的に再ビルド・再起動されます。
+
+#### Docker Compose で起動
+
+```bash
+make grpc-server-docker
+# または
+docker compose up grpc-server
+```
+
+gRPC サーバーはポート `50051` で起動します。
+
+#### 直接起動
+
+```bash
+APP_ENV=local GRPC_PORT=50051 go run entrypoint/grpc/main.go
+```
+
+環境変数 `GRPC_PORT` でポート番号を変更できます（デフォルト: 50051）。
+
+### gRPC API Endpoints
+
+#### GetHighVolumeStockBrands
+
+高出来高銘柄を取得します。ページネーション対応。
+
+- **Service**: `stock.StockService`
+- **Method**: `GetHighVolumeStockBrands`
+- **Request**: `GetHighVolumeStockBrandsRequest`
+  - `symbol_from` (string, optional): カーソル（銘柄コード）。この値より大きい銘柄を取得。
+  - `limit` (int32, optional): 取得件数。0 の場合は全件取得。
+- **Response**: `GetHighVolumeStockBrandsResponse`
+
+**Request Schema:**
+
+```protobuf
+message GetHighVolumeStockBrandsRequest {
+  string symbol_from = 1;  // カーソル（銘柄コード）
+  int32 limit = 2;         // 取得件数（0=全件）
+}
+```
+
+**Response Schema:**
+
+```protobuf
+message GetHighVolumeStockBrandsResponse {
+  repeated HighVolumeStockBrand brands = 1;
+  PaginationInfo pagination = 2;  // limit > 0の場合のみ含まれる
+}
+
+message HighVolumeStockBrand {
+  string stock_brand_id = 1;
+  string ticker_symbol = 2;
+  string company_name = 3;    // 銘柄名（stock_brandテーブルからJOIN）
+  uint64 volume_average = 4;
+  string created_at = 5;      // RFC3339形式 (例: "2024-01-15T10:30:00Z")
+}
+
+message PaginationInfo {
+  string next_cursor = 1;  // 次のページのカーソル。空文字列の場合は最後のページ。
+  int32 limit = 2;         // リクエストで指定したlimit値
+}
+```
+
+**Example Request (grpcurl):**
+
+```bash
+# 全件取得
+grpcurl -plaintext localhost:50051 stock.StockService/GetHighVolumeStockBrands
+
+# 最初の10件を取得
+grpcurl -plaintext -d '{"limit": 10}' localhost:50051 stock.StockService/GetHighVolumeStockBrands
+
+# カーソル指定で次のページを取得（next_cursorが"7203"の場合）
+grpcurl -plaintext -d '{"symbol_from": "7203", "limit": 10}' localhost:50051 stock.StockService/GetHighVolumeStockBrands
+```
+
+**Example Response:**
+
+```json
+{
+  "brands": [
+    {
+      "stockBrandId": "550e8400-e29b-41d4-a716-446655440000",
+      "tickerSymbol": "7203",
+      "companyName": "トヨタ自動車",
+      "volumeAverage": "15234567",
+      "createdAt": "2024-01-15T10:30:00Z"
+    },
+    {
+      "stockBrandId": "660e8400-e29b-41d4-a716-446655440001",
+      "tickerSymbol": "6758",
+      "companyName": "ソニーグループ",
+      "volumeAverage": "12345678",
+      "createdAt": "2024-01-15T10:31:00Z"
+    }
+  ],
+  "pagination": {
+    "nextCursor": "9984",
+    "limit": 10
+  }
+}
+```
+
+**Pagination の使い方:**
+
+1. 最初のページを取得: `{"limit": 10}`
+2. レスポンスの `pagination.nextCursor` を確認
+3. 次のページを取得: `{"symbol_from": "<nextCursor>", "limit": 10}`
+4. `pagination.nextCursor` が空文字列になるまで繰り返す
+
+### Testing with grpcurl
+
+開発環境（`APP_ENV=local`）では gRPC Reflection が有効になっているため、`grpcurl`で簡単にテストできます。
+
+1. **grpcurl のインストール**
+
+   ```bash
+   brew install grpcurl
+   ```
+
+2. **サービス一覧の確認**
+
+   ```bash
+   grpcurl -plaintext localhost:50051 list
+   ```
+
+3. **メソッド一覧の確認**
+
+   ```bash
+   grpcurl -plaintext localhost:50051 list stock.StockService
+   ```
+
+4. **高出来高銘柄の取得**
+   ```bash
+   grpcurl -plaintext localhost:50051 stock.StockService/GetHighVolumeStockBrands
+   ```
+
+### Proto Definitions Management
+
+proto 定義は別リポジトリ（[stock-price-proto](https://github.com/Code0716/stock-price-proto)）で管理されています。
+
+#### proto 定義の更新手順
+
+1. **最新の proto 定義を取得**
+
+   ```bash
+   make proto-pull
+   ```
+
+2. **コード再生成**
+
+   ```bash
+   make proto-gen
+   ```
+
+3. **モックの再生成**
+
+   ```bash
+   make mock
+   ```
+
+4. **テスト実行**
+   ```bash
+   make test
+   ```

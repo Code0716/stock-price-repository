@@ -11,11 +11,13 @@ import (
 	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/entrypoint/api/handler"
 	"github.com/Code0716/stock-price-repository/entrypoint/api/router"
+	"github.com/Code0716/stock-price-repository/entrypoint/grpc/server"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	"github.com/Code0716/stock-price-repository/usecase"
 	"github.com/google/wire"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -95,6 +97,24 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	}, nil
 }
 
+func InitializeStockServiceServer(ctx context.Context, logger *zap.Logger) (*server.StockServiceServer, func(), error) {
+	db, cleanup, err := driver.NewDBConn()
+	if err != nil {
+		return nil, nil, err
+	}
+	gormDB, err := driver.NewGorm(db)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	highVolumeStockBrandRepository := database.NewHighVolumeStockBrandRepositoryImpl(gormDB)
+	getHighVolumeStockBrandsUseCase := usecase.NewGetHighVolumeStockBrandsUseCase(highVolumeStockBrandRepository)
+	stockServiceServer := server.NewStockServiceServer(getHighVolumeStockBrandsUseCase)
+	return stockServiceServer, func() {
+		cleanup()
+	}, nil
+}
+
 // wire.go:
 
 var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewExportSQLInteractor)
@@ -103,6 +123,10 @@ var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequ
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewExportStockBrandsAndDailyPriceToSQLV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command)
 
-var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl)
+var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl)
 
 var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, router.NewRouter)
+
+var grpcSet = wire.NewSet(server.NewStockServiceServer, usecase.NewGetHighVolumeStockBrandsUseCase)
+
+var grpcDriverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient)

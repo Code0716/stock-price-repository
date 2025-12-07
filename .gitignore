@@ -5,6 +5,8 @@ tmp
 .vscode
 cover.out
 cover.html
+air.log
+air_grpc.log
 document
 csv
 init_data
@@ -16,3 +18,6 @@ migration_daily_price
 sql/mysql
 sql/db_data
 main
+proto-definitions/
+# Exclude root-level pb.go files (should be in pb/ directory only)
+/*.pb.go

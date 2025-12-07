@@ -9,10 +9,12 @@ import (
 	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/entrypoint/api/handler"
 	"github.com/Code0716/stock-price-repository/entrypoint/api/router"
+	"github.com/Code0716/stock-price-repository/entrypoint/grpc/server"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	"github.com/Code0716/stock-price-repository/usecase"
+	"go.uber.org/zap"
 
 	"github.com/google/wire"
 )
@@ -55,6 +57,7 @@ var databaseSet = wire.NewSet(
 	database.NewStockBrandsDailyPriceRepositoryImpl,
 	database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl,
 	database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl,
+	database.NewHighVolumeStockBrandRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
@@ -79,6 +82,31 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 		usecaseSet,
 		databaseSet,
 		driverSet,
+	)
+	return nil, nil, nil
+}
+
+var grpcSet = wire.NewSet(
+	server.NewStockServiceServer,
+	usecase.NewGetHighVolumeStockBrandsUseCase,
+)
+
+var grpcDriverSet = wire.NewSet(
+	driver.NewGorm,
+	driver.NewDBConn,
+	driver.NewHTTPRequest,
+	driver.NewHTTPServer,
+	driver.NewSlackAPIClient,
+	driver.OpenRedis,
+	driver.NewStockAPIClient,
+	driver.NewMySQLDumpClient,
+)
+
+func InitializeStockServiceServer(ctx context.Context, logger *zap.Logger) (*server.StockServiceServer, func(), error) {
+	wire.Build(
+		grpcSet,
+		databaseSet,
+		grpcDriverSet,
 	)
 	return nil, nil, nil
 }

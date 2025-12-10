@@ -54,7 +54,12 @@ func TestStockBrandsDailyStockPriceInteractorImpl_CreateDailyStockPrice(t *testi
 			fields: fields{
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					mock := mock_repositories.NewMockStockBrandRepository(ctrl)
-					mock.EXPECT().FindFromSymbol(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*models.StockBrand{
+					mock.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
+						OnlyMainMarkets: true,
+						MarketCodes:     nil,
+						SymbolFrom:      "0",
+						Limit:           5000,
+					})).Return([]*models.StockBrand{
 						{
 							ID:           "1",
 							TickerSymbol: "1111",
@@ -108,7 +113,12 @@ func TestStockBrandsDailyStockPriceInteractorImpl_CreateDailyStockPrice(t *testi
 			fields: fields{
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					mock := mock_repositories.NewMockStockBrandRepository(ctrl)
-					mock.EXPECT().FindFromSymbol(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*models.StockBrand{}, nil)
+					mock.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
+						OnlyMainMarkets: true,
+						MarketCodes:     nil,
+						SymbolFrom:      "0",
+						Limit:           5000,
+					})).Return([]*models.StockBrand{}, nil)
 					return mock
 				},
 			},
@@ -125,11 +135,11 @@ func TestStockBrandsDailyStockPriceInteractorImpl_CreateDailyStockPrice(t *testi
 			},
 		},
 		{
-			name: "Error - FindFromSymbol failed",
+			name: "Error - FindWithFilter failed",
 			fields: fields{
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					mock := mock_repositories.NewMockStockBrandRepository(ctrl)
-					mock.EXPECT().FindFromSymbol(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
+					mock.EXPECT().FindWithFilter(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
 					return mock
 				},
 			},
@@ -150,7 +160,12 @@ func TestStockBrandsDailyStockPriceInteractorImpl_CreateDailyStockPrice(t *testi
 			fields: fields{
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					mock := mock_repositories.NewMockStockBrandRepository(ctrl)
-					mock.EXPECT().FindFromSymbol(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*models.StockBrand{
+					mock.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
+						OnlyMainMarkets: true,
+						MarketCodes:     nil,
+						SymbolFrom:      "0",
+						Limit:           5000,
+					})).Return([]*models.StockBrand{
 						{
 							ID:           "1",
 							TickerSymbol: "1111",
@@ -203,7 +218,12 @@ func TestStockBrandsDailyStockPriceInteractorImpl_CreateDailyStockPrice(t *testi
 			fields: fields{
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					mock := mock_repositories.NewMockStockBrandRepository(ctrl)
-					mock.EXPECT().FindFromSymbol(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*models.StockBrand{
+					mock.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
+						OnlyMainMarkets: true,
+						MarketCodes:     nil,
+						SymbolFrom:      "0",
+						Limit:           5000,
+					})).Return([]*models.StockBrand{
 						{
 							ID:           "1",
 							TickerSymbol: "1111",

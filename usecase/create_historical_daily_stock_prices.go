@@ -39,10 +39,12 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) CreateHistoricalDailyStockPr
 
 	// 銘柄取得
 	// FindAllで取得してもいいが、API次第もあるので一旦制御
-	stockBrands, err := si.stockBrandRepository.
-		FindFromSymbol(ctx, symbolFrom, createHistoricalDailyStockPricesLimitAtOnce)
+	filter := models.NewStockBrandFilter().
+		WithOnlyMainMarkets().
+		WithPagination(symbolFrom, createHistoricalDailyStockPricesLimitAtOnce)
+	stockBrands, err := si.stockBrandRepository.FindWithFilter(ctx, filter)
 	if err != nil {
-		return errors.Wrap(err, "stockBrandRepository.FindAll")
+		return errors.Wrap(err, "stockBrandRepository.FindWithFilter error")
 	}
 
 	if err = si.createHistoricalDailyStockPrices(ctx, stockBrands, now); err != nil {

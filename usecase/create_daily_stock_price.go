@@ -17,7 +17,7 @@ import (
 
 const (
 	// createDailyStockPrice
-	createDailyStockPriceLimitAtOnceByAll                                          int           = 4000
+	createDailyStockPriceLimitAtOnceByAll                                          int           = 5000
 	createDailyStockPriceListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey string        = "create_daily_stock_price_list_toshyo_stock_brands_by_symbol_stock_price_repository_redis_key"
 	createDailyStockPriceListToshyoStockBrandsBySymbolStockPriceRepositoryRedisTTL time.Duration = 2 * time.Hour
 )
@@ -40,10 +40,12 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) CreateDailyStockPrice(ctx co
 	// JQuantsを使用する場合は、一度で全てのデータを取得する
 	limit := createDailyStockPriceLimitAtOnceByAll
 
-	stockBrands, err := si.stockBrandRepository.
-		FindFromSymbol(ctx, symbolFrom, limit)
+	filter := models.NewStockBrandFilter().
+		WithOnlyMainMarkets().
+		WithPagination(symbolFrom, limit)
+	stockBrands, err := si.stockBrandRepository.FindWithFilter(ctx, filter)
 	if err != nil {
-		return errors.Wrap(err, "stockBrandRepository.FindAll")
+		return errors.Wrap(err, "stockBrandRepository.FindWithFilter")
 	}
 
 	if len(stockBrands) == 0 {

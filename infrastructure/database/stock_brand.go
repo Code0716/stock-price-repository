@@ -34,26 +34,8 @@ func NewStockBrandRepositoryImpl(db *gorm.DB) repositories.StockBrandRepository 
 
 // FindAll retrieves all stock brands from the database.
 func (si *StockBrandRepositoryImpl) FindAll(ctx context.Context) ([]*models.StockBrand, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
-
-	resultRow, err := tx.StockBrand.WithContext(ctx).
-		Where(tx.StockBrand.DeletedAt.IsNull()).
-		Find()
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindAll error")
-	}
-	if err != nil {
-		return nil, nil
-	}
-
-	result := make([]*models.StockBrand, 0, len(resultRow))
-	for _, v := range resultRow {
-		result = append(result, si.convertToDomainModel(v))
-	}
-	return result, nil
+	filter := models.NewStockBrandFilter()
+	return si.FindWithFilter(ctx, filter)
 }
 
 func (si *StockBrandRepositoryImpl) UpsertStockBrands(ctx context.Context, stockBrands []*models.StockBrand) error {
@@ -88,72 +70,61 @@ func (si *StockBrandRepositoryImpl) UpsertStockBrands(ctx context.Context, stock
 
 // FindAllMainMarkets retrieves all stock brands from main markets (111, 112, 113).
 func (si *StockBrandRepositoryImpl) FindAllMainMarkets(ctx context.Context) ([]*models.StockBrand, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
-
-	resultRow, err := tx.StockBrand.WithContext(ctx).
-		Where(tx.StockBrand.DeletedAt.IsNull()).
-		Where(tx.StockBrand.MarketCode.In(stockBrandMarketCodePrime, stockBrandMarketCodeStandard, stockBrandMarketCodeGrowth)).
-		Order(tx.StockBrand.TickerSymbol).
-		Find()
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindAllMainMarkets error")
-	}
-	if err != nil {
-		return nil, nil
-	}
-
-	result := make([]*models.StockBrand, 0, len(resultRow))
-	for _, v := range resultRow {
-		result = append(result, si.convertToDomainModel(v))
-	}
-	return result, nil
+	filter := models.NewStockBrandFilter().WithOnlyMainMarkets()
+	return si.FindWithFilter(ctx, filter)
 }
 
 func (si *StockBrandRepositoryImpl) FindFromSymbol(ctx context.Context, symbol string, limit int) ([]*models.StockBrand, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
-
-	resultRow, err := tx.StockBrand.WithContext(ctx).
-		Where(tx.StockBrand.TickerSymbol.Gt(symbol)).
-		Where(tx.StockBrand.DeletedAt.IsNull()).
-		Order(tx.StockBrand.TickerSymbol).
-		Limit(limit).
-		Find()
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindFromSymbol error")
-	}
-	if err != nil {
-		return nil, nil
-	}
-
-	result := make([]*models.StockBrand, 0, len(resultRow))
-	for _, v := range resultRow {
-		result = append(result, si.convertToDomainModel(v))
-	}
-	return result, nil
+	filter := models.NewStockBrandFilter().WithPagination(symbol, limit)
+	return si.FindWithFilter(ctx, filter)
 }
 
 // FindFromSymbolMainMarkets retrieves stock brands from main markets starting from the specified symbol.
 func (si *StockBrandRepositoryImpl) FindFromSymbolMainMarkets(ctx context.Context, symbol string, limit int) ([]*models.StockBrand, error) {
+	filter := models.NewStockBrandFilter().WithOnlyMainMarkets().WithPagination(symbol, limit)
+	return si.FindWithFilter(ctx, filter)
+}
+
+// FindWithFilter フィルタ条件に基づいて銘柄を取得する
+func (si *StockBrandRepositoryImpl) FindWithFilter(ctx context.Context, filter *models.StockBrandFilter) ([]*models.StockBrand, error) {
 	tx, ok := GetTxQuery(ctx)
 	if !ok {
 		tx = si.query
 	}
 
-	resultRow, err := tx.StockBrand.WithContext(ctx).
-		Where(tx.StockBrand.TickerSymbol.Gt(symbol)).
-		Where(tx.StockBrand.DeletedAt.IsNull()).
-		Where(tx.StockBrand.MarketCode.In(stockBrandMarketCodePrime, stockBrandMarketCodeStandard, stockBrandMarketCodeGrowth)).
-		Order(tx.StockBrand.TickerSymbol).
-		Limit(limit).
-		Find()
+	// ベースクエリ: 削除済み除外、シンボル順
+	q := tx.StockBrand.WithContext(ctx).
+		Where(tx.StockBrand.DeletedAt.IsNull())
+
+	// 市場コードフィルタ
+	if filter.OnlyMainMarkets {
+		// 主要市場のみ
+		q = q.Where(tx.StockBrand.MarketCode.In(
+			stockBrandMarketCodePrime,
+			stockBrandMarketCodeStandard,
+			stockBrandMarketCodeGrowth,
+		))
+	} else if len(filter.MarketCodes) > 0 {
+		// 指定市場コード
+		q = q.Where(tx.StockBrand.MarketCode.In(filter.MarketCodes...))
+	}
+
+	// ページネーション: シンボル開始位置
+	if filter.SymbolFrom != "" {
+		q = q.Where(tx.StockBrand.TickerSymbol.Gt(filter.SymbolFrom))
+	}
+
+	// ソート: シンボル昇順
+	q = q.Order(tx.StockBrand.TickerSymbol)
+
+	// 件数制限
+	if filter.Limit > 0 {
+		q = q.Limit(filter.Limit)
+	}
+
+	resultRow, err := q.Find()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindFromSymbolMainMarkets error")
+		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindWithFilter error")
 	}
 	if err != nil {
 		return nil, nil

@@ -132,6 +132,21 @@ func (mr *MockStockBrandRepositoryMockRecorder) FindFromSymbolMainMarkets(ctx, s
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFromSymbolMainMarkets", reflect.TypeOf((*MockStockBrandRepository)(nil).FindFromSymbolMainMarkets), ctx, symbolFrom, limit)
 }
 
+// FindWithFilter mocks base method.
+func (m *MockStockBrandRepository) FindWithFilter(ctx context.Context, filter *models.StockBrandFilter) ([]*models.StockBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindWithFilter", ctx, filter)
+	ret0, _ := ret[0].([]*models.StockBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindWithFilter indicates an expected call of FindWithFilter.
+func (mr *MockStockBrandRepositoryMockRecorder) FindWithFilter(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindWithFilter", reflect.TypeOf((*MockStockBrandRepository)(nil).FindWithFilter), ctx, filter)
+}
+
 // UpsertStockBrands mocks base method.
 func (m *MockStockBrandRepository) UpsertStockBrands(ctx context.Context, stockBrands []*models.StockBrand) error {
 	m.ctrl.T.Helper()

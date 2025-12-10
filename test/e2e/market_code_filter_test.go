@@ -32,7 +32,7 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to start miniredis: %v", err)
 	}
-	defer miniredis.Run()
+	defer mr.Close()
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: mr.Addr(),

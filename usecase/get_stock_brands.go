@@ -21,7 +21,7 @@ func (si *stockBrandInteractorImpl) GetStockBrands(ctx context.Context, symbolFr
 
 	filter := models.NewStockBrandFilter().WithPagination(symbolFrom, fetchLimit)
 	if onlyMainMarkets {
-		filter.WithOnlyMainMarkets()
+		filter = filter.WithOnlyMainMarkets()
 	}
 
 	brands, err := si.stockBrandRepository.FindWithFilter(ctx, filter)

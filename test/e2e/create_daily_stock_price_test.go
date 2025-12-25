@@ -70,17 +70,15 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
 
-				mockStockAPI.EXPECT().GetDailyPricesBySymbolAndRange(
+				mockStockAPI.EXPECT().GetAllBrandDailyPricesByDate(
 					gomock.Any(),
-					gateway.StockAPISymbol("1234"),
-					gomock.Any(), // from
-					gomock.Any(), // to
-				).DoAndReturn(func(_ context.Context, symbol gateway.StockAPISymbol, _, to time.Time) ([]*gateway.StockPrice, error) {
+					gomock.Any(), // date
+				).DoAndReturn(func(_ context.Context, to time.Time) ([]*gateway.StockPrice, error) {
 					// Return some dummy prices
 					return []*gateway.StockPrice{
 						{
 							Date:            to,
-							TickerSymbol:    string(symbol),
+							TickerSymbol:    "1234",
 							Open:            decimal.NewFromInt(100),
 							High:            decimal.NewFromInt(110),
 							Low:             decimal.NewFromInt(90),

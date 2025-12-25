@@ -20,7 +20,7 @@ func NewCreateDailyStockPriceV1Command(stockBrandsDailyStockPriceInteractor usec
 
 func (c *CreateDailyStockPriceV1Command) Command() *Command {
 	return &Command{
-		Name:   "create_daily_stock_price_v2",
+		Name:   "create_daily_stock_price_v1",
 		Usage:  "場終了後すべての銘柄の今日の日足を取得する。",
 		Action: c.Action,
 	}

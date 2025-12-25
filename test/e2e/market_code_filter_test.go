@@ -102,27 +102,44 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
 
 				// 主要市場の3銘柄についてのみAPIコールが行われることを期待
-				for _, symbol := range []string{"1001", "1002", "1003"} {
-					mockStockAPI.EXPECT().GetDailyPricesBySymbolAndRange(
-						gomock.Any(),
-						gateway.StockAPISymbol(symbol),
-						gomock.Any(),
-						gomock.Any(),
-					).DoAndReturn(func(_ context.Context, sym gateway.StockAPISymbol, _, to time.Time) ([]*gateway.StockPrice, error) {
-						return []*gateway.StockPrice{
-							{
-								Date:            to,
-								TickerSymbol:    string(sym),
-								Open:            decimal.NewFromInt(100),
-								High:            decimal.NewFromInt(110),
-								Low:             decimal.NewFromInt(90),
-								Close:           decimal.NewFromInt(105),
-								Volume:          1000,
-								AdjustmentClose: decimal.NewFromInt(105),
-							},
-						}, nil
-					})
-				}
+
+				mockStockAPI.EXPECT().GetAllBrandDailyPricesByDate(
+					gomock.Any(),
+					gomock.Any(),
+				).DoAndReturn(func(_ context.Context, to time.Time) ([]*gateway.StockPrice, error) {
+					return []*gateway.StockPrice{
+						{
+							Date:            to,
+							TickerSymbol:    "1001",
+							Open:            decimal.NewFromInt(100),
+							High:            decimal.NewFromInt(110),
+							Low:             decimal.NewFromInt(90),
+							Close:           decimal.NewFromInt(105),
+							Volume:          1000,
+							AdjustmentClose: decimal.NewFromInt(105),
+						},
+						{
+							Date:            to,
+							TickerSymbol:    "1002",
+							Open:            decimal.NewFromInt(100),
+							High:            decimal.NewFromInt(110),
+							Low:             decimal.NewFromInt(90),
+							Close:           decimal.NewFromInt(105),
+							Volume:          1000,
+							AdjustmentClose: decimal.NewFromInt(105),
+						},
+						{
+							Date:            to,
+							TickerSymbol:    "1003",
+							Open:            decimal.NewFromInt(100),
+							High:            decimal.NewFromInt(110),
+							Low:             decimal.NewFromInt(90),
+							Close:           decimal.NewFromInt(105),
+							Volume:          1000,
+							AdjustmentClose: decimal.NewFromInt(105),
+						},
+					}, nil
+				})
 
 				// market_code="999" の銘柄についてはAPIコールされないことを期待（Timesを設定しない）
 			},

@@ -8,15 +8,14 @@ import (
 )
 
 type TestRunnerOptions struct {
-	HealthCheckCommand                           *commands.HealthCheckCommand
-	SetJQuantsAPITokenToRedisV1Command           *commands.SetJQuantsAPITokenToRedisV1Command
-	UpdateStockBrandsV1Command                   *commands.UpdateStockBrandsV1Command
-	CreateHistoricalDailyStockPricesV1Command    *commands.CreateHistoricalDailyStockPricesV1Command
-	CreateDailyStockPriceV1Command               *commands.CreateDailyStockPriceV1Command
-	CreateNikkeiAndDjiHistoricalDataV1Command    *commands.CreateNikkeiAndDjiHistoricalDataV1Command
-	ExportStockBrandsAndDailyPriceToSQLV1Command *commands.ExportStockBrandsAndDailyPriceToSQLV1Command
-	IndexInteractor                              usecase.IndexInteractor
-	SlackAPIClient                               gateway.SlackAPIClient
+	HealthCheckCommand                        *commands.HealthCheckCommand
+	SetJQuantsAPITokenToRedisV1Command        *commands.SetJQuantsAPITokenToRedisV1Command
+	UpdateStockBrandsV1Command                *commands.UpdateStockBrandsV1Command
+	CreateHistoricalDailyStockPricesV1Command *commands.CreateHistoricalDailyStockPricesV1Command
+	CreateDailyStockPriceV1Command            *commands.CreateDailyStockPriceV1Command
+	CreateNikkeiAndDjiHistoricalDataV1Command *commands.CreateNikkeiAndDjiHistoricalDataV1Command
+	IndexInteractor                           usecase.IndexInteractor
+	SlackAPIClient                            gateway.SlackAPIClient
 }
 
 func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
@@ -38,9 +37,6 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 	if opts.CreateNikkeiAndDjiHistoricalDataV1Command == nil {
 		opts.CreateNikkeiAndDjiHistoricalDataV1Command = commands.NewCreateNikkeiAndDjiHistoricalDataV1Command(nil)
 	}
-	if opts.ExportStockBrandsAndDailyPriceToSQLV1Command == nil {
-		opts.ExportStockBrandsAndDailyPriceToSQLV1Command = commands.NewExportStockBrandsAndDailyPriceToSQLV1Command(nil)
-	}
 
 	return cli.NewRunner(
 		opts.HealthCheckCommand,
@@ -49,7 +45,6 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.CreateHistoricalDailyStockPricesV1Command,
 		opts.CreateDailyStockPriceV1Command,
 		opts.CreateNikkeiAndDjiHistoricalDataV1Command,
-		opts.ExportStockBrandsAndDailyPriceToSQLV1Command,
 		opts.IndexInteractor,
 		opts.SlackAPIClient,
 	)

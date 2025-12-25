@@ -16,33 +16,16 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) CreateDailyStockPrice(ctx co
 	if err := si.createDailyStockPrice(ctx, now); err != nil {
 		return errors.Wrap(err, "createDailyStockPrice error")
 	}
-
-	// 3年前の日付を計算
-	threeYearsAgo := now.AddDate(-3, 0, 0)
-	if err := si.stockBrandsDailyPriceForAnalyzeRepository.DeleteBeforeDate(ctx, threeYearsAgo); err != nil {
-		return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.DeleteBeforeDate error")
-	}
-
 	return nil
 }
 
 // createDailyStockPrice - 日足を作成する
 func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx context.Context, now time.Time) error {
-	stockPrices, err := si.stockAPIClient.GetAllBrandDailyPricesByDate(ctx, now)
-
-	if len(stockPrices) == 0 {
-		return nil
-	}
-
-	err = si.tx.DoInTx(ctx, func(ctx context.Context) error {
+	err := si.tx.DoInTx(ctx, func(ctx context.Context) error {
 		// 銘柄を取得
 		currentBrands, err := si.stockBrandRepository.FindAll(ctx)
 		if err != nil {
 			return errors.Wrap(err, "stockBrandRepository.FindAll error")
-		}
-
-		if err != nil {
-			return errors.Wrap(err, "stockAPIClient.GetAllBrandDailyPricesByDate error")
 		}
 
 		currentBrandsMap := make(map[string]*models.StockBrand, len(currentBrands))
@@ -64,6 +47,12 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 			return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandDailyPriceForAnalyze error")
 		}
 
+		// 3年前の日付を計算
+		threeYearsAgo := now.AddDate(-3, 0, 0)
+		if err := si.stockBrandsDailyPriceForAnalyzeRepository.DeleteBeforeDate(ctx, threeYearsAgo); err != nil {
+			return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.DeleteBeforeDate error")
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -75,7 +64,6 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 
 // createDailyStockPrices - 全銘柄の一日の日足スライスを作成する
 func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPrices(ctx context.Context, currentBrandsMap map[string]*models.StockBrand, now time.Time) []*models.StockBrandDailyPrice {
-
 	stockPrices, err := si.stockAPIClient.GetAllBrandDailyPricesByDate(ctx, now)
 	if err != nil {
 		return nil

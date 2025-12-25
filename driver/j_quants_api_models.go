@@ -27,43 +27,43 @@ type jQuantsAPIClientIDTokenResponse struct {
 }
 
 type jQuantsStockBrandsResponse struct {
-	Info []struct {
+	Data []struct {
 		Date               string `json:"Date"`
 		Code               string `json:"Code"`
-		CompanyName        string `json:"CompanyName"`
-		CompanyNameEnglish string `json:"CompanyNameEnglish"`
-		Sector17Code       string `json:"Sector17Code"`
-		Sector17CodeName   string `json:"Sector17CodeName"`
-		Sector33Code       string `json:"Sector33Code"`
-		Sector33CodeName   string `json:"Sector33CodeName"`
-		ScaleCategory      string `json:"ScaleCategory"`
-		MarketCode         string `json:"MarketCode"`
-		MarketCodeName     string `json:"MarketCodeName"`
-	} `json:"info"`
+		CompanyName        string `json:"CoName"`
+		CompanyNameEnglish string `json:"CoNameEn"`
+		Sector17Code       string `json:"S17"`
+		Sector17CodeName   string `json:"S17Nm"`
+		Sector33Code       string `json:"S33"`
+		Sector33CodeName   string `json:"S33Nm"`
+		ScaleCategory      string `json:"ScaleCat"`
+		MarketCode         string `json:"Mkt"`
+		MarketCodeName     string `json:"MktNm"`
+	} `json:"data"`
 }
 
 type jQuantsDailyQuotesResponse struct {
-	DailyQuotes []*jQuantsDailyQuote `json:"daily_quotes"`
+	DailyQuotes []*jQuantsDailyQuote `json:"Data"`
 }
 
 // 日足
 type jQuantsDailyQuote struct {
 	Date             string          `json:"Date"`
 	Code             string          `json:"Code"`
-	Open             decimal.Decimal `json:"Open"`
-	High             decimal.Decimal `json:"High"`
-	Low              decimal.Decimal `json:"Low"`
-	Close            decimal.Decimal `json:"Close"`
-	UpperLimit       string          `json:"UpperLimit"`
-	LowerLimit       string          `json:"LowerLimit"`
-	Volume           decimal.Decimal `json:"Volume"`
-	TurnoverValue    decimal.Decimal `json:"TurnoverValue"`
-	AdjustmentFactor decimal.Decimal `json:"AdjustmentFactor"`
-	AdjustmentOpen   decimal.Decimal `json:"AdjustmentOpen"`
-	AdjustmentHigh   decimal.Decimal `json:"AdjustmentHigh"`
-	AdjustmentLow    decimal.Decimal `json:"AdjustmentLow"`
-	AdjustmentClose  decimal.Decimal `json:"AdjustmentClose"`
-	AdjustmentVolume decimal.Decimal `json:"AdjustmentVolume"`
+	Open             decimal.Decimal `json:"O"`
+	High             decimal.Decimal `json:"H"`
+	Low              decimal.Decimal `json:"L"`
+	Close            decimal.Decimal `json:"C"`
+	UpperLimit       string          `json:"UL"`
+	LowerLimit       string          `json:"LL"`
+	Volume           decimal.Decimal `json:"Vo"`
+	TurnoverValue    decimal.Decimal `json:"Va"`
+	AdjustmentFactor decimal.Decimal `json:"AdjFactor"`
+	AdjustmentOpen   decimal.Decimal `json:"AdjO"`
+	AdjustmentHigh   decimal.Decimal `json:"AdjH"`
+	AdjustmentLow    decimal.Decimal `json:"AdjL"`
+	AdjustmentClose  decimal.Decimal `json:"AdjC"`
+	AdjustmentVolume decimal.Decimal `json:"AdjVo"`
 }
 
 // 翌営業日に決算発表予定の銘柄
@@ -280,13 +280,13 @@ type jQuantsFinancialStatement struct {
 
 // TradingCalendarsInfo 相場の営業日の情報のスライス
 type TradingCalendarsResponse struct {
-	TradingCalendars []TradingCalendar `json:"trading_calendar"`
+	TradingCalendars []TradingCalendar `json:"data"`
 }
 
 // TradingCalendar 相場の営業日の情報
 type TradingCalendar struct {
 	Date            string `json:"Date"`
-	HolidayDivision string `json:"HolidayDivision"`
+	HolidayDivision string `json:"HolDiv"`
 }
 
 func (c *StockAPIClient) jQuantsAnnounceFinsScheduleResponseToResponseInfo(
@@ -315,7 +315,7 @@ func (c *StockAPIClient) jQuantsAnnounceFinsScheduleResponseToResponseInfo(
 
 func (c *StockAPIClient) jQuantsStockBrandsResponseToResponseInfo(response jQuantsStockBrandsResponse) []*gateway.StockBrand {
 	var stockBrands []*gateway.StockBrand
-	for _, v := range response.Info {
+	for _, v := range response.Data {
 		date, err := util.FormatStringToDate(v.Date)
 		if err != nil {
 			log.Printf("util.FormatStringToDate: %v", err)

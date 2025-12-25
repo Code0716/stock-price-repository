@@ -27,12 +27,8 @@ const (
 )
 
 func (c *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockBrand, error) {
-	idToken, err := c.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "GetOrSetJQuantsAPIIDTokenToRedis error")
-	}
 
-	u, err := url.Parse(fmt.Sprintf("%s/listed/info", config.GetJQuants().JQuantsBaseURLV1))
+	u, err := url.Parse(fmt.Sprintf("%s/equities/master", config.GetJQuants().JQuantsBaseURLV2))
 	if err != nil {
 		return nil, err
 	}
@@ -45,22 +41,16 @@ func (c *StockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockBr
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	req.Header.Set("User-Agent", "SttApp/1.0 Go-http-client/1.1 (linux)")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
-
+	req.Header.Set("x-api-key", config.GetJQuants().JQuantsBaseURLV2APIKey)
 	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
+
 	if res.StatusCode == http.StatusUnauthorized {
-		// IDToken再取得
-		_, err := c.getNewIDToken(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "getNewIDToken error")
-		}
-		// 再度リクエスト。だめだったらエラーを返す。
-		result, err := c.GetStockBrands(ctx)
-		return result, err
+		return nil, errors.Wrap(err, "http StatusUnauthorized error")
 	}
+
 	defer res.Body.Close()
 
 	resBody, err := io.ReadAll(res.Body)
@@ -137,19 +127,15 @@ func (c *StockAPIClient) GetAnnounceFinSchedule(ctx context.Context) ([]*gateway
 	return responseInfo, nil
 }
 
+// getDailyPricesBySymbolAndRangeJQ - 指定した証券コードの日足を指定した期間分取得する
 // 場中の価格が取れるわけではない
 func (c *StockAPIClient) getDailyPricesBySymbolAndRangeJQ(ctx context.Context, symbol string, dateFrom, dateTo time.Time) ([]*gateway.StockPrice, error) {
-	idToken, err := c.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "GetCurrentStockPriceBySymbol error")
-	}
-
 	// 念の為、土日祝日だったら前の日にする。
 	lastWeekday := c.getLastWeekday(dateTo)
 	u, err := url.Parse(
 		fmt.Sprintf(
-			"%s/prices/daily_quotes?code=%s&from=%s&to=%s",
-			config.GetJQuants().JQuantsBaseURLV1,
+			"%s/equities/bars/daily?code=%s&from=%s&to=%s",
+			config.GetJQuants().JQuantsBaseURLV2,
 			symbol,
 			util.DatetimeToDateStr(dateFrom),
 			util.DatetimeToDateStr(lastWeekday),
@@ -165,22 +151,69 @@ func (c *StockAPIClient) getDailyPricesBySymbolAndRangeJQ(ctx context.Context, s
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
+	req.Header.Set("x-api-key", config.GetJQuants().JQuantsBaseURLV2APIKey)
 
 	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
+
 	if res.StatusCode == http.StatusUnauthorized {
-		// IDToken再取得
-		_, err := c.getNewIDToken(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "getNewIDToken error")
-		}
-		// 再度リクエスト。だめだったらエラーを返す。
-		result, err := c.getDailyPricesBySymbolAndRangeJQ(ctx, symbol, dateFrom, dateTo)
-		return result, err
+		return nil, errors.Wrap(err, "http StatusUnauthorized error")
 	}
+
+	defer res.Body.Close()
+
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "j-quants.api io.ReadAll error")
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
+	}
+
+	var response jQuantsDailyQuotesResponse
+	if err := json.Unmarshal(resBody, &response); err != nil {
+		log.Printf("json parse error: %v", err)
+		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
+	}
+	responseInfo := c.jQuantsDailyQuotesResponseToResponseInfo(response)
+
+	return responseInfo, nil
+}
+
+// getAllBrandDailyPricesByDate - すべての銘柄の指定した日の日足を取得する
+func (c *StockAPIClient) getAllBrandDailyPricesByDate(ctx context.Context, date time.Time) ([]*gateway.StockPrice, error) {
+	// 念の為、土日祝日だったら前の日にする。
+	u, err := url.Parse(
+		fmt.Sprintf(
+			"%s/equities/bars/daily?date=%s",
+			config.GetJQuants().JQuantsBaseURLV2,
+			util.DatetimeToDateStr(date),
+		))
+	if err != nil {
+		return nil, errors.Wrap(err, u.String())
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "j-quants.api request error")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	req.Header.Set("x-api-key", config.GetJQuants().JQuantsBaseURLV2APIKey)
+
+	res, err := c.request.GetHTTPClient().Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
+	}
+
+	if res.StatusCode == http.StatusUnauthorized {
+		return nil, errors.Wrap(err, "http StatusUnauthorized error")
+	}
+
 	defer res.Body.Close()
 
 	resBody, err := io.ReadAll(res.Body)
@@ -214,20 +247,15 @@ func (c *StockAPIClient) getLastWeekday(t time.Time) time.Time {
 }
 
 func (c *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol string, date *time.Time) ([]*gateway.FinancialStatementsResponseInfo, error) {
-	idToken, err := c.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "GetOrSetJQuantsAPIIDTokenToRedis error")
-	}
-
-	u, err := url.Parse(fmt.Sprintf("%s/fins/statements?code=%s", config.GetJQuants().JQuantsBaseURLV1, symbol))
+	u, err := url.Parse(fmt.Sprintf("%s/fins/summary?code=%s", config.GetJQuants().JQuantsBaseURLV2, symbol))
 	if err != nil {
 		return nil, errors.Wrap(err, u.String())
 	}
 
 	if date != nil {
 		u, err = url.Parse(
-			fmt.Sprintf("%s/fins/statements?date=%s",
-				config.GetJQuants().JQuantsBaseURLV1,
+			fmt.Sprintf("%s/fins/summary?date=%s",
+				config.GetJQuants().JQuantsBaseURLV2,
 				util.DatetimeToDateStr(
 					util.FromPtrGenerics(date),
 				),
@@ -245,22 +273,17 @@ func (c *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol st
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
+	req.Header.Set("x-api-key", config.GetJQuants().JQuantsBaseURLV2APIKey)
 
 	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
+
 	if res.StatusCode == http.StatusUnauthorized {
-		// IDToken再取得
-		_, err := c.getNewIDToken(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "getNewIDToken error")
-		}
-		// 再度リクエスト。だめだったらエラーを返す。
-		result, err := c.getFinancialStatementsJQ(ctx, symbol, date)
-		return result, err
+		return nil, errors.Wrap(err, "http StatusUnauthorized error")
 	}
+
 	defer res.Body.Close()
 
 	resBody, err := io.ReadAll(res.Body)
@@ -283,14 +306,10 @@ func (c *StockAPIClient) getFinancialStatementsJQ(ctx context.Context, symbol st
 }
 
 func (c *StockAPIClient) getTradingCalendarsInfo(ctx context.Context, filter gateway.TradingCalendarsInfoFilter) ([]*gateway.TradingCalendarsInfo, error) {
-	idToken, err := c.GetOrSetJQuantsAPIIDTokenToRedis(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "GetOrSetJQuantsAPIIDTokenToRedis error")
-	}
 
 	u, err := url.Parse(fmt.Sprintf(
-		"%s/markets/trading_calendar?from=%s&to=%s",
-		config.GetJQuants().JQuantsBaseURLV1,
+		"%s/markets/calendar?from=%s&to=%s",
+		config.GetJQuants().JQuantsBaseURLV2,
 		util.DatetimeToDateStr(filter.From),
 		util.DatetimeToDateStr(filter.To),
 	),
@@ -306,21 +325,15 @@ func (c *StockAPIClient) getTradingCalendarsInfo(ctx context.Context, filter gat
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", idToken))
+	req.Header.Set("x-api-key", config.GetJQuants().JQuantsBaseURLV2APIKey)
 
 	res, err := c.request.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
 	}
 	if res.StatusCode == http.StatusUnauthorized {
-		// IDToken再取得
-		_, err := c.getNewIDToken(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "getNewIDToken error")
-		}
-		// 再度リクエスト。だめだったらエラーを返す。
-		result, err := c.getTradingCalendarsInfo(ctx, filter)
-		return result, err
+
+		return nil, errors.Wrap(err, "http StatusUnauthorized error")
 	}
 	defer res.Body.Close()
 

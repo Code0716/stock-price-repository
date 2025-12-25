@@ -23,7 +23,7 @@ func NewUpdateStockBrandsV1Command(
 
 func (c *UpdateStockBrandsV1Command) Command() *Command {
 	return &Command{
-		Name:   "update_stock_brands_v1",
+		Name:   "update_stock_brands_v2",
 		Usage:  "株式銘柄をj-Quants取得してdbに保存する。",
 		Action: c.Action,
 	}

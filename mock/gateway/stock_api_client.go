@@ -42,6 +42,21 @@ func (m *MockStockAPIClient) EXPECT() *MockStockAPIClientMockRecorder {
 	return m.recorder
 }
 
+// GetAllBrandDailyPricesByDate mocks base method.
+func (m *MockStockAPIClient) GetAllBrandDailyPricesByDate(ctx context.Context, date time.Time) ([]*gateway.StockPrice, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllBrandDailyPricesByDate", ctx, date)
+	ret0, _ := ret[0].([]*gateway.StockPrice)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllBrandDailyPricesByDate indicates an expected call of GetAllBrandDailyPricesByDate.
+func (mr *MockStockAPIClientMockRecorder) GetAllBrandDailyPricesByDate(ctx, date any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllBrandDailyPricesByDate", reflect.TypeOf((*MockStockAPIClient)(nil).GetAllBrandDailyPricesByDate), ctx, date)
+}
+
 // GetAnnounceFinSchedule mocks base method.
 func (m *MockStockAPIClient) GetAnnounceFinSchedule(ctx context.Context) ([]*gateway.AnnounceFinScheduleResponseInfo, error) {
 	m.ctrl.T.Helper()

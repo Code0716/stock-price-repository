@@ -56,8 +56,14 @@ func (c *StockAPIClient) GetCurrentStockPriceBySymbol(ctx context.Context, symbo
 	return c.getCurrentStockPriceBySymbolYF(ctx, symbol.String())
 }
 
+// // getDailyPricesBySymbolAndRangeJQ - 指定した証券コードの日足を指定した期間分取得する
 func (c *StockAPIClient) GetDailyPricesBySymbolAndRange(ctx context.Context, symbol gateway.StockAPISymbol, dateFrom, dateTo time.Time) ([]*gateway.StockPrice, error) {
 	return c.getDailyPricesBySymbolAndRangeJQ(ctx, symbol.String(), dateFrom, dateTo)
+}
+
+// getAllBrandDailyPricesByDate - すべての銘柄の指定した日の日足を取得する
+func (c *StockAPIClient) GetAllBrandDailyPricesByDate(ctx context.Context, date time.Time) ([]*gateway.StockPrice, error) {
+	return c.getAllBrandDailyPricesByDate(ctx, date)
 }
 
 // GetFinancialStatementsBySymbol シンボルから財務情報の取得

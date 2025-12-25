@@ -22,6 +22,7 @@ type StockAPIClient interface {
 	GetStockBrands(ctx context.Context) ([]*StockBrand, error)
 	GetAnnounceFinSchedule(ctx context.Context) ([]*AnnounceFinScheduleResponseInfo, error)
 	GetDailyPricesBySymbolAndRange(ctx context.Context, symbol StockAPISymbol, dateFrom, dateTo time.Time) ([]*StockPrice, error)
+	GetAllBrandDailyPricesByDate(ctx context.Context, date time.Time) ([]*StockPrice, error)
 	GetFinancialStatementsBySymbol(ctx context.Context, symbol StockAPISymbol) ([]*FinancialStatementsResponseInfo, error)
 	GetFinancialStatementsByDate(ctx context.Context, date time.Time) ([]*FinancialStatementsResponseInfo, error)
 	GetTradingCalendarsInfo(ctx context.Context, filter TradingCalendarsInfoFilter) ([]*TradingCalendarsInfo, error)

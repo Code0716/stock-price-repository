@@ -83,6 +83,10 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPrices(ctx
 
 // newStockBrandDailyPrice - StockBrandDailyPrice 作成
 func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPrice(stockBrand *models.StockBrand, prices *gateway.StockPrice, now time.Time) *models.StockBrandDailyPrice {
+	if stockBrand == nil {
+		return nil
+	}
+
 	if prices.High.IsZero() && prices.Close.IsZero() && prices.Low.IsZero() && prices.Open.IsZero() {
 		return nil
 	}

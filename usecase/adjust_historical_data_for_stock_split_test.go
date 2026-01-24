@@ -16,7 +16,8 @@ import (
 
 func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStockSplit(t *testing.T) {
 	type fields struct {
-		StockBrandsDailyPriceForAnalyzeRepository func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository
+		stockBrandsDailyPriceForAnalyzeRepository func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository
+		appliedStockSplitsHistoryRepository       func(ctrl *gomock.Controller) repositories.AppliedStockSplitsHistoryRepository
 	}
 	type args struct {
 		ctx        context.Context
@@ -34,8 +35,12 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 		{
 			name: "正常系: 分割実行 (1:2分割)",
 			fields: fields{
-				StockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
+				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
 					mock := mock_repositories.NewMockStockBrandsDailyPriceForAnalyzeRepository(ctrl)
+
+					// 株式分割履歴の存在確認
+					// (このフィールドは fields に移動したため、ここでは設定せず、下の appliedStockSplitsHistoryRepository で設定します)
+
 					// データ取得のモック
 					mock.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Any()).Return([]*models.StockBrandDailyPriceForAnalyze{
 						{
@@ -67,6 +72,39 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 					})
 					return mock
 				},
+				appliedStockSplitsHistoryRepository: func(ctrl *gomock.Controller) repositories.AppliedStockSplitsHistoryRepository {
+					mock := mock_repositories.NewMockAppliedStockSplitsHistoryRepository(ctrl)
+					// 未実行であることを返す
+					mock.EXPECT().Exists(gomock.Any(), "1001", gomock.Any()).Return(false, nil)
+					// 履歴登録が呼ばれることを確認
+					mock.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+					return mock
+				},
+			},
+			args: args{
+				ctx:        context.Background(),
+				code:       "1001",
+				splitDate:  time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+				splitRatio: decimal.NewFromInt(2),
+				dryRun:     false,
+			},
+			wantErr: false,
+		},
+		{
+			name: "正常系: 適用済みのためスキップ",
+			fields: fields{
+				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
+					mock := mock_repositories.NewMockStockBrandsDailyPriceForAnalyzeRepository(ctrl)
+					// 実行済みの場合はデータ取得も保存も呼ばれない
+					mock.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Any()).Times(0)
+					return mock
+				},
+				appliedStockSplitsHistoryRepository: func(ctrl *gomock.Controller) repositories.AppliedStockSplitsHistoryRepository {
+					mock := mock_repositories.NewMockAppliedStockSplitsHistoryRepository(ctrl)
+					// 適用済みを返す
+					mock.EXPECT().Exists(gomock.Any(), "1001", gomock.Any()).Return(true, nil)
+					return mock
+				},
 			},
 			args: args{
 				ctx:        context.Background(),
@@ -80,7 +118,7 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 		{
 			name: "正常系: DryRun (保存処理が呼ばれない)",
 			fields: fields{
-				StockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
+				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
 					mock := mock_repositories.NewMockStockBrandsDailyPriceForAnalyzeRepository(ctrl)
 					mock.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Any()).Return([]*models.StockBrandDailyPriceForAnalyze{
 						{
@@ -98,6 +136,13 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 					mock.EXPECT().CreateStockBrandDailyPriceForAnalyze(gomock.Any(), gomock.Any()).Times(0)
 					return mock
 				},
+				appliedStockSplitsHistoryRepository: func(ctrl *gomock.Controller) repositories.AppliedStockSplitsHistoryRepository {
+					mock := mock_repositories.NewMockAppliedStockSplitsHistoryRepository(ctrl)
+					mock.EXPECT().Exists(gomock.Any(), "1001", gomock.Any()).Return(false, nil)
+					// DryRun の場合は履歴登録も呼ばれない
+					mock.EXPECT().Create(gomock.Any(), gomock.Any()).Times(0)
+					return mock
+				},
 			},
 			args: args{
 				ctx:        context.Background(),
@@ -111,10 +156,15 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 		{
 			name: "正常系: 対象データなし",
 			fields: fields{
-				StockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
+				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
 					mock := mock_repositories.NewMockStockBrandsDailyPriceForAnalyzeRepository(ctrl)
 					mock.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Any()).Return([]*models.StockBrandDailyPriceForAnalyze{}, nil)
 					mock.EXPECT().CreateStockBrandDailyPriceForAnalyze(gomock.Any(), gomock.Any()).Times(0)
+					return mock
+				},
+				appliedStockSplitsHistoryRepository: func(ctrl *gomock.Controller) repositories.AppliedStockSplitsHistoryRepository {
+					mock := mock_repositories.NewMockAppliedStockSplitsHistoryRepository(ctrl)
+					mock.EXPECT().Exists(gomock.Any(), "1001", gomock.Any()).Return(false, nil)
 					return mock
 				},
 			},
@@ -130,9 +180,14 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 		{
 			name: "異常系: データ取得エラー",
 			fields: fields{
-				StockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
+				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
 					mock := mock_repositories.NewMockStockBrandsDailyPriceForAnalyzeRepository(ctrl)
 					mock.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
+					return mock
+				},
+				appliedStockSplitsHistoryRepository: func(ctrl *gomock.Controller) repositories.AppliedStockSplitsHistoryRepository {
+					mock := mock_repositories.NewMockAppliedStockSplitsHistoryRepository(ctrl)
+					mock.EXPECT().Exists(gomock.Any(), "1001", gomock.Any()).Return(false, nil)
 					return mock
 				},
 			},
@@ -148,7 +203,7 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 		{
 			name: "異常系: データ保存エラー",
 			fields: fields{
-				StockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
+				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
 					mock := mock_repositories.NewMockStockBrandsDailyPriceForAnalyzeRepository(ctrl)
 					mock.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Any()).Return([]*models.StockBrandDailyPriceForAnalyze{
 						{
@@ -163,6 +218,11 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 						},
 					}, nil)
 					mock.EXPECT().CreateStockBrandDailyPriceForAnalyze(gomock.Any(), gomock.Any()).Return(errors.New("db save error"))
+					return mock
+				},
+				appliedStockSplitsHistoryRepository: func(ctrl *gomock.Controller) repositories.AppliedStockSplitsHistoryRepository {
+					mock := mock_repositories.NewMockAppliedStockSplitsHistoryRepository(ctrl)
+					mock.EXPECT().Exists(gomock.Any(), "1001", gomock.Any()).Return(false, nil)
 					return mock
 				},
 			},
@@ -181,9 +241,10 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			ui := &AdjustHistoricalDataForStockSplitInteractor{
-				StockBrandsDailyPriceForAnalyzeRepository: tt.fields.StockBrandsDailyPriceForAnalyzeRepository(ctrl),
-			}
+			ui := NewAdjustHistoricalDataForStockSplit(
+				tt.fields.stockBrandsDailyPriceForAnalyzeRepository(ctrl),
+				tt.fields.appliedStockSplitsHistoryRepository(ctrl),
+			)
 			if err := ui.AdjustHistoricalDataForStockSplit(tt.args.ctx, tt.args.code, tt.args.splitDate, tt.args.splitRatio, tt.args.dryRun); (err != nil) != tt.wantErr {
 				t.Errorf("AdjustHistoricalDataForStockSplitInteractor.AdjustHistoricalDataForStockSplit() error = %v, wantErr %v", err, tt.wantErr)
 			}

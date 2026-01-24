@@ -102,27 +102,44 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
 
 				// 主要市場の3銘柄についてのみAPIコールが行われることを期待
-				for _, symbol := range []string{"1001", "1002", "1003"} {
-					mockStockAPI.EXPECT().GetDailyPricesBySymbolAndRange(
-						gomock.Any(),
-						gateway.StockAPISymbol(symbol),
-						gomock.Any(),
-						gomock.Any(),
-					).DoAndReturn(func(_ context.Context, sym gateway.StockAPISymbol, _, to time.Time) ([]*gateway.StockPrice, error) {
-						return []*gateway.StockPrice{
-							{
-								Date:            to,
-								TickerSymbol:    string(sym),
-								Open:            decimal.NewFromInt(100),
-								High:            decimal.NewFromInt(110),
-								Low:             decimal.NewFromInt(90),
-								Close:           decimal.NewFromInt(105),
-								Volume:          1000,
-								AdjustmentClose: decimal.NewFromInt(105),
-							},
-						}, nil
-					})
-				}
+
+				mockStockAPI.EXPECT().GetAllBrandDailyPricesByDate(
+					gomock.Any(),
+					gomock.Any(),
+				).DoAndReturn(func(_ context.Context, to time.Time) ([]*gateway.StockPrice, error) {
+					return []*gateway.StockPrice{
+						{
+							Date:            to,
+							TickerSymbol:    "1001",
+							Open:            decimal.NewFromInt(100),
+							High:            decimal.NewFromInt(110),
+							Low:             decimal.NewFromInt(90),
+							Close:           decimal.NewFromInt(105),
+							Volume:          1000,
+							AdjustmentClose: decimal.NewFromInt(105),
+						},
+						{
+							Date:            to,
+							TickerSymbol:    "1002",
+							Open:            decimal.NewFromInt(100),
+							High:            decimal.NewFromInt(110),
+							Low:             decimal.NewFromInt(90),
+							Close:           decimal.NewFromInt(105),
+							Volume:          1000,
+							AdjustmentClose: decimal.NewFromInt(105),
+						},
+						{
+							Date:            to,
+							TickerSymbol:    "1003",
+							Open:            decimal.NewFromInt(100),
+							High:            decimal.NewFromInt(110),
+							Low:             decimal.NewFromInt(90),
+							Close:           decimal.NewFromInt(105),
+							Volume:          1000,
+							AdjustmentClose: decimal.NewFromInt(105),
+						},
+					}, nil
+				}).Times(5)
 
 				// market_code="999" の銘柄についてはAPIコールされないことを期待（Timesを設定しない）
 			},
@@ -132,7 +149,7 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 				var prices []*genModel.StockBrandsDailyPrice
 				err = db.Find(&prices).Error
 				assert.NoError(t, err)
-				assert.Len(t, prices, 3, "主要市場の3銘柄のみ日足データが作成されるべき")
+				assert.Len(t, prices, 15, "主要市場の3銘柄 * 5日分 = 15レコード作成されるべき")
 
 				// その他市場の銘柄（1004）について日足データが作成されていないことを確認
 				var otherMarketPrices []*genModel.StockBrandsDailyPrice
@@ -141,17 +158,18 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 				assert.Len(t, otherMarketPrices, 0, "market_code=999の銘柄は日足データが作成されないべき")
 
 				// 作成された日足データの ticker_symbol を確認
-				actualSymbols := make([]string, 0, len(prices))
-				for _, p := range prices {
-					actualSymbols = append(actualSymbols, p.TickerSymbol)
-				}
-				assert.ElementsMatch(t, []string{"1001", "1002", "1003"}, actualSymbols)
+				var uniqueSymbols []string
+				err = db.Model(&genModel.StockBrandsDailyPrice{}).
+					Distinct("ticker_symbol").
+					Pluck("ticker_symbol", &uniqueSymbols).Error
+				assert.NoError(t, err)
+				assert.ElementsMatch(t, []string{"1001", "1002", "1003"}, uniqueSymbols)
 
 				// analyze リポジトリも同様に主要市場のみであることを確認
 				var analyzePrices []*genModel.StockBrandsDailyPriceForAnalyze
 				err = db.Find(&analyzePrices).Error
 				assert.NoError(t, err)
-				assert.Len(t, analyzePrices, 3, "主要市場の3銘柄のみ分析用データが作成されるべき")
+				assert.Len(t, analyzePrices, 15, "主要市場の3銘柄 * 5日分 = 15レコード作成されるべき")
 			},
 		},
 	}

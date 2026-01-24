@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/di"
@@ -14,6 +15,10 @@ import (
 func main() {
 	config.LoadEnvConfig()
 	ctx := context.Background()
+	if loc, err := time.LoadLocation("Asia/Tokyo"); err == nil {
+		time.Local = loc
+	}
+
 	cli, cleanup, err := di.InitializeCli(ctx)
 	if err != nil {
 		log.Fatal(ctx, "failed to initialize cli", zap.Error(err))

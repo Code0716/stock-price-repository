@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Code0716/stock-price-repository/models"
@@ -17,15 +18,18 @@ type AdjustHistoricalDataForStockSplit interface {
 
 // AdjustHistoricalDataForStockSplitInteractor Interactor
 type AdjustHistoricalDataForStockSplitInteractor struct {
-	StockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository
+	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository
+	appliedStockSplitsHistoryRepository       repositories.AppliedStockSplitsHistoryRepository
 }
 
 // NewAdjustHistoricalDataForStockSplit New
 func NewAdjustHistoricalDataForStockSplit(
 	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository,
+	appliedStockSplitsHistoryRepository repositories.AppliedStockSplitsHistoryRepository,
 ) AdjustHistoricalDataForStockSplit {
 	return &AdjustHistoricalDataForStockSplitInteractor{
-		StockBrandsDailyPriceForAnalyzeRepository: stockBrandsDailyPriceForAnalyzeRepository,
+		stockBrandsDailyPriceForAnalyzeRepository: stockBrandsDailyPriceForAnalyzeRepository,
+		appliedStockSplitsHistoryRepository:       appliedStockSplitsHistoryRepository,
 	}
 }
 
@@ -46,10 +50,19 @@ func (ui *AdjustHistoricalDataForStockSplitInteractor) AdjustHistoricalDataForSt
 	// ここでは splitDate より前の日付 ( < splitDate ) を対象とするため、 DateTo に splitDate の前日を設定する。
 	// ただし、ListDailyPricesBySymbolFilter の DateTo は inclusive (Lte) なので、
 	// splitDate.AddDate(0, 0, -1) をセットする。
-
 	targetDateTo := splitDate.AddDate(0, 0, -1)
 
-	analyzeDailyPrices, err := ui.StockBrandsDailyPriceForAnalyzeRepository.ListDailyPricesBySymbol(ctx, models.ListDailyPricesBySymbolFilter{
+	// 株式分割履歴から実行済みか確認する。
+	exists, err := ui.appliedStockSplitsHistoryRepository.Exists(ctx, code, splitDate)
+	if err != nil {
+		return err
+	}
+	if exists {
+		log.Printf("Stock split adjustment already applied for code: %s on date: %v", code, splitDate)
+		return nil
+	}
+
+	analyzeDailyPrices, err := ui.stockBrandsDailyPriceForAnalyzeRepository.ListDailyPricesBySymbol(ctx, models.ListDailyPricesBySymbolFilter{
 		TickerSymbol: code,
 		DateTo:       &targetDateTo,
 	})
@@ -58,51 +71,92 @@ func (ui *AdjustHistoricalDataForStockSplitInteractor) AdjustHistoricalDataForSt
 	}
 
 	if len(analyzeDailyPrices) == 0 {
-		fmt.Printf("No historical data found for code: %s before %v in StockBrandsDailyPriceForAnalyze\n", code, splitDate)
+		log.Printf("No historical data found for code: %s before %v in StockBrandsDailyPriceForAnalyze", code, splitDate)
+		return nil
+	}
+
+	err = ui.updateAnalyzePrices(ctx, analyzeDailyPrices, code, splitDate, splitRatio, dryRun)
+	if err != nil {
+		return err
+	}
+
+	if !dryRun {
+
+		// 株式分割履歴を登録する
+		history := models.NewAppliedStockSplitHistory(
+			code,
+			splitDate,
+			splitRatio,
+		)
+		err = ui.appliedStockSplitsHistoryRepository.Create(ctx, history)
+		if err != nil {
+			return err
+		}
+	}
+
+	if dryRun {
+		fmt.Printf("DryRun finished.\n")
+	}
+
+	return nil
+}
+
+// updateAnalyzePrices 分割後の価格に調整する
+func (ui *AdjustHistoricalDataForStockSplitInteractor) updateAnalyzePrices(
+	ctx context.Context,
+	analyzeDailyPrices []*models.StockBrandDailyPriceForAnalyze,
+	code string,
+	splitDate time.Time,
+	splitRatio decimal.Decimal,
+	dryRun bool,
+) error {
+
+	if len(analyzeDailyPrices) == 0 {
+		log.Printf("No historical data found for code: %s before %v in StockBrandsDailyPriceForAnalyze", code, splitDate)
 	} else {
 		var updateAnalyzePrices []*models.StockBrandDailyPriceForAnalyze
-
 		for _, price := range analyzeDailyPrices {
 			newOpen := price.Open.Div(splitRatio)
 			newClose := price.Close.Div(splitRatio)
 			newHigh := price.High.Div(splitRatio)
 			newLow := price.Low.Div(splitRatio)
 			newAdjClose := price.Adjclose.Div(splitRatio)
-
 			newVolumeDecimal := decimal.NewFromInt(price.Volume).Mul(splitRatio)
 			newVolume := newVolumeDecimal.IntPart()
+			// TODO: models.NewStockBrandDailyPriceForAnalyzeを使うように修正する。
+			newPrice := models.NewStockBrandDailyPriceForAnalyze(
+				price.ID,
+				price.Date,
+				price.TickerSymbol,
+				newHigh,
+				newLow,
+				newOpen,
+				newClose,
+				newVolume,
+				newAdjClose,
+				price.CreatedAt,
+				time.Now(),
+			)
 
 			if dryRun {
-				fmt.Printf("[StockBrandDailyPriceForAnalyze] DryRun: %s Date: %s Open: %s -> %s, Close: %s -> %s, Volume: %d -> %d\n",
+				log.Printf("[StockBrandDailyPriceForAnalyze] DryRun: %s Date: %s Open: %s -> %s, Close: %s -> %s, Volume: %d -> %d",
 					code, price.Date.Format("2006-01-02"),
-					price.Open.String(), newOpen.String(),
-					price.Close.String(), newClose.String(),
-					price.Volume, newVolume,
+					price.Open.String(), newPrice.Open.String(),
+					price.Close.String(), newPrice.Close.String(),
+					price.Volume, newPrice.Volume,
 				)
 			} else {
-				price.Open = newOpen
-				price.Close = newClose
-				price.High = newHigh
-				price.Low = newLow
-				price.Adjclose = newAdjClose
-				price.Volume = newVolume
-				price.UpdatedAt = time.Now()
-
-				updateAnalyzePrices = append(updateAnalyzePrices, price)
+				updateAnalyzePrices = append(updateAnalyzePrices, newPrice)
 			}
 		}
 
 		if !dryRun && len(updateAnalyzePrices) > 0 {
-			err = ui.StockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandDailyPriceForAnalyze(ctx, updateAnalyzePrices)
+			err := ui.stockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandDailyPriceForAnalyze(ctx, updateAnalyzePrices)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Successfully updated %d records for code: %s in StockBrandsDailyPriceForAnalyze\n", len(updateAnalyzePrices), code)
-		}
-	}
 
-	if dryRun {
-		fmt.Printf("DryRun finished.\n")
+		}
 	}
 
 	return nil

@@ -18,6 +18,7 @@ import (
 var (
 	Q                               = new(Query)
 	AnalyzeStockBrandPriceHistory   *analyzeStockBrandPriceHistory
+	AppliedStockSplitsHistory       *appliedStockSplitsHistory
 	DjiStockAverageDailyStockPrice  *djiStockAverageDailyStockPrice
 	HighVolumeStockBrand            *highVolumeStockBrand
 	NikkeiStockAverageDailyPrice    *nikkeiStockAverageDailyPrice
@@ -32,6 +33,7 @@ var (
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	*Q = *Use(db, opts...)
 	AnalyzeStockBrandPriceHistory = &Q.AnalyzeStockBrandPriceHistory
+	AppliedStockSplitsHistory = &Q.AppliedStockSplitsHistory
 	DjiStockAverageDailyStockPrice = &Q.DjiStockAverageDailyStockPrice
 	HighVolumeStockBrand = &Q.HighVolumeStockBrand
 	NikkeiStockAverageDailyPrice = &Q.NikkeiStockAverageDailyPrice
@@ -47,6 +49,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
 		db:                              db,
 		AnalyzeStockBrandPriceHistory:   newAnalyzeStockBrandPriceHistory(db, opts...),
+		AppliedStockSplitsHistory:       newAppliedStockSplitsHistory(db, opts...),
 		DjiStockAverageDailyStockPrice:  newDjiStockAverageDailyStockPrice(db, opts...),
 		HighVolumeStockBrand:            newHighVolumeStockBrand(db, opts...),
 		NikkeiStockAverageDailyPrice:    newNikkeiStockAverageDailyPrice(db, opts...),
@@ -63,6 +66,7 @@ type Query struct {
 	db *gorm.DB
 
 	AnalyzeStockBrandPriceHistory   analyzeStockBrandPriceHistory
+	AppliedStockSplitsHistory       appliedStockSplitsHistory
 	DjiStockAverageDailyStockPrice  djiStockAverageDailyStockPrice
 	HighVolumeStockBrand            highVolumeStockBrand
 	NikkeiStockAverageDailyPrice    nikkeiStockAverageDailyPrice
@@ -80,6 +84,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
 		db:                              db,
 		AnalyzeStockBrandPriceHistory:   q.AnalyzeStockBrandPriceHistory.clone(db),
+		AppliedStockSplitsHistory:       q.AppliedStockSplitsHistory.clone(db),
 		DjiStockAverageDailyStockPrice:  q.DjiStockAverageDailyStockPrice.clone(db),
 		HighVolumeStockBrand:            q.HighVolumeStockBrand.clone(db),
 		NikkeiStockAverageDailyPrice:    q.NikkeiStockAverageDailyPrice.clone(db),
@@ -104,6 +109,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
 		db:                              db,
 		AnalyzeStockBrandPriceHistory:   q.AnalyzeStockBrandPriceHistory.replaceDB(db),
+		AppliedStockSplitsHistory:       q.AppliedStockSplitsHistory.replaceDB(db),
 		DjiStockAverageDailyStockPrice:  q.DjiStockAverageDailyStockPrice.replaceDB(db),
 		HighVolumeStockBrand:            q.HighVolumeStockBrand.replaceDB(db),
 		NikkeiStockAverageDailyPrice:    q.NikkeiStockAverageDailyPrice.replaceDB(db),
@@ -118,6 +124,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 
 type queryCtx struct {
 	AnalyzeStockBrandPriceHistory   IAnalyzeStockBrandPriceHistoryDo
+	AppliedStockSplitsHistory       IAppliedStockSplitsHistoryDo
 	DjiStockAverageDailyStockPrice  IDjiStockAverageDailyStockPriceDo
 	HighVolumeStockBrand            IHighVolumeStockBrandDo
 	NikkeiStockAverageDailyPrice    INikkeiStockAverageDailyPriceDo
@@ -132,6 +139,7 @@ type queryCtx struct {
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
 		AnalyzeStockBrandPriceHistory:   q.AnalyzeStockBrandPriceHistory.WithContext(ctx),
+		AppliedStockSplitsHistory:       q.AppliedStockSplitsHistory.WithContext(ctx),
 		DjiStockAverageDailyStockPrice:  q.DjiStockAverageDailyStockPrice.WithContext(ctx),
 		HighVolumeStockBrand:            q.HighVolumeStockBrand.WithContext(ctx),
 		NikkeiStockAverageDailyPrice:    q.NikkeiStockAverageDailyPrice.WithContext(ctx),

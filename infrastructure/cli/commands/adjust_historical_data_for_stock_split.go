@@ -1,13 +1,12 @@
 package commands
 
 import (
-	"time"
-
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"github.com/urfave/cli/v2"
 
 	"github.com/Code0716/stock-price-repository/usecase"
+	"github.com/Code0716/stock-price-repository/util"
 )
 
 // AdjustHistoricalDataForStockSplitCommand is a command to adjust historical data for stock splits.
@@ -50,10 +49,6 @@ func (c *AdjustHistoricalDataForStockSplitCommand) Command() *Command {
 				Name:  "dry-run",
 				Usage: "Perform a dry run without saving changes",
 			},
-			&cli.StringSliceFlag{
-				Name:  "target",
-				Usage: "Target tables to update (normal, analyze). If omitted, both are updated.",
-			},
 		},
 	}
 }
@@ -65,7 +60,7 @@ func (c *AdjustHistoricalDataForStockSplitCommand) Action(ctx *cli.Context) erro
 	splitRatioFloat := ctx.Float64("split-ratio")
 	dryRun := ctx.Bool("dry-run")
 
-	splitDate, err := time.Parse("2006-01-02", splitDateStr)
+	splitDate, err := util.FormatStringToDate(splitDateStr)
 	if err != nil {
 		return errors.Wrap(err, "invalid split-date format. use YYYY-MM-DD")
 	}

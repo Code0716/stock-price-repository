@@ -14,6 +14,7 @@ type TestRunnerOptions struct {
 	CreateHistoricalDailyStockPricesV1Command *commands.CreateHistoricalDailyStockPricesV1Command
 	CreateDailyStockPriceV1Command            *commands.CreateDailyStockPriceV1Command
 	CreateNikkeiAndDjiHistoricalDataV1Command *commands.CreateNikkeiAndDjiHistoricalDataV1Command
+	AdjustHistoricalDataForStockSplitCommand  *commands.AdjustHistoricalDataForStockSplitCommand
 	IndexInteractor                           usecase.IndexInteractor
 	SlackAPIClient                            gateway.SlackAPIClient
 }
@@ -37,6 +38,9 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 	if opts.CreateNikkeiAndDjiHistoricalDataV1Command == nil {
 		opts.CreateNikkeiAndDjiHistoricalDataV1Command = commands.NewCreateNikkeiAndDjiHistoricalDataV1Command(nil)
 	}
+	if opts.AdjustHistoricalDataForStockSplitCommand == nil {
+		opts.AdjustHistoricalDataForStockSplitCommand = commands.NewAdjustHistoricalDataForStockSplitCommand(nil)
+	}
 
 	return cli.NewRunner(
 		opts.HealthCheckCommand,
@@ -45,6 +49,7 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.CreateHistoricalDailyStockPricesV1Command,
 		opts.CreateDailyStockPriceV1Command,
 		opts.CreateNikkeiAndDjiHistoricalDataV1Command,
+		opts.AdjustHistoricalDataForStockSplitCommand,
 		opts.IndexInteractor,
 		opts.SlackAPIClient,
 	)

@@ -1,0 +1,26 @@
+model: gemini-3-pro-latest
+
+# エージェントが読み込むコンテキストの設定
+context:
+  include:
+    - '**/*.go'
+    - '**/*.proto'
+    - 'go.mod'
+    - 'Makefile'
+    - 'sql/**/*.sql'
+    - 'README.md'
+    - '.gemini/styleguide.md'
+  exclude:
+    - 'vendor/**'
+    - 'node_modules/**'
+    - '**/*_gen.go' # WireやGORM Genなどの自動生成ファイルを除外
+    - 'mock/**'      # モックファイルはサイズが大きいため、必要に応じて個別に読み込む
+    - 'tmp/**'
+    - '.git/**'
+
+# 特定のツール実行を許可
+tools:
+  - name: terminal
+    allow: true
+  - name: file_system
+    allow: true

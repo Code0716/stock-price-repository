@@ -139,7 +139,7 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 							AdjustmentClose: decimal.NewFromInt(105),
 						},
 					}, nil
-				})
+				}).Times(5)
 
 				// market_code="999" の銘柄についてはAPIコールされないことを期待（Timesを設定しない）
 			},
@@ -149,7 +149,7 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 				var prices []*genModel.StockBrandsDailyPrice
 				err = db.Find(&prices).Error
 				assert.NoError(t, err)
-				assert.Len(t, prices, 3, "主要市場の3銘柄のみ日足データが作成されるべき")
+				assert.Len(t, prices, 15, "主要市場の3銘柄 * 5日分 = 15レコード作成されるべき")
 
 				// その他市場の銘柄（1004）について日足データが作成されていないことを確認
 				var otherMarketPrices []*genModel.StockBrandsDailyPrice
@@ -158,17 +158,18 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 				assert.Len(t, otherMarketPrices, 0, "market_code=999の銘柄は日足データが作成されないべき")
 
 				// 作成された日足データの ticker_symbol を確認
-				actualSymbols := make([]string, 0, len(prices))
-				for _, p := range prices {
-					actualSymbols = append(actualSymbols, p.TickerSymbol)
-				}
-				assert.ElementsMatch(t, []string{"1001", "1002", "1003"}, actualSymbols)
+				var uniqueSymbols []string
+				err = db.Model(&genModel.StockBrandsDailyPrice{}).
+					Distinct("ticker_symbol").
+					Pluck("ticker_symbol", &uniqueSymbols).Error
+				assert.NoError(t, err)
+				assert.ElementsMatch(t, []string{"1001", "1002", "1003"}, uniqueSymbols)
 
 				// analyze リポジトリも同様に主要市場のみであることを確認
 				var analyzePrices []*genModel.StockBrandsDailyPriceForAnalyze
 				err = db.Find(&analyzePrices).Error
 				assert.NoError(t, err)
-				assert.Len(t, analyzePrices, 3, "主要市場の3銘柄のみ分析用データが作成されるべき")
+				assert.Len(t, analyzePrices, 15, "主要市場の3銘柄 * 5日分 = 15レコード作成されるべき")
 			},
 		},
 	}

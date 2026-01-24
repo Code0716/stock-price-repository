@@ -15,6 +15,7 @@ import (
 	time "time"
 
 	models "github.com/Code0716/stock-price-repository/models"
+	decimal "github.com/shopspring/decimal"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,6 +41,20 @@ func NewMockStockBrandsDailyPriceInteractor(ctrl *gomock.Controller) *MockStockB
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockStockBrandsDailyPriceInteractor) EXPECT() *MockStockBrandsDailyPriceInteractorMockRecorder {
 	return m.recorder
+}
+
+// AdjustHistoricalDataForStockSplit mocks base method.
+func (m *MockStockBrandsDailyPriceInteractor) AdjustHistoricalDataForStockSplit(ctx context.Context, symbol string, splitRatio decimal.Decimal, effectiveDate time.Time, dryRun bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdjustHistoricalDataForStockSplit", ctx, symbol, splitRatio, effectiveDate, dryRun)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AdjustHistoricalDataForStockSplit indicates an expected call of AdjustHistoricalDataForStockSplit.
+func (mr *MockStockBrandsDailyPriceInteractorMockRecorder) AdjustHistoricalDataForStockSplit(ctx, symbol, splitRatio, effectiveDate, dryRun any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdjustHistoricalDataForStockSplit", reflect.TypeOf((*MockStockBrandsDailyPriceInteractor)(nil).AdjustHistoricalDataForStockSplit), ctx, symbol, splitRatio, effectiveDate, dryRun)
 }
 
 // CreateDailyStockPrice mocks base method.

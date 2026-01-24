@@ -3,7 +3,8 @@
 	migrate-file migrate-up migrate-down migrate-down-all \
 	down docker-down volume-down format build \
 	proto-setup proto-pull proto-gen proto-clean \
-	grpc-server grpc-server-docker
+	grpc-server grpc-server-docker \
+	adjust-split
 
 ## Init .env file
 # .PHONY: init
@@ -59,6 +60,14 @@ vuln-check:
 
 cli:
 	go run entrypoint/cli/main.go ${command}
+
+adjust-split:
+	go run entrypoint/cli/main.go adjust_historical_data_for_stock_split \
+		--code ${code} \
+		--split-date ${date} \
+		--split-ratio ${ratio} \
+		$(if $(dry-run),--dry-run,) 
+# make adjust-split code=9984 date=2025-12-29 ratio=4 dry-run=true。
 
 migrate-file:
 	migrate create -ext sql -dir sql/migrations -seq ${name}

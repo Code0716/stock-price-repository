@@ -13,8 +13,11 @@ import (
 
 // CreateDailyStockPrice - 全銘柄の日足を取得して保存する
 func (si *stockBrandsDailyStockPriceInteractorImpl) CreateDailyStockPrice(ctx context.Context, now time.Time) error {
-	if err := si.createDailyStockPrice(ctx, now); err != nil {
-		return errors.Wrap(err, "createDailyStockPrice error")
+	//  直近5日分の日足を作成
+	for i := range 5 {
+		if err := si.createDailyStockPrice(ctx, now.AddDate(0, 0, -i)); err != nil {
+			return errors.Wrap(err, "createDailyStockPrice error")
+		}
 	}
 	return nil
 }
@@ -66,6 +69,10 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPrices(ctx context.Context, currentBrandsMap map[string]*models.StockBrand, now time.Time) []*models.StockBrandDailyPrice {
 	stockPrices, err := si.stockAPIClient.GetAllBrandDailyPricesByDate(ctx, now)
 	if err != nil {
+		return nil
+	}
+
+	if stockPrices == nil {
 		return nil
 	}
 

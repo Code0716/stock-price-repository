@@ -27,43 +27,43 @@ type jQuantsAPIClientIDTokenResponse struct {
 }
 
 type jQuantsStockBrandsResponse struct {
-	Info []struct {
+	Data []struct {
 		Date               string `json:"Date"`
 		Code               string `json:"Code"`
-		CompanyName        string `json:"CompanyName"`
-		CompanyNameEnglish string `json:"CompanyNameEnglish"`
-		Sector17Code       string `json:"Sector17Code"`
-		Sector17CodeName   string `json:"Sector17CodeName"`
-		Sector33Code       string `json:"Sector33Code"`
-		Sector33CodeName   string `json:"Sector33CodeName"`
-		ScaleCategory      string `json:"ScaleCategory"`
-		MarketCode         string `json:"MarketCode"`
-		MarketCodeName     string `json:"MarketCodeName"`
-	} `json:"info"`
+		CompanyName        string `json:"CoName"`
+		CompanyNameEnglish string `json:"CoNameEn"`
+		Sector17Code       string `json:"S17"`
+		Sector17CodeName   string `json:"S17Nm"`
+		Sector33Code       string `json:"S33"`
+		Sector33CodeName   string `json:"S33Nm"`
+		ScaleCategory      string `json:"ScaleCat"`
+		MarketCode         string `json:"Mkt"`
+		MarketCodeName     string `json:"MktNm"`
+	} `json:"data"`
 }
 
 type jQuantsDailyQuotesResponse struct {
-	DailyQuotes []*jQuantsDailyQuote `json:"daily_quotes"`
+	DailyQuotes []*jQuantsDailyQuote `json:"Data"`
 }
 
 // 日足
 type jQuantsDailyQuote struct {
 	Date             string          `json:"Date"`
 	Code             string          `json:"Code"`
-	Open             decimal.Decimal `json:"Open"`
-	High             decimal.Decimal `json:"High"`
-	Low              decimal.Decimal `json:"Low"`
-	Close            decimal.Decimal `json:"Close"`
-	UpperLimit       string          `json:"UpperLimit"`
-	LowerLimit       string          `json:"LowerLimit"`
-	Volume           decimal.Decimal `json:"Volume"`
-	TurnoverValue    decimal.Decimal `json:"TurnoverValue"`
-	AdjustmentFactor decimal.Decimal `json:"AdjustmentFactor"`
-	AdjustmentOpen   decimal.Decimal `json:"AdjustmentOpen"`
-	AdjustmentHigh   decimal.Decimal `json:"AdjustmentHigh"`
-	AdjustmentLow    decimal.Decimal `json:"AdjustmentLow"`
-	AdjustmentClose  decimal.Decimal `json:"AdjustmentClose"`
-	AdjustmentVolume decimal.Decimal `json:"AdjustmentVolume"`
+	Open             decimal.Decimal `json:"O"`
+	High             decimal.Decimal `json:"H"`
+	Low              decimal.Decimal `json:"L"`
+	Close            decimal.Decimal `json:"C"`
+	UpperLimit       string          `json:"UL"`
+	LowerLimit       string          `json:"LL"`
+	Volume           decimal.Decimal `json:"Vo"`
+	TurnoverValue    decimal.Decimal `json:"Va"`
+	AdjustmentFactor decimal.Decimal `json:"AdjFactor"`
+	AdjustmentOpen   decimal.Decimal `json:"AdjO"`
+	AdjustmentHigh   decimal.Decimal `json:"AdjH"`
+	AdjustmentLow    decimal.Decimal `json:"AdjL"`
+	AdjustmentClose  decimal.Decimal `json:"AdjC"`
+	AdjustmentVolume decimal.Decimal `json:"AdjVo"`
 }
 
 // 翌営業日に決算発表予定の銘柄
@@ -83,210 +83,128 @@ type AnnounceFinSchedule struct {
 }
 
 type jQuantsFinancialStatementsResponse struct {
-	Statements    []jQuantsFinancialStatement `json:"statements"`
-	PaginationKey string                      `json:"pagination_key,omitempty"`
-}
-type jQuantsFinancialStatement struct {
-	DisclosedDate                                                                string `json:"DisclosedDate"`
-	DisclosedTime                                                                string `json:"DisclosedTime"`
-	LocalCode                                                                    string `json:"LocalCode"`
-	DisclosureNumber                                                             string `json:"DisclosureNumber"`
-	TypeOfDocument                                                               string `json:"TypeOfDocument"`
-	TypeOfCurrentPeriod                                                          string `json:"TypeOfCurrentPeriod"`
-	CurrentPeriodStartDate                                                       string `json:"CurrentPeriodStartDate"`
-	CurrentPeriodEndDate                                                         string `json:"CurrentPeriodEndDate"`
-	CurrentFiscalYearStartDate                                                   string `json:"CurrentFiscalYearStartDate"`
-	CurrentFiscalYearEndDate                                                     string `json:"CurrentFiscalYearEndDate"`
-	NextFiscalYearStartDate                                                      string `json:"NextFiscalYearStartDate"`
-	NextFiscalYearEndDate                                                        string `json:"NextFiscalYearEndDate"`
-	NetSales                                                                     string `json:"NetSales"`
-	OperatingProfit                                                              string `json:"OperatingProfit"`
-	OrdinaryProfit                                                               string `json:"OrdinaryProfit"`
-	Profit                                                                       string `json:"Profit"`
-	EarningsPerShare                                                             string `json:"EarningsPerShare"`
-	DilutedEarningsPerShare                                                      string `json:"DilutedEarningsPerShare"`
-	TotalAssets                                                                  string `json:"TotalAssets"`
-	Equity                                                                       string `json:"Equity"`
-	EquityToAssetRatio                                                           string `json:"EquityToAssetRatio"`
-	BookValuePerShare                                                            string `json:"BookValuePerShare"`
-	CashFlowsFromOperatingActivities                                             string `json:"CashFlowsFromOperatingActivities"`
-	CashFlowsFromInvestingActivities                                             string `json:"CashFlowsFromInvestingActivities"`
-	CashFlowsFromFinancingActivities                                             string `json:"CashFlowsFromFinancingActivities"`
-	CashAndEquivalents                                                           string `json:"CashAndEquivalents"`
-	ResultDividendPerShare1StQuarter                                             string `json:"ResultDividendPerShare1stQuarter"`
-	ResultDividendPerShare2NdQuarter                                             string `json:"ResultDividendPerShare2ndQuarter"`
-	ResultDividendPerShare3RdQuarter                                             string `json:"ResultDividendPerShare3rdQuarter"`
-	ResultDividendPerShareFiscalYearEnd                                          string `json:"ResultDividendPerShareFiscalYearEnd"`
-	ResultDividendPerShareAnnual                                                 string `json:"ResultDividendPerShareAnnual"`
-	DistributionsPerUnitREIT                                                     string `json:"DistributionsPerUnit(REIT)"`
-	ResultTotalDividendPaidAnnual                                                string `json:"ResultTotalDividendPaidAnnual"`
-	ResultPayoutRatioAnnual                                                      string `json:"ResultPayoutRatioAnnual"`
-	ForecastDividendPerShare1StQuarter                                           string `json:"ForecastDividendPerShare1stQuarter"`
-	ForecastDividendPerShare2NdQuarter                                           string `json:"ForecastDividendPerShare2ndQuarter"`
-	ForecastDividendPerShare3RdQuarter                                           string `json:"ForecastDividendPerShare3rdQuarter"`
-	ForecastDividendPerShareFiscalYearEnd                                        string `json:"ForecastDividendPerShareFiscalYearEnd"`
-	ForecastDividendPerShareAnnual                                               string `json:"ForecastDividendPerShareAnnual"`
-	ForecastDistributionsPerUnitREIT                                             string `json:"ForecastDistributionsPerUnit(REIT)"`
-	ForecastTotalDividendPaidAnnual                                              string `json:"ForecastTotalDividendPaidAnnual"`
-	ForecastPayoutRatioAnnual                                                    string `json:"ForecastPayoutRatioAnnual"`
-	NextYearForecastDividendPerShare1StQuarter                                   string `json:"NextYearForecastDividendPerShare1stQuarter"`
-	NextYearForecastDividendPerShare2NdQuarter                                   string `json:"NextYearForecastDividendPerShare2ndQuarter"`
-	NextYearForecastDividendPerShare3RdQuarter                                   string `json:"NextYearForecastDividendPerShare3rdQuarter"`
-	NextYearForecastDividendPerShareFiscalYearEnd                                string `json:"NextYearForecastDividendPerShareFiscalYearEnd"`
-	NextYearForecastDividendPerShareAnnual                                       string `json:"NextYearForecastDividendPerShareAnnual"`
-	NextYearForecastDistributionsPerUnitREIT                                     string `json:"NextYearForecastDistributionsPerUnit(REIT)"`
-	NextYearForecastPayoutRatioAnnual                                            string `json:"NextYearForecastPayoutRatioAnnual"`
-	ForecastNetSales2NdQuarter                                                   string `json:"ForecastNetSales2ndQuarter"`
-	ForecastOperatingProfit2NdQuarter                                            string `json:"ForecastOperatingProfit2ndQuarter"`
-	ForecastOrdinaryProfit2NdQuarter                                             string `json:"ForecastOrdinaryProfit2ndQuarter"`
-	ForecastProfit2NdQuarter                                                     string `json:"ForecastProfit2ndQuarter"`
-	ForecastEarningsPerShare2NdQuarter                                           string `json:"ForecastEarningsPerShare2ndQuarter"`
-	NextYearForecastNetSales2NdQuarter                                           string `json:"NextYearForecastNetSales2ndQuarter"`
-	NextYearForecastOperatingProfit2NdQuarter                                    string `json:"NextYearForecastOperatingProfit2ndQuarter"`
-	NextYearForecastOrdinaryProfit2NdQuarter                                     string `json:"NextYearForecastOrdinaryProfit2ndQuarter"`
-	NextYearForecastProfit2NdQuarter                                             string `json:"NextYearForecastProfit2ndQuarter"`
-	NextYearForecastEarningsPerShare2NdQuarter                                   string `json:"NextYearForecastEarningsPerShare2ndQuarter"`
-	ForecastNetSales                                                             string `json:"ForecastNetSales"`
-	ForecastOperatingProfit                                                      string `json:"ForecastOperatingProfit"`
-	ForecastOrdinaryProfit                                                       string `json:"ForecastOrdinaryProfit"`
-	ForecastProfit                                                               string `json:"ForecastProfit"`
-	ForecastEarningsPerShare                                                     string `json:"ForecastEarningsPerShare"`
-	NextYearForecastNetSales                                                     string `json:"NextYearForecastNetSales"`
-	NextYearForecastOperatingProfit                                              string `json:"NextYearForecastOperatingProfit"`
-	NextYearForecastOrdinaryProfit                                               string `json:"NextYearForecastOrdinaryProfit"`
-	NextYearForecastProfit                                                       string `json:"NextYearForecastProfit"`
-	NextYearForecastEarningsPerShare                                             string `json:"NextYearForecastEarningsPerShare"`
-	MaterialChangesInSubsidiaries                                                string `json:"MaterialChangesInSubsidiaries"`
-	SignificantChangesInTheScopeOfConsolidation                                  string `json:"SignificantChangesInTheScopeOfConsolidation"`
-	ChangesBasedOnRevisionsOfAccountingStandard                                  string `json:"ChangesBasedOnRevisionsOfAccountingStandard"`
-	ChangesOtherThanOnesBasedOnRevisionsOfAccountingStandard                     string `json:"ChangesOtherThanOnesBasedOnRevisionsOfAccountingStandard"`
-	ChangesInAccountingEstimates                                                 string `json:"ChangesInAccountingEstimates"`
-	RetrospectiveRestatement                                                     string `json:"RetrospectiveRestatement"`
-	NumberOfIssuedAndOutstandingSharesAtTheEndOfFiscalYearIncludingTreasuryStock string `json:"NumberOfIssuedAndOutstandingSharesAtTheEndOfFiscalYearIncludingTreasuryStock"`
-	NumberOfTreasuryStockAtTheEndOfFiscalYear                                    string `json:"NumberOfTreasuryStockAtTheEndOfFiscalYear"`
-	AverageNumberOfShares                                                        string `json:"AverageNumberOfShares"`
-	NonConsolidatedNetSales                                                      string `json:"NonConsolidatedNetSales"`
-	NonConsolidatedOperatingProfit                                               string `json:"NonConsolidatedOperatingProfit"`
-	NonConsolidatedOrdinaryProfit                                                string `json:"NonConsolidatedOrdinaryProfit"`
-	NonConsolidatedProfit                                                        string `json:"NonConsolidatedProfit"`
-	NonConsolidatedEarningsPerShare                                              string `json:"NonConsolidatedEarningsPerShare"`
-	NonConsolidatedTotalAssets                                                   string `json:"NonConsolidatedTotalAssets"`
-	NonConsolidatedEquity                                                        string `json:"NonConsolidatedEquity"`
-	NonConsolidatedEquityToAssetRatio                                            string `json:"NonConsolidatedEquityToAssetRatio"`
-	NonConsolidatedBookValuePerShare                                             string `json:"NonConsolidatedBookValuePerShare"`
-	ForecastNonConsolidatedNetSales2NdQuarter                                    string `json:"ForecastNonConsolidatedNetSales2ndQuarter"`
-	ForecastNonConsolidatedOperatingProfit2NdQuarter                             string `json:"ForecastNonConsolidatedOperatingProfit2ndQuarter"`
-	ForecastNonConsolidatedOrdinaryProfit2NdQuarter                              string `json:"ForecastNonConsolidatedOrdinaryProfit2ndQuarter"`
-	ForecastNonConsolidatedProfit2NdQuarter                                      string `json:"ForecastNonConsolidatedProfit2ndQuarter"`
-	ForecastNonConsolidatedEarningsPerShare2NdQuarter                            string `json:"ForecastNonConsolidatedEarningsPerShare2ndQuarter"`
-	NextYearForecastNonConsolidatedNetSales2NdQuarter                            string `json:"NextYearForecastNonConsolidatedNetSales2ndQuarter"`
-	NextYearForecastNonConsolidatedOperatingProfit2NdQuarter                     string `json:"NextYearForecastNonConsolidatedOperatingProfit2ndQuarter"`
-	NextYearForecastNonConsolidatedOrdinaryProfit2NdQuarter                      string `json:"NextYearForecastNonConsolidatedOrdinaryProfit2ndQuarter"`
-	NextYearForecastNonConsolidatedProfit2NdQuarter                              string `json:"NextYearForecastNonConsolidatedProfit2ndQuarter"`
-	NextYearForecastNonConsolidatedEarningsPerShare2NdQuarter                    string `json:"NextYearForecastNonConsolidatedEarningsPerShare2ndQuarter"`
-	ForecastNonConsolidatedNetSales                                              string `json:"ForecastNonConsolidatedNetSales"`
-	ForecastNonConsolidatedOperatingProfit                                       string `json:"ForecastNonConsolidatedOperatingProfit"`
-	ForecastNonConsolidatedOrdinaryProfit                                        string `json:"ForecastNonConsolidatedOrdinaryProfit"`
-	ForecastNonConsolidatedProfit                                                string `json:"ForecastNonConsolidatedProfit"`
-	ForecastNonConsolidatedEarningsPerShare                                      string `json:"ForecastNonConsolidatedEarningsPerShare"`
-	NextYearForecastNonConsolidatedNetSales                                      string `json:"NextYearForecastNonConsolidatedNetSales"`
-	NextYearForecastNonConsolidatedOperatingProfit                               string `json:"NextYearForecastNonConsolidatedOperatingProfit"`
-	NextYearForecastNonConsolidatedOrdinaryProfit                                string `json:"NextYearForecastNonConsolidatedOrdinaryProfit"`
-	NextYearForecastNonConsolidatedProfit                                        string `json:"NextYearForecastNonConsolidatedProfit"`
-	NextYearForecastNonConsolidatedEarningsPerShare                              string `json:"NextYearForecastNonConsolidatedEarningsPerShare"`
+	Statements []jQuantsFinancialStatement `json:"data"`
 }
 
-// type jQuantsFinancialStatement struct {
-// 	FsDetails []struct {
-// 		DisclosedDate      string `json:"DisclosedDate"`
-// 		DisclosedTime      string `json:"DisclosedTime"`
-// 		LocalCode          string `json:"LocalCode"`
-// 		DisclosureNumber   string `json:"DisclosureNumber"`
-// 		TypeOfDocument     string `json:"TypeOfDocument"`
-// 		FinancialStatement struct {
-// 			GoodwillIFRS                                                                                             string `json:"Goodwill (IFRS)"`
-// 			RetainedEarningsIFRS                                                                                     string `json:"Retained earnings (IFRS)"`
-// 			OperatingProfitLossIFRS                                                                                  string `json:"Operating profit (loss) (IFRS)"`
-// 			PreviousFiscalYearEndDateDEI                                                                             string `json:"Previous fiscal year end date, DEI"`
-// 			BasicEarningsLossPerShareIFRS                                                                            string `json:"Basic earnings (loss) per share (IFRS)"`
-// 			DocumentTypeDEI                                                                                          string `json:"Document type, DEI"`
-// 			CurrentPeriodEndDateDEI                                                                                  string `json:"Current period end date, DEI"`
-// 			Revenue2IFRS                                                                                             string `json:"Revenue - 2 (IFRS)"`
-// 			IndustryCodeWhenConsolidatedFinancialStatementsArePreparedInAccordanceWithIndustrySpecificRegulationsDEI string `json:"Industry code when consolidated financial statements are prepared in accordance with industry specific regulations, DEI"`
-// 			ProfitLossAttributableToOwnersOfParentIFRS                                                               string `json:"Profit (loss) attributable to owners of parent (IFRS)"`
-// 			OtherCurrentLiabilitiesCLIFRS                                                                            string `json:"Other current liabilities - CL (IFRS)"`
-// 			ShareOfProfitLossOfInvestmentsAccountedForUsingEquityMethodIFRS                                          string `json:"Share of profit (loss) of investments accounted for using equity method (IFRS)"`
-// 			CurrentLiabilitiesIFRS                                                                                   string `json:"Current liabilities (IFRS)"`
-// 			EquityAttributableToOwnersOfParentIFRS                                                                   string `json:"Equity attributable to owners of parent (IFRS)"`
-// 			WhetherConsolidatedFinancialStatementsArePreparedDEI                                                     string `json:"Whether consolidated financial statements are prepared, DEI"`
-// 			NonCurrentLiabilitiesIFRS                                                                                string `json:"Non-current liabilities (IFRS)"`
-// 			OtherExpensesIFRS                                                                                        string `json:"Other expenses (IFRS)"`
-// 			IncomeTaxesPayableCLIFRS                                                                                 string `json:"Income taxes payable - CL (IFRS)"`
-// 			FilerNameInEnglishDEI                                                                                    string `json:"Filer name in English, DEI"`
-// 			NonControllingInterestsIFRS                                                                              string `json:"Non-controlling interests (IFRS)"`
-// 			CapitalSurplusIFRS                                                                                       string `json:"Capital surplus (IFRS)"`
-// 			FinanceCostsIFRS                                                                                         string `json:"Finance costs (IFRS)"`
-// 			OtherCurrentAssetsCAIFRS                                                                                 string `json:"Other current assets - CA (IFRS)"`
-// 			PropertyPlantAndEquipmentIFRS                                                                            string `json:"Property, plant and equipment (IFRS)"`
-// 			DeferredTaxLiabilitiesIFRS                                                                               string `json:"Deferred tax liabilities (IFRS)"`
-// 			OtherComponentsOfEquityIFRS                                                                              string `json:"Other components of equity (IFRS)"`
-// 			CurrentFiscalYearStartDateDEI                                                                            string `json:"Current fiscal year start date, DEI"`
-// 			TypeOfCurrentPeriodDEI                                                                                   string `json:"Type of current period, DEI"`
-// 			CashAndCashEquivalentsIFRS                                                                               string `json:"Cash and cash equivalents (IFRS)"`
-// 			ShareCapitalIFRS                                                                                         string `json:"Share capital (IFRS)"`
-// 			RetirementBenefitAssetNCAIFRS                                                                            string `json:"Retirement benefit asset - NCA (IFRS)"`
-// 			NumberOfSubmissionDEI                                                                                    string `json:"Number of submission, DEI"`
-// 			TradeAndOtherReceivablesCAIFRS                                                                           string `json:"Trade and other receivables - CA (IFRS)"`
-// 			LiabilitiesAndEquityIFRS                                                                                 string `json:"Liabilities and equity (IFRS)"`
-// 			EDINETCodeDEI                                                                                            string `json:"EDINET code, DEI"`
-// 			EquityIFRS                                                                                               string `json:"Equity (IFRS)"`
-// 			SecurityCodeDEI                                                                                          string `json:"Security code, DEI"`
-// 			OtherFinancialAssetsCAIFRS                                                                               string `json:"Other financial assets - CA (IFRS)"`
-// 			OtherFinancialAssetsNCAIFRS                                                                              string `json:"Other financial assets - NCA (IFRS)"`
-// 			IncomeTaxesReceivableCAIFRS                                                                              string `json:"Income taxes receivable - CA (IFRS)"`
-// 			InvestmentsAccountedForUsingEquityMethodIFRS                                                             string `json:"Investments accounted for using equity method (IFRS)"`
-// 			OtherNonCurrentAssetsNCAIFRS                                                                             string `json:"Other non-current assets - NCA (IFRS)"`
-// 			PreviousFiscalYearStartDateDEI                                                                           string `json:"Previous fiscal year start date, DEI"`
-// 			FilerNameInJapaneseDEI                                                                                   string `json:"Filer name in Japanese, DEI"`
-// 			DeferredTaxAssetsIFRS                                                                                    string `json:"Deferred tax assets (IFRS)"`
-// 			TradeAndOtherPayablesCLIFRS                                                                              string `json:"Trade and other payables - CL (IFRS)"`
-// 			BondsAndBorrowingsCLIFRS                                                                                 string `json:"Bonds and borrowings - CL (IFRS)"`
-// 			CurrentFiscalYearEndDateDEI                                                                              string `json:"Current fiscal year end date, DEI"`
-// 			XBRLAmendmentFlagDEI                                                                                     string `json:"XBRL amendment flag, DEI"`
-// 			NonCurrentAssetsIFRS                                                                                     string `json:"Non-current assets (IFRS)"`
-// 			RetirementBenefitLiabilityNCLIFRS                                                                        string `json:"Retirement benefit liability - NCL (IFRS)"`
-// 			AmendmentFlagDEI                                                                                         string `json:"Amendment flag, DEI"`
-// 			AssetsIFRS                                                                                               string `json:"Assets (IFRS)"`
-// 			IncomeTaxExpenseIFRS                                                                                     string `json:"Income tax expense (IFRS)"`
-// 			ReportAmendmentFlagDEI                                                                                   string `json:"Report amendment flag, DEI"`
-// 			ProfitLossIFRS                                                                                           string `json:"Profit (loss) (IFRS)"`
-// 			OperatingExpensesIFRS                                                                                    string `json:"Operating expenses (IFRS)"`
-// 			IntangibleAssetsIFRS                                                                                     string `json:"Intangible assets (IFRS)"`
-// 			ProfitLossBeforeTaxFromContinuingOperationsIFRS                                                          string `json:"Profit (loss) before tax from continuing operations (IFRS)"`
-// 			LiabilitiesIFRS                                                                                          string `json:"Liabilities (IFRS)"`
-// 			AccountingStandardsDEI                                                                                   string `json:"Accounting standards, DEI"`
-// 			BondsAndBorrowingsNCLIFRS                                                                                string `json:"Bonds and borrowings - NCL (IFRS)"`
-// 			FinanceIncomeIFRS                                                                                        string `json:"Finance income (IFRS)"`
-// 			ProfitLossAttributableToNonControllingInterestsIFRS                                                      string `json:"Profit (loss) attributable to non-controlling interests (IFRS)"`
-// 			ComparativePeriodEndDateDEI                                                                              string `json:"Comparative period end date, DEI"`
-// 			CurrentAssetsIFRS                                                                                        string `json:"Current assets (IFRS)"`
-// 			OtherNonCurrentLiabilitiesNCLIFRS                                                                        string `json:"Other non-current liabilities - NCL (IFRS)"`
-// 			OtherIncomeIFRS                                                                                          string `json:"Other income (IFRS)"`
-// 			TreasurySharesIFRS                                                                                       string `json:"Treasury shares (IFRS)"`
-// 		} `json:"FinancialStatement"`
-// 	} `json:"fs_details"`
-// 	PaginationKey string `json:"pagination_key"`
-// }
+type jQuantsFinancialStatement struct {
+	DisclosedDate                                                                string `json:"DiscDate"`
+	DisclosedTime                                                                string `json:"DiscTime"`
+	LocalCode                                                                    string `json:"Code"`
+	DisclosureNumber                                                             string `json:"DiscNo"`
+	TypeOfDocument                                                               string `json:"DocType"`
+	TypeOfCurrentPeriod                                                          string `json:"CurPerType"`
+	CurrentPeriodStartDate                                                       string `json:"CurPerSt"`
+	CurrentPeriodEndDate                                                         string `json:"CurPerEn"`
+	CurrentFiscalYearStartDate                                                   string `json:"CurFYSt"`
+	CurrentFiscalYearEndDate                                                     string `json:"CurFYEn"`
+	NextFiscalYearStartDate                                                      string `json:"NxtFYSt"`
+	NextFiscalYearEndDate                                                        string `json:"NxtFYEn"`
+	NetSales                                                                     string `json:"Sales"`
+	OperatingProfit                                                              string `json:"OP"`
+	OrdinaryProfit                                                               string `json:"OdP"`
+	Profit                                                                       string `json:"NP"`
+	EarningsPerShare                                                             string `json:"EPS"`
+	DilutedEarningsPerShare                                                      string `json:"DEPS"`
+	TotalAssets                                                                  string `json:"TA"`
+	Equity                                                                       string `json:"Eq"`
+	EquityToAssetRatio                                                           string `json:"EqAR"`
+	BookValuePerShare                                                            string `json:"BPS"`
+	CashFlowsFromOperatingActivities                                             string `json:"CFO"`
+	CashFlowsFromInvestingActivities                                             string `json:"CFI"`
+	CashFlowsFromFinancingActivities                                             string `json:"CFF"`
+	CashAndEquivalents                                                           string `json:"CashEq"`
+	ResultDividendPerShare1StQuarter                                             string `json:"Div1Q"`
+	ResultDividendPerShare2NdQuarter                                             string `json:"Div2Q"`
+	ResultDividendPerShare3RdQuarter                                             string `json:"Div3Q"`
+	ResultDividendPerShareFiscalYearEnd                                          string `json:"DivFY"`
+	ResultDividendPerShareAnnual                                                 string `json:"DivAnn"`
+	DistributionsPerUnitREIT                                                     string `json:"DivUnit"`
+	ResultTotalDividendPaidAnnual                                                string `json:"DivTotalAnn"`
+	ResultPayoutRatioAnnual                                                      string `json:"PayoutRatioAnn"`
+	ForecastDividendPerShare1StQuarter                                           string `json:"FDiv1Q"`
+	ForecastDividendPerShare2NdQuarter                                           string `json:"FDiv2Q"`
+	ForecastDividendPerShare3RdQuarter                                           string `json:"FDiv3Q"`
+	ForecastDividendPerShareFiscalYearEnd                                        string `json:"FDivFY"`
+	ForecastDividendPerShareAnnual                                               string `json:"FDivAnn"`
+	ForecastDistributionsPerUnitREIT                                             string `json:"FDivUnit"`
+	ForecastTotalDividendPaidAnnual                                              string `json:"FDivTotalAnn"`
+	ForecastPayoutRatioAnnual                                                    string `json:"FPayoutRatioAnn"`
+	NextYearForecastDividendPerShare1StQuarter                                   string `json:"NxFDiv1Q"`
+	NextYearForecastDividendPerShare2NdQuarter                                   string `json:"NxFDiv2Q"`
+	NextYearForecastDividendPerShare3RdQuarter                                   string `json:"NxFDiv3Q"`
+	NextYearForecastDividendPerShareFiscalYearEnd                                string `json:"NxFDivFY"`
+	NextYearForecastDividendPerShareAnnual                                       string `json:"NxFDivAnn"`
+	NextYearForecastDistributionsPerUnitREIT                                     string `json:"NxFDivUnit"`
+	NextYearForecastPayoutRatioAnnual                                            string `json:"NxFPayoutRatioAnn"`
+	ForecastNetSales2NdQuarter                                                   string `json:"FSales2Q"`
+	ForecastOperatingProfit2NdQuarter                                            string `json:"FOP2Q"`
+	ForecastOrdinaryProfit2NdQuarter                                             string `json:"FOdP2Q"`
+	ForecastProfit2NdQuarter                                                     string `json:"FNP2Q"`
+	ForecastEarningsPerShare2NdQuarter                                           string `json:"FEPS2Q"`
+	NextYearForecastNetSales2NdQuarter                                           string `json:"NxFSales2Q"`
+	NextYearForecastOperatingProfit2NdQuarter                                    string `json:"NxFOP2Q"`
+	NextYearForecastOrdinaryProfit2NdQuarter                                     string `json:"NxFOdP2Q"`
+	NextYearForecastProfit2NdQuarter                                             string `json:"NxFNp2Q"`
+	NextYearForecastEarningsPerShare2NdQuarter                                   string `json:"NxFEPS2Q"`
+	ForecastNetSales                                                             string `json:"FSales"`
+	ForecastOperatingProfit                                                      string `json:"FOP"`
+	ForecastOrdinaryProfit                                                       string `json:"FOdP"`
+	ForecastProfit                                                               string `json:"FNP"`
+	ForecastEarningsPerShare                                                     string `json:"FEPS"`
+	NextYearForecastNetSales                                                     string `json:"NxFSales"`
+	NextYearForecastOperatingProfit                                              string `json:"NxFOP"`
+	NextYearForecastOrdinaryProfit                                               string `json:"NxFOdP"`
+	NextYearForecastProfit                                                       string `json:"NxFNp"`
+	NextYearForecastEarningsPerShare                                             string `json:"NxFEPS"`
+	MaterialChangesInSubsidiaries                                                string `json:"MatChgSub"`
+	SignificantChangesInTheScopeOfConsolidation                                  string `json:"SigChgInC"`
+	ChangesBasedOnRevisionsOfAccountingStandard                                  string `json:"ChgByASRev"`
+	ChangesOtherThanOnesBasedOnRevisionsOfAccountingStandard                     string `json:"ChgNoASRev"`
+	ChangesInAccountingEstimates                                                 string `json:"ChgAcEst"`
+	RetrospectiveRestatement                                                     string `json:"RetroRst"`
+	NumberOfIssuedAndOutstandingSharesAtTheEndOfFiscalYearIncludingTreasuryStock string `json:"ShOutFY"`
+	NumberOfTreasuryStockAtTheEndOfFiscalYear                                    string `json:"TrShFY"`
+	AverageNumberOfShares                                                        string `json:"AvgSh"`
+	NonConsolidatedNetSales                                                      string `json:"NCSales"`
+	NonConsolidatedOperatingProfit                                               string `json:"NCOP"`
+	NonConsolidatedOrdinaryProfit                                                string `json:"NCOdP"`
+	NonConsolidatedProfit                                                        string `json:"NCNP"`
+	NonConsolidatedEarningsPerShare                                              string `json:"NCEPS"`
+	NonConsolidatedTotalAssets                                                   string `json:"NCTA"`
+	NonConsolidatedEquity                                                        string `json:"NCEq"`
+	NonConsolidatedEquityToAssetRatio                                            string `json:"NCEqAR"`
+	NonConsolidatedBookValuePerShare                                             string `json:"NCBPS"`
+	ForecastNonConsolidatedNetSales2NdQuarter                                    string `json:"FNCSales2Q"`
+	ForecastNonConsolidatedOperatingProfit2NdQuarter                             string `json:"FNCOP2Q"`
+	ForecastNonConsolidatedOrdinaryProfit2NdQuarter                              string `json:"FNCOdP2Q"`
+	ForecastNonConsolidatedProfit2NdQuarter                                      string `json:"FNCNP2Q"`
+	ForecastNonConsolidatedEarningsPerShare2NdQuarter                            string `json:"FNCEPS2Q"`
+	NextYearForecastNonConsolidatedNetSales2NdQuarter                            string `json:"NxFNCSales2Q"`
+	NextYearForecastNonConsolidatedOperatingProfit2NdQuarter                     string `json:"NxFNCOP2Q"`
+	NextYearForecastNonConsolidatedOrdinaryProfit2NdQuarter                      string `json:"NxFNCOdP2Q"`
+	NextYearForecastNonConsolidatedProfit2NdQuarter                              string `json:"NxFNCNP2Q"`
+	NextYearForecastNonConsolidatedEarningsPerShare2NdQuarter                    string `json:"NxFNCEPS2Q"`
+	ForecastNonConsolidatedNetSales                                              string `json:"FNCSales"`
+	ForecastNonConsolidatedOperatingProfit                                       string `json:"FNCOP"`
+	ForecastNonConsolidatedOrdinaryProfit                                        string `json:"FNCOdP"`
+	ForecastNonConsolidatedProfit                                                string `json:"FNCNP"`
+	ForecastNonConsolidatedEarningsPerShare                                      string `json:"FNCEPS"`
+	NextYearForecastNonConsolidatedNetSales                                      string `json:"NxFNCSales"`
+	NextYearForecastNonConsolidatedOperatingProfit                               string `json:"NxFNCOP"`
+	NextYearForecastNonConsolidatedOrdinaryProfit                                string `json:"NxFNCOdP"`
+	NextYearForecastNonConsolidatedProfit                                        string `json:"NxFNCNP"`
+	NextYearForecastNonConsolidatedEarningsPerShare                              string `json:"NxFNCEPS"`
+}
 
 // TradingCalendarsInfo 相場の営業日の情報のスライス
 type TradingCalendarsResponse struct {
-	TradingCalendars []TradingCalendar `json:"trading_calendar"`
+	TradingCalendars []TradingCalendar `json:"data"`
 }
 
 // TradingCalendar 相場の営業日の情報
 type TradingCalendar struct {
 	Date            string `json:"Date"`
-	HolidayDivision string `json:"HolidayDivision"`
+	HolidayDivision string `json:"HolDiv"`
 }
 
 func (c *StockAPIClient) jQuantsAnnounceFinsScheduleResponseToResponseInfo(
@@ -315,7 +233,7 @@ func (c *StockAPIClient) jQuantsAnnounceFinsScheduleResponseToResponseInfo(
 
 func (c *StockAPIClient) jQuantsStockBrandsResponseToResponseInfo(response jQuantsStockBrandsResponse) []*gateway.StockBrand {
 	var stockBrands []*gateway.StockBrand
-	for _, v := range response.Info {
+	for _, v := range response.Data {
 		date, err := util.FormatStringToDate(v.Date)
 		if err != nil {
 			log.Printf("util.FormatStringToDate: %v", err)

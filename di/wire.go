@@ -23,7 +23,7 @@ var usecaseSet = wire.NewSet(
 	usecase.NewStockBrandInteractor,
 	usecase.NewIndexInteractor,
 	usecase.NewStockBrandsDailyPriceInteractor,
-	usecase.NewExportSQLInteractor,
+	usecase.NewAdjustHistoricalDataForStockSplit,
 )
 
 var driverSet = wire.NewSet(
@@ -45,8 +45,8 @@ var cliSet = wire.NewSet(
 	commands.NewUpdateStockBrandsV1Command,
 	commands.NewCreateHistoricalDailyStockPricesV1Command,
 	commands.NewCreateDailyStockPriceV1Command,
-	commands.NewExportStockBrandsAndDailyPriceToSQLV1Command,
 	commands.NewCreateNikkeiAndDjiHistoricalDataV1Command,
+	commands.NewAdjustHistoricalDataForStockSplitCommand,
 )
 
 var databaseSet = wire.NewSet(

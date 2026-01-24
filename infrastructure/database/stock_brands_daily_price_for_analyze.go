@@ -121,6 +121,66 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBeforeDate(ctx co
 	return nil
 }
 
+func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPriceForAnalyze, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	if filter.TickerSymbol == "" {
+		return nil, errors.New("TickerSymbol is required")
+	}
+	q := tx.WithContext(ctx).
+		StockBrandsDailyPriceForAnalyze.
+		Where(
+			tx.StockBrandsDailyPriceForAnalyze.
+				TickerSymbol.
+				Eq(filter.TickerSymbol),
+		)
+
+	if filter.DateFrom != nil {
+		dateOnlyFrom := time.Date(
+			filter.DateFrom.Year(),
+			filter.DateFrom.Month(),
+			filter.DateFrom.Day(),
+			0, 0, 0, 0,
+			filter.DateFrom.Location(),
+		)
+
+		q = q.Where(tx.StockBrandsDailyPriceForAnalyze.Date.Gte(dateOnlyFrom))
+	}
+
+	if filter.DateTo != nil {
+		dateOnlyTo := time.Date(
+			filter.DateTo.Year(),
+			filter.DateTo.Month(),
+			filter.DateTo.Day(),
+			0, 0, 0, 0,
+			filter.DateTo.Location(),
+		)
+		q = q.Where(tx.StockBrandsDailyPriceForAnalyze.Date.Lte(dateOnlyTo))
+	}
+
+	// ソート順の適用（デフォルトは昇順）
+	if filter.DateOrder != nil && *filter.DateOrder == models.SortOrderDesc {
+		q = q.Order(tx.StockBrandsDailyPriceForAnalyze.Date.Desc())
+	} else {
+		q = q.Order(tx.StockBrandsDailyPriceForAnalyze.Date)
+	}
+
+	rdbDailyPrices, err := q.Find()
+	if err != nil {
+		return nil, errors.Wrap(err, "ListDailyPricesBySymbol error")
+	}
+
+	domainDailyPrices := make([]*models.StockBrandDailyPriceForAnalyze, 0, len(rdbDailyPrices))
+	for _, rdbDailyPrice := range rdbDailyPrices {
+		domainDailyPrices = append(domainDailyPrices, si.convertToDomainModel(rdbDailyPrice))
+	}
+
+	return domainDailyPrices, nil
+}
+
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) convertToDomainModel(dailyPriceDB *genModel.StockBrandsDailyPriceForAnalyze) *models.StockBrandDailyPriceForAnalyze {
 	if dailyPriceDB == nil {
 		return nil

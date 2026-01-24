@@ -70,17 +70,15 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
 
-				mockStockAPI.EXPECT().GetDailyPricesBySymbolAndRange(
+				mockStockAPI.EXPECT().GetAllBrandDailyPricesByDate(
 					gomock.Any(),
-					gateway.StockAPISymbol("1234"),
-					gomock.Any(), // from
-					gomock.Any(), // to
-				).DoAndReturn(func(_ context.Context, symbol gateway.StockAPISymbol, _, to time.Time) ([]*gateway.StockPrice, error) {
+					gomock.Any(), // date
+				).DoAndReturn(func(_ context.Context, to time.Time) ([]*gateway.StockPrice, error) {
 					// Return some dummy prices
 					return []*gateway.StockPrice{
 						{
 							Date:            to,
-							TickerSymbol:    string(symbol),
+							TickerSymbol:    "1234",
 							Open:            decimal.NewFromInt(100),
 							High:            decimal.NewFromInt(110),
 							Low:             decimal.NewFromInt(90),
@@ -89,7 +87,7 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 							AdjustmentClose: decimal.NewFromInt(105),
 						},
 					}, nil
-				})
+				}).Times(5)
 			},
 			wantErr: false,
 			check: func(t *testing.T) {
@@ -97,7 +95,7 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 				var prices []*genModel.StockBrandsDailyPrice
 				err = db.Where("stock_brand_id = ?", "1").Find(&prices).Error
 				assert.NoError(t, err)
-				assert.Len(t, prices, 1)
+				assert.Len(t, prices, 5)
 				assert.Equal(t, "1", prices[0].StockBrandID)
 				assert.Equal(t, "1234", prices[0].TickerSymbol)
 				// genModel uses float64, so we compare with float
@@ -107,7 +105,7 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 				var analyzePrices []*genModel.StockBrandsDailyPriceForAnalyze
 				err = db.Where("ticker_symbol = ?", "1234").Find(&analyzePrices).Error
 				assert.NoError(t, err)
-				assert.Len(t, analyzePrices, 1)
+				assert.Len(t, analyzePrices, 5)
 				assert.Equal(t, "1234", analyzePrices[0].TickerSymbol)
 			},
 		},

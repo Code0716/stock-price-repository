@@ -29,7 +29,7 @@ func NewRunner(
 	createHistoricalDailyStockPricesV1Command *commands.CreateHistoricalDailyStockPricesV1Command,
 	createDailyStockPriceV1Command *commands.CreateDailyStockPriceV1Command,
 	createNikkeiAndDjiHistoricalDataV1Command *commands.CreateNikkeiAndDjiHistoricalDataV1Command,
-	exportStockBrandsAndDailyPriceToSQLV1Command *commands.ExportStockBrandsAndDailyPriceToSQLV1Command,
+	adjustHistoricalDataForStockSplitCommand *commands.AdjustHistoricalDataForStockSplitCommand,
 	indexInteractor usecase.IndexInteractor,
 	slackAPIClient gateway.SlackAPIClient,
 ) *Runner {
@@ -41,7 +41,7 @@ func NewRunner(
 			createHistoricalDailyStockPricesV1Command.Command(),
 			createDailyStockPriceV1Command.Command(),
 			createNikkeiAndDjiHistoricalDataV1Command.Command(),
-			exportStockBrandsAndDailyPriceToSQLV1Command.Command(),
+			adjustHistoricalDataForStockSplitCommand.Command(),
 		},
 		indexInteractor: indexInteractor,
 		slackAPIClient:  slackAPIClient,

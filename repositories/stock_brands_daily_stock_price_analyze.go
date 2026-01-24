@@ -13,6 +13,7 @@ import (
 type StockBrandsDailyPriceForAnalyzeRepository interface {
 	CreateStockBrandDailyPriceForAnalyze(ctx context.Context, dailyPrice []*models.StockBrandDailyPriceForAnalyze) error
 	ListLatestPriceBySymbols(ctx context.Context, symbols []*string) ([]*models.StockBrandDailyPriceForAnalyze, error)
+	ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPriceForAnalyze, error)
 	DeleteBySymbols(ctx context.Context, deleteSymbols []string) error
 	DeleteBeforeDate(ctx context.Context, date time.Time) error
 }

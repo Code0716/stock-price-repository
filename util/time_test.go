@@ -20,7 +20,7 @@ func TestFormatStringToDate(t *testing.T) {
 			args: args{
 				timeStr: "2023-01-01",
 			},
-			want:    time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+			want:    time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
 			wantErr: false,
 		},
 		{

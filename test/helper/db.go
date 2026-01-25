@@ -83,7 +83,11 @@ func SetupTestDB(t *testing.T) (*gorm.DB, func()) {
 		// DB接続を閉じる
 		sqlDB, err := testDB.DB()
 		if err == nil {
-			sqlDB.Close()
+			if err := sqlDB.Close(); err != nil {
+				t.Logf("Failed to close testDB connection: %v", err)
+			}
+		} else {
+			t.Logf("Failed to get underlying sqlDB from testDB: %v", err)
 		}
 
 		// DB削除
@@ -91,7 +95,22 @@ func SetupTestDB(t *testing.T) (*gorm.DB, func()) {
 			Logger: logger.Default.LogMode(logger.Silent),
 		})
 		if err == nil {
-			dropDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName))
+			sqlDropDB, err := dropDB.DB()
+			if err == nil {
+				defer func() {
+					if err := sqlDropDB.Close(); err != nil {
+						t.Logf("Failed to close dropDB connection: %v", err)
+					}
+				}()
+			} else {
+				t.Logf("Failed to get underlying sqlDB from dropDB: %v", err)
+			}
+
+			if err := dropDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName)).Error; err != nil {
+				t.Logf("Failed to drop database %s: %v", dbName, err)
+			}
+		} else {
+			t.Logf("Failed to open connection to drop database: %v", err)
 		}
 	}
 

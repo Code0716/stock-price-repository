@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/Code0716/stock-price-repository/config"
-	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	mock_gateway "github.com/Code0716/stock-price-repository/mock/gateway"
@@ -47,16 +45,10 @@ func TestE2E_ExportData(t *testing.T) {
 	// エクスポートパスが書き込み不可だとエラーになるため、そこだけ注意。
 	// config.Database.ExportBackupPath = tmpDir のように書き換えられるならしたい。
 
-	// config.GetDatabase()が参照渡しなら書き換え可能
-	dbConfig := config.GetDatabase()
-	originalPath := dbConfig.ExportBackupPath
-	dbConfig.ExportBackupPath = tmpDir
-	// テスト終了後に戻す
-	defer func() {
-		dbConfig.ExportBackupPath = originalPath
-	}()
-
-	mysqlDumpClient := driver.NewMySQLDumpClient()
+	// CI/CD環境など、mysqldumpが実際にDBに接続できない環境での実行を考慮し、
+	// 実際のドライバではなくモックを使用する。
+	// これにより、コマンドの結線と成功/失敗時の通知ロジックをテストする。
+	mockMySQLDumpClient := mock_gateway.NewMockMySQLDumpClient(gomock.NewController(t))
 
 	type args struct {
 		cmdArgs []string
@@ -64,7 +56,7 @@ func TestE2E_ExportData(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		setup   func(t *testing.T, mockSlackAPI *mock_gateway.MockSlackAPIClient)
+		setup   func(t *testing.T, mockSlackAPI *mock_gateway.MockSlackAPIClient, mockMySQLDump *mock_gateway.MockMySQLDumpClient)
 		wantErr bool
 	}{
 		{
@@ -72,7 +64,10 @@ func TestE2E_ExportData(t *testing.T) {
 			args: args{
 				cmdArgs: []string{"main", "export_master_data"},
 			},
-			setup: func(t *testing.T, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
+			setup: func(t *testing.T, mockSlackAPI *mock_gateway.MockSlackAPIClient, mockMySQLDump *mock_gateway.MockMySQLDumpClient) {
+				// ExportTableAllが呼ばれることを期待
+				mockMySQLDump.EXPECT().ExportTableAll(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
 				mockSlackAPI.EXPECT().SendMessageByStrings(
 					gomock.Any(),
 					gateway.SlackChannelNameDevNotification,
@@ -91,7 +86,10 @@ func TestE2E_ExportData(t *testing.T) {
 			args: args{
 				cmdArgs: []string{"main", "export_yearly_data", "--year", "2024"},
 			},
-			setup: func(t *testing.T, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
+			setup: func(t *testing.T, mockSlackAPI *mock_gateway.MockSlackAPIClient, mockMySQLDump *mock_gateway.MockMySQLDumpClient) {
+				// ExportTableByYearが呼ばれることを期待
+				mockMySQLDump.EXPECT().ExportTableByYear(gomock.Any(), gomock.Any(), 2024).Return(nil).AnyTimes()
+
 				mockSlackAPI.EXPECT().SendMessageByStrings(
 					gomock.Any(),
 					gateway.SlackChannelNameDevNotification,
@@ -115,12 +113,12 @@ func TestE2E_ExportData(t *testing.T) {
 			mockSlackAPI := mock_gateway.NewMockSlackAPIClient(ctrl)
 
 			if tt.setup != nil {
-				tt.setup(t, mockSlackAPI)
+				tt.setup(t, mockSlackAPI, mockMySQLDumpClient)
 			}
 
 			// Commands
-			exportYearlyCmd := commands.NewExportYearlyDataCommand(mysqlDumpClient)
-			exportMasterCmd := commands.NewExportMasterDataCommand(mysqlDumpClient)
+			exportYearlyCmd := commands.NewExportYearlyDataCommand(mockMySQLDumpClient)
+			exportMasterCmd := commands.NewExportMasterDataCommand(mockMySQLDumpClient)
 
 			runner := helper.NewTestRunner(helper.TestRunnerOptions{
 				ExportYearlyDataCommand: exportYearlyCmd,
@@ -132,15 +130,6 @@ func TestE2E_ExportData(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
-			// 成功した場合、ファイルが生成されているか確認するロジックを入れても良いが
-			// mysqldumpがDB接続できずにエラーになる可能性（外部環境依存）が高いため、
-			// エラーチェックのみとする。
 		})
 	}
 }
-
-// 注意: このテストは config.GetDatabase() の戻り値がポインタで、
-// かつそのフィールドを書き換えることで driver 側が参照する値が変わることを前提としている。
-// もし config.GetDatabase() が構造体のコピーを返している場合、パスの変更は反映されない。
-// その場合はDBエクスポートパスがデフォルトのまま実行され、権限エラーになる可能性がある。

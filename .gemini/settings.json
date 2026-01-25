@@ -1,5 +1,12 @@
 {
     "general": {
-        "previewFeatures": true
+        "previewFeatures": true,
+        "checkpointing": {
+            "enabled": false
+        }
+    },
+    "chat": {
+        "saveHistory": false,
+        "maxRecentChats": 0
     }
 }

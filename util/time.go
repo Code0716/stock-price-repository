@@ -21,7 +21,7 @@ func IsSameDay(today, now time.Time) bool {
 }
 
 func FormatStringToDate(timeStr string) (time.Time, error) {
-	date, err := time.Parse(DateLayout, timeStr)
+	date, err := time.ParseInLocation(DateLayout, timeStr, time.Local)
 	if err != nil {
 		log.Printf("time.Parse:%v", err)
 		return time.Time{}, err

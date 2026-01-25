@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Code0716/stock-price-repository/models"
@@ -17,15 +18,18 @@ type AdjustHistoricalDataForStockSplit interface {
 
 // AdjustHistoricalDataForStockSplitInteractor Interactor
 type AdjustHistoricalDataForStockSplitInteractor struct {
-	StockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository
+	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository
+	appliedStockSplitsHistoryRepository       repositories.AppliedStockSplitsHistoryRepository
 }
 
 // NewAdjustHistoricalDataForStockSplit New
 func NewAdjustHistoricalDataForStockSplit(
 	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository,
+	appliedStockSplitsHistoryRepository repositories.AppliedStockSplitsHistoryRepository,
 ) AdjustHistoricalDataForStockSplit {
 	return &AdjustHistoricalDataForStockSplitInteractor{
-		StockBrandsDailyPriceForAnalyzeRepository: stockBrandsDailyPriceForAnalyzeRepository,
+		stockBrandsDailyPriceForAnalyzeRepository: stockBrandsDailyPriceForAnalyzeRepository,
+		appliedStockSplitsHistoryRepository:       appliedStockSplitsHistoryRepository,
 	}
 }
 
@@ -37,6 +41,12 @@ func (ui *AdjustHistoricalDataForStockSplitInteractor) AdjustHistoricalDataForSt
 	splitRatio decimal.Decimal,
 	dryRun bool,
 ) error {
+	// 指定された日付が未来の場合は処理をスキップする
+	if splitDate.After(time.Now()) {
+		log.Printf("Split date %v is in the future. Skipping adjustment.", splitDate)
+		return nil
+	}
+
 	// 指定された日付以前のデータを取得する
 	// 分割日そのものも、分割後の価格で反映されるべきなのか、分割前の価格なのかはケースバイケースだが、
 	// 通常「分割した日付」のデータは既に分割後の価格で市場取引されているはず。
@@ -46,10 +56,19 @@ func (ui *AdjustHistoricalDataForStockSplitInteractor) AdjustHistoricalDataForSt
 	// ここでは splitDate より前の日付 ( < splitDate ) を対象とするため、 DateTo に splitDate の前日を設定する。
 	// ただし、ListDailyPricesBySymbolFilter の DateTo は inclusive (Lte) なので、
 	// splitDate.AddDate(0, 0, -1) をセットする。
-
 	targetDateTo := splitDate.AddDate(0, 0, -1)
 
-	analyzeDailyPrices, err := ui.StockBrandsDailyPriceForAnalyzeRepository.ListDailyPricesBySymbol(ctx, models.ListDailyPricesBySymbolFilter{
+	// 株式分割履歴から実行済みか確認する。
+	exists, err := ui.appliedStockSplitsHistoryRepository.Exists(ctx, code, splitDate)
+	if err != nil {
+		return err
+	}
+	if exists {
+		log.Printf("Stock split adjustment already applied for code: %s on date: %v", code, splitDate)
+		return nil
+	}
+
+	analyzeDailyPrices, err := ui.stockBrandsDailyPriceForAnalyzeRepository.ListDailyPricesBySymbol(ctx, models.ListDailyPricesBySymbolFilter{
 		TickerSymbol: code,
 		DateTo:       &targetDateTo,
 	})
@@ -58,51 +77,72 @@ func (ui *AdjustHistoricalDataForStockSplitInteractor) AdjustHistoricalDataForSt
 	}
 
 	if len(analyzeDailyPrices) == 0 {
-		fmt.Printf("No historical data found for code: %s before %v in StockBrandsDailyPriceForAnalyze\n", code, splitDate)
-	} else {
-		var updateAnalyzePrices []*models.StockBrandDailyPriceForAnalyze
+		log.Printf("No historical data found for code: %s before %v in StockBrandsDailyPriceForAnalyze", code, splitDate)
+		return nil
+	}
 
-		for _, price := range analyzeDailyPrices {
-			newOpen := price.Open.Div(splitRatio)
-			newClose := price.Close.Div(splitRatio)
-			newHigh := price.High.Div(splitRatio)
-			newLow := price.Low.Div(splitRatio)
-			newAdjClose := price.Adjclose.Div(splitRatio)
+	err = ui.updateAnalyzePrices(ctx, analyzeDailyPrices, code, splitDate, splitRatio, dryRun)
+	if err != nil {
+		return err
+	}
 
-			newVolumeDecimal := decimal.NewFromInt(price.Volume).Mul(splitRatio)
-			newVolume := newVolumeDecimal.IntPart()
+	if !dryRun {
 
-			if dryRun {
-				fmt.Printf("[StockBrandDailyPriceForAnalyze] DryRun: %s Date: %s Open: %s -> %s, Close: %s -> %s, Volume: %d -> %d\n",
-					code, price.Date.Format("2006-01-02"),
-					price.Open.String(), newOpen.String(),
-					price.Close.String(), newClose.String(),
-					price.Volume, newVolume,
-				)
-			} else {
-				price.Open = newOpen
-				price.Close = newClose
-				price.High = newHigh
-				price.Low = newLow
-				price.Adjclose = newAdjClose
-				price.Volume = newVolume
-				price.UpdatedAt = time.Now()
-
-				updateAnalyzePrices = append(updateAnalyzePrices, price)
-			}
-		}
-
-		if !dryRun && len(updateAnalyzePrices) > 0 {
-			err = ui.StockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandDailyPriceForAnalyze(ctx, updateAnalyzePrices)
-			if err != nil {
-				return err
-			}
-			fmt.Printf("Successfully updated %d records for code: %s in StockBrandsDailyPriceForAnalyze\n", len(updateAnalyzePrices), code)
+		// 株式分割履歴を登録する
+		history := models.NewAppliedStockSplitHistory(
+			code,
+			splitDate,
+			splitRatio,
+		)
+		err = ui.appliedStockSplitsHistoryRepository.Create(ctx, history)
+		if err != nil {
+			return err
 		}
 	}
 
 	if dryRun {
 		fmt.Printf("DryRun finished.\n")
+	}
+
+	return nil
+}
+
+// updateAnalyzePrices 分割後の価格に調整する
+func (ui *AdjustHistoricalDataForStockSplitInteractor) updateAnalyzePrices(
+	ctx context.Context,
+	analyzeDailyPrices []*models.StockBrandDailyPriceForAnalyze,
+	code string,
+	splitDate time.Time,
+	splitRatio decimal.Decimal,
+	dryRun bool,
+) error {
+
+	if len(analyzeDailyPrices) == 0 {
+		log.Printf("No historical data found for code: %s before %v in StockBrandsDailyPriceForAnalyze", code, splitDate)
+	} else {
+		var updateAnalyzePrices []*models.StockBrandDailyPriceForAnalyze
+		for _, price := range analyzeDailyPrices {
+			newPrice := price.AdjustForSplit(splitRatio)
+
+			if dryRun {
+				log.Printf("[StockBrandDailyPriceForAnalyze] DryRun: %s Date: %s Open: %s -> %s, Close: %s -> %s, Volume: %d -> %d",
+					code, price.Date.Format("2006-01-02"),
+					price.Open.String(), newPrice.Open.String(),
+					price.Close.String(), newPrice.Close.String(),
+					price.Volume, newPrice.Volume,
+				)
+			} else {
+				updateAnalyzePrices = append(updateAnalyzePrices, newPrice)
+			}
+		}
+
+		if !dryRun && len(updateAnalyzePrices) > 0 {
+			err := ui.stockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandDailyPriceForAnalyze(ctx, updateAnalyzePrices)
+			if err != nil {
+				return err
+			}
+
+		}
 	}
 
 	return nil

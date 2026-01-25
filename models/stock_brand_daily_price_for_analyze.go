@@ -48,3 +48,22 @@ func NewStockBrandDailyPriceForAnalyze(
 		UpdatedAt:    updatedAt,
 	}
 }
+
+// AdjustForSplit adjusts the stock price for a stock split.
+func (s *StockBrandDailyPriceForAnalyze) AdjustForSplit(splitRatio decimal.Decimal) *StockBrandDailyPriceForAnalyze {
+	newVolumeDecimal := decimal.NewFromInt(s.Volume).Mul(splitRatio)
+
+	return NewStockBrandDailyPriceForAnalyze(
+		s.ID,
+		s.Date,
+		s.TickerSymbol,
+		s.High.Div(splitRatio),
+		s.Low.Div(splitRatio),
+		s.Open.Div(splitRatio),
+		s.Close.Div(splitRatio),
+		newVolumeDecimal.IntPart(),
+		s.Adjclose.Div(splitRatio),
+		s.CreatedAt,
+		time.Now(),
+	)
+}

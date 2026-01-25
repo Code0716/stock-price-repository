@@ -67,7 +67,7 @@ adjust-split:
 		--split-date ${date} \
 		--split-ratio ${ratio} \
 		$(if $(dry-run),--dry-run,) 
-# make adjust-split code=9984 date=2025-12-29 ratio=4 dry-run=true。
+# make adjust-split code=9984 date=2025-12-29 ratio=4 dry-run=true
 
 migrate-file:
 	migrate create -ext sql -dir sql/migrations -seq ${name}

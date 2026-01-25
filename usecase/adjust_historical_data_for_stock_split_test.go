@@ -91,6 +91,31 @@ func TestAdjustHistoricalDataForStockSplitInteractor_AdjustHistoricalDataForStoc
 			wantErr: false,
 		},
 		{
+			name: "正常系: 分割日が未来の場合はスキップ",
+			fields: fields{
+				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
+					mock := mock_repositories.NewMockStockBrandsDailyPriceForAnalyzeRepository(ctrl)
+					// 未来の日付の場合は何も呼ばれない
+					mock.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Any()).Times(0)
+					return mock
+				},
+				appliedStockSplitsHistoryRepository: func(ctrl *gomock.Controller) repositories.AppliedStockSplitsHistoryRepository {
+					mock := mock_repositories.NewMockAppliedStockSplitsHistoryRepository(ctrl)
+					// 未来の日付の場合は何も呼ばれない
+					mock.EXPECT().Exists(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+					return mock
+				},
+			},
+			args: args{
+				ctx:        context.Background(),
+				code:       "1001",
+				splitDate:  time.Now().Add(24 * time.Hour), // 明日の日付
+				splitRatio: decimal.NewFromInt(2),
+				dryRun:     false,
+			},
+			wantErr: false,
+		},
+		{
 			name: "正常系: 適用済みのためスキップ",
 			fields: fields{
 				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {

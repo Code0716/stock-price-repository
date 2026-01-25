@@ -41,6 +41,12 @@ func (ui *AdjustHistoricalDataForStockSplitInteractor) AdjustHistoricalDataForSt
 	splitRatio decimal.Decimal,
 	dryRun bool,
 ) error {
+	// 指定された日付が未来の場合は処理をスキップする
+	if splitDate.After(time.Now()) {
+		log.Printf("Split date %v is in the future. Skipping adjustment.", splitDate)
+		return nil
+	}
+
 	// 指定された日付以前のデータを取得する
 	// 分割日そのものも、分割後の価格で反映されるべきなのか、分割前の価格なのかはケースバイケースだが、
 	// 通常「分割した日付」のデータは既に分割後の価格で市場取引されているはず。
@@ -116,27 +122,7 @@ func (ui *AdjustHistoricalDataForStockSplitInteractor) updateAnalyzePrices(
 	} else {
 		var updateAnalyzePrices []*models.StockBrandDailyPriceForAnalyze
 		for _, price := range analyzeDailyPrices {
-			newOpen := price.Open.Div(splitRatio)
-			newClose := price.Close.Div(splitRatio)
-			newHigh := price.High.Div(splitRatio)
-			newLow := price.Low.Div(splitRatio)
-			newAdjClose := price.Adjclose.Div(splitRatio)
-			newVolumeDecimal := decimal.NewFromInt(price.Volume).Mul(splitRatio)
-			newVolume := newVolumeDecimal.IntPart()
-			// TODO: models.NewStockBrandDailyPriceForAnalyzeを使うように修正する。
-			newPrice := models.NewStockBrandDailyPriceForAnalyze(
-				price.ID,
-				price.Date,
-				price.TickerSymbol,
-				newHigh,
-				newLow,
-				newOpen,
-				newClose,
-				newVolume,
-				newAdjClose,
-				price.CreatedAt,
-				time.Now(),
-			)
+			newPrice := price.AdjustForSplit(splitRatio)
 
 			if dryRun {
 				log.Printf("[StockBrandDailyPriceForAnalyze] DryRun: %s Date: %s Open: %s -> %s, Close: %s -> %s, Volume: %d -> %d",

@@ -16,6 +16,10 @@ import (
 
 func main() {
 	config.LoadEnvConfig()
+	if loc, err := time.LoadLocation("Asia/Tokyo"); err == nil {
+		time.Local = loc
+	}
+
 	logger, err := zap.NewProduction()
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize logger: %v", err))

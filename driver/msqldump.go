@@ -14,23 +14,21 @@ import (
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 )
 
+var execCommand = exec.Command
+
 // mySQLDumpClientは、MySQLのダンプするためのクライアント。
 type MySQLDumpClient struct {
 	// redisClient *redis.Client
 }
 
-func NewMySQLDumpClient(
-// redisClient *redis.Client,
-) gateway.MySQLDumpClient {
-	return &MySQLDumpClient{
-		// redisClient,
-	}
+func NewMySQLDumpClient() gateway.MySQLDumpClient {
+	return &MySQLDumpClient{}
 }
 
 // ExportTableAllは、指定されたテーブルの全データをエクスポートする。
 func (c *MySQLDumpClient) ExportTableAll(_ context.Context, fileName, tableName string) error {
 	dbConfig := config.GetDatabase()
-	cmd := exec.Command("mysqldump",
+	cmd := execCommand("mysqldump",
 		"-u"+dbConfig.User,
 		"-p"+dbConfig.Passwd,
 		"-h"+dbConfig.Host,
@@ -56,26 +54,25 @@ func (c *MySQLDumpClient) ExportTableAll(_ context.Context, fileName, tableName 
 	return nil
 }
 
-// ExportDailyStockPriceByYear 各銘柄の日足を年ごとにexportする
-func (c *MySQLDumpClient) ExportDailyStockPriceByYear(_ context.Context, year int) error {
+// ExportTableByYear 指定したテーブルを年ごとにexportする
+func (c *MySQLDumpClient) ExportTableByYear(_ context.Context, tableName string, year int) error {
 	if year < 0 {
 		return errors.New("year must be a positive integer")
 	}
 
-	if err := c.exportDailyStockPriceByYear(year); err != nil {
+	if err := c.exportTableByYear(tableName, year); err != nil {
 		return errors.Wrapf(err, "exportYearlyData error for year %d", year)
 	}
 
 	return nil
 }
 
-// exportDailyStockPriceByYearは、指定された年の日足データをエクスポートする。
-func (c *MySQLDumpClient) exportDailyStockPriceByYear(year int) error {
+// exportTableByYearは、指定された年の日足データをエクスポートする。
+func (c *MySQLDumpClient) exportTableByYear(tableName string, year int) error {
 	dbConfig := config.GetDatabase()
 	where := fmt.Sprintf("YEAR(date) = %d", year)
 
-	tableName := gateway.MySQLDumpTableNameStockBrandsDailyPrice
-	cmd := exec.Command("mysqldump",
+	cmd := execCommand("mysqldump",
 		"-u"+dbConfig.User,
 		"-p"+dbConfig.Passwd,
 		"-h"+dbConfig.Host,

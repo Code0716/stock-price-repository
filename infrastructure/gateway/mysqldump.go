@@ -9,17 +9,19 @@ import (
 
 // テーブル名を定義
 const (
-	MySQLDumpTableNameStockBrand                     = genModel.TableNameStockBrand
-	MySQLDumpTableNameStockBrandsDailyPrice          = genModel.TableNameStockBrandsDailyPrice
-	MySQLDumpTableNameNikkeiStockAverageDailyPrice   = genModel.TableNameNikkeiStockAverageDailyPrice
-	MySQLDumpTableNameDjiStockAverageDailyStockPrice = genModel.TableNameDjiStockAverageDailyStockPrice
-	MySQLDumpTableNameSector33AverageDailyPrice      = genModel.TableNameSector33AverageDailyPrice
-	MySQLDumpTableNameSector17AverageDailyPrice      = genModel.TableNameSector17AverageDailyPrice
+	MySQLDumpTableNameStockBrand                      = genModel.TableNameStockBrand
+	MySQLDumpTableNameStockBrandsDailyPrice           = genModel.TableNameStockBrandsDailyPrice
+	MySQLDumpTableNameStockBrandsDailyPriceForAnalyze = genModel.TableNameStockBrandsDailyPriceForAnalyze
+	MySQLDumpTableNameAppliedStockSplitsHistory       = genModel.TableNameAppliedStockSplitsHistory
+	MySQLDumpTableNameNikkeiStockAverageDailyPrice    = genModel.TableNameNikkeiStockAverageDailyPrice
+	MySQLDumpTableNameDjiStockAverageDailyStockPrice  = genModel.TableNameDjiStockAverageDailyStockPrice
+	// MySQLDumpTableNameSector33AverageDailyPrice       = genModel.TableNameSector33AverageDailyPrice
+	// MySQLDumpTableNameSector17AverageDailyPrice       = genModel.TableNameSector17AverageDailyPrice
 )
 
 type MySQLDumpClient interface {
 	// 指定したテーブルを全件exportする.
 	ExportTableAll(ctx context.Context, fileName, tableName string) error
-	// 各銘柄の日足を年ごとにexportす
-	ExportDailyStockPriceByYear(ctx context.Context, year int) error
+	// 指定したテーブルを年ごとにexportする
+	ExportTableByYear(ctx context.Context, tableName string, year int) error
 }

@@ -36,8 +36,10 @@ func (c *MySQLDumpClient) ExportTableAll(ctx context.Context, fileName, tableNam
 	}
 
 	cmd := execCommandContext(ctx, "mysqldump",
+		"--protocol=tcp",
 		"-u"+dbConfig.User,
 		"-h"+dbConfig.Host,
+		"-P"+dbConfig.Port,
 		"--skip-add-locks", // オプション：不要なLOCK文除外
 		// "--no-create-info",  オプション：テーブルのCREATE文を除外
 		dbConfig.DBName,
@@ -89,8 +91,10 @@ func (c *MySQLDumpClient) exportTableByYear(ctx context.Context, tableName strin
 	}
 
 	cmd := execCommandContext(ctx, "mysqldump",
+		"--protocol=tcp",
 		"-u"+dbConfig.User,
 		"-h"+dbConfig.Host,
+		"-P"+dbConfig.Port,
 		"--skip-add-locks", // オプション：不要なLOCK文除外
 		"--no-create-info", // オプション：テーブルのCREATE文を除外
 		"--where="+where,

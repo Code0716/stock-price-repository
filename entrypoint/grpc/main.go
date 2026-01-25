@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -19,6 +20,9 @@ import (
 
 func main() {
 	ctx := context.Background()
+	if loc, err := time.LoadLocation("Asia/Tokyo"); err == nil {
+		time.Local = loc
+	}
 
 	// Load configuration
 	config.LoadEnvConfig()

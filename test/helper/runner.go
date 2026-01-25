@@ -15,8 +15,11 @@ type TestRunnerOptions struct {
 	CreateDailyStockPriceV1Command            *commands.CreateDailyStockPriceV1Command
 	CreateNikkeiAndDjiHistoricalDataV1Command *commands.CreateNikkeiAndDjiHistoricalDataV1Command
 	AdjustHistoricalDataForStockSplitCommand  *commands.AdjustHistoricalDataForStockSplitCommand
+	ExportYearlyDataCommand                   *commands.ExportYearlyDataCommand
+	ExportMasterDataCommand                   *commands.ExportMasterDataCommand
 	IndexInteractor                           usecase.IndexInteractor
 	SlackAPIClient                            gateway.SlackAPIClient
+	MySQLDumpClient                           gateway.MySQLDumpClient
 }
 
 func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
@@ -41,6 +44,12 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 	if opts.AdjustHistoricalDataForStockSplitCommand == nil {
 		opts.AdjustHistoricalDataForStockSplitCommand = commands.NewAdjustHistoricalDataForStockSplitCommand(nil)
 	}
+	if opts.ExportYearlyDataCommand == nil {
+		opts.ExportYearlyDataCommand = commands.NewExportYearlyDataCommand(opts.MySQLDumpClient)
+	}
+	if opts.ExportMasterDataCommand == nil {
+		opts.ExportMasterDataCommand = commands.NewExportMasterDataCommand(opts.MySQLDumpClient)
+	}
 
 	return cli.NewRunner(
 		opts.HealthCheckCommand,
@@ -50,6 +59,8 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.CreateDailyStockPriceV1Command,
 		opts.CreateNikkeiAndDjiHistoricalDataV1Command,
 		opts.AdjustHistoricalDataForStockSplitCommand,
+		opts.ExportYearlyDataCommand,
+		opts.ExportMasterDataCommand,
 		opts.IndexInteractor,
 		opts.SlackAPIClient,
 	)

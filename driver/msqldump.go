@@ -2,11 +2,13 @@
 package driver
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 
@@ -14,32 +16,37 @@ import (
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 )
 
+var execCommandContext = exec.CommandContext
+
 // mySQLDumpClientは、MySQLのダンプするためのクライアント。
 type MySQLDumpClient struct {
 	// redisClient *redis.Client
 }
 
-func NewMySQLDumpClient(
-// redisClient *redis.Client,
-) gateway.MySQLDumpClient {
-	return &MySQLDumpClient{
-		// redisClient,
-	}
+func NewMySQLDumpClient() gateway.MySQLDumpClient {
+	return &MySQLDumpClient{}
 }
 
 // ExportTableAllは、指定されたテーブルの全データをエクスポートする。
-func (c *MySQLDumpClient) ExportTableAll(_ context.Context, fileName, tableName string) error {
+func (c *MySQLDumpClient) ExportTableAll(ctx context.Context, fileName, tableName string) error {
 	dbConfig := config.GetDatabase()
-	cmd := exec.Command("mysqldump",
+
+	if err := os.MkdirAll(dbConfig.ExportBackupPath, 0755); err != nil {
+		return errors.Wrap(err, "failed to create backup directory")
+	}
+
+	cmd := execCommandContext(ctx, "mysqldump",
 		"-u"+dbConfig.User,
-		"-p"+dbConfig.Passwd,
 		"-h"+dbConfig.Host,
 		"--skip-add-locks", // オプション：不要なLOCK文除外
 		// "--no-create-info",  オプション：テーブルのCREATE文を除外
 		dbConfig.DBName,
 		tableName,
 	)
-	filePath := fmt.Sprintf("%s/%s.sql", dbConfig.ExportBackupPath, fileName)
+
+	cmd.Env = append(os.Environ(), fmt.Sprintf("MYSQL_PWD=%s", dbConfig.Passwd))
+
+	filePath := filepath.Join(dbConfig.ExportBackupPath, fmt.Sprintf("%s.sql", fileName))
 
 	outFile, err := os.Create(filePath)
 	if err != nil {
@@ -48,36 +55,41 @@ func (c *MySQLDumpClient) ExportTableAll(_ context.Context, fileName, tableName 
 	defer outFile.Close()
 	cmd.Stdout = outFile
 
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "mysqldump command run error")
+		return errors.Wrapf(err, "mysqldump command run error: %s", stderr.String())
 	}
 
 	log.Printf("mysqldump & export success: %s\n", fileName)
 	return nil
 }
 
-// ExportDailyStockPriceByYear 各銘柄の日足を年ごとにexportする
-func (c *MySQLDumpClient) ExportDailyStockPriceByYear(_ context.Context, year int) error {
+// ExportTableByYear 指定したテーブルを年ごとにexportする
+func (c *MySQLDumpClient) ExportTableByYear(ctx context.Context, tableName string, year int) error {
 	if year < 0 {
 		return errors.New("year must be a positive integer")
 	}
 
-	if err := c.exportDailyStockPriceByYear(year); err != nil {
+	if err := c.exportTableByYear(ctx, tableName, year); err != nil {
 		return errors.Wrapf(err, "exportYearlyData error for year %d", year)
 	}
 
 	return nil
 }
 
-// exportDailyStockPriceByYearは、指定された年の日足データをエクスポートする。
-func (c *MySQLDumpClient) exportDailyStockPriceByYear(year int) error {
+// exportTableByYearは、指定された年の日足データをエクスポートする。
+func (c *MySQLDumpClient) exportTableByYear(ctx context.Context, tableName string, year int) error {
 	dbConfig := config.GetDatabase()
 	where := fmt.Sprintf("YEAR(date) = %d", year)
 
-	tableName := gateway.MySQLDumpTableNameStockBrandsDailyPrice
-	cmd := exec.Command("mysqldump",
+	if err := os.MkdirAll(dbConfig.ExportBackupPath, 0755); err != nil {
+		return errors.Wrap(err, "failed to create backup directory")
+	}
+
+	cmd := execCommandContext(ctx, "mysqldump",
 		"-u"+dbConfig.User,
-		"-p"+dbConfig.Passwd,
 		"-h"+dbConfig.Host,
 		"--skip-add-locks", // オプション：不要なLOCK文除外
 		"--no-create-info", // オプション：テーブルのCREATE文を除外
@@ -86,7 +98,9 @@ func (c *MySQLDumpClient) exportDailyStockPriceByYear(year int) error {
 		tableName, // テーブル名を指定
 	)
 
-	filePath := fmt.Sprintf("%s/%d_%s.sql", dbConfig.ExportBackupPath, year, tableName)
+	cmd.Env = append(os.Environ(), fmt.Sprintf("MYSQL_PWD=%s", dbConfig.Passwd))
+
+	filePath := filepath.Join(dbConfig.ExportBackupPath, fmt.Sprintf("%d_%s.sql", year, tableName))
 	outFile, err := os.Create(filePath)
 	if err != nil {
 		return errors.Wrap(err, "os.Create error")
@@ -94,8 +108,11 @@ func (c *MySQLDumpClient) exportDailyStockPriceByYear(year int) error {
 	defer outFile.Close()
 	cmd.Stdout = outFile
 
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "mysqldump command run error")
+		return errors.Wrapf(err, "mysqldump command run error: %s", stderr.String())
 	}
 
 	return nil

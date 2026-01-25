@@ -56,7 +56,10 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	appliedStockSplitsHistoryRepository := database.NewAppliedStockSplitsHistoryRepositoryImpl(gormDB)
 	adjustHistoricalDataForStockSplit := usecase.NewAdjustHistoricalDataForStockSplit(stockBrandsDailyPriceForAnalyzeRepository, appliedStockSplitsHistoryRepository)
 	adjustHistoricalDataForStockSplitCommand := commands.NewAdjustHistoricalDataForStockSplitCommand(adjustHistoricalDataForStockSplit)
-	runner := cli.NewRunner(healthCheckCommand, setJQuantsAPITokenToRedisV1Command, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, indexInteractor, slackAPIClient)
+	mySQLDumpClient := driver.NewMySQLDumpClient()
+	exportYearlyDataCommand := commands.NewExportYearlyDataCommand(mySQLDumpClient)
+	exportMasterDataCommand := commands.NewExportMasterDataCommand(mySQLDumpClient)
+	runner := cli.NewRunner(healthCheckCommand, setJQuantsAPITokenToRedisV1Command, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, exportYearlyDataCommand, exportMasterDataCommand, indexInteractor, slackAPIClient)
 	return runner, func() {
 		cleanup()
 	}, nil
@@ -130,7 +133,7 @@ var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexIn
 
 var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewLogger)
 
-var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand)
+var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand)
 
 var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl)
 

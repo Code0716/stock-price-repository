@@ -14,10 +14,10 @@ insert_csv
 back_up
 private_key.pem
 spr-cli
-migration_daily_price
 sql/mysql
 sql/db_data
 main
 proto-definitions/
 # Exclude root-level pb.go files (should be in pb/ directory only)
 /*.pb.go
+shell_scripts/

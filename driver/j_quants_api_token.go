@@ -58,7 +58,7 @@ func (c *StockAPIClient) getOrSetJQuantsAPIRefreshTokenToRedis(ctx context.Conte
 
 // idTokenをRedisにセット
 func (c *StockAPIClient) setJQuantsAPIIDTokenToRedis(ctx context.Context, idToken string) error {
-	err := c.redisClient.SetEx(ctx, jQuantsAPIIDTokenRedisKey, idToken, jQuantsAPIIDTokenRedisDuration).Err()
+	err := c.redisClient.Set(ctx, jQuantsAPIIDTokenRedisKey, idToken, jQuantsAPIIDTokenRedisDuration).Err()
 	if err != nil {
 		return errors.Wrap(err, "setJQuantsAPIIDTokenToRedis error")
 	}
@@ -67,7 +67,7 @@ func (c *StockAPIClient) setJQuantsAPIIDTokenToRedis(ctx context.Context, idToke
 
 // refreshTokenをRedisにセット
 func (c *StockAPIClient) setJQuantsAPIRefreshTokenToRedis(ctx context.Context, refreshToken string) error {
-	err := c.redisClient.SetEx(ctx, jQuantsAPIRefreshTokenRedisKey, refreshToken, jQuantsAPIRefreshTokenRedisDuration).Err()
+	err := c.redisClient.Set(ctx, jQuantsAPIRefreshTokenRedisKey, refreshToken, jQuantsAPIRefreshTokenRedisDuration).Err()
 	if err != nil {
 		return errors.Wrap(err, "setJQuantsAPIRefreshTokenToRedis error")
 	}

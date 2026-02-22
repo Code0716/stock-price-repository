@@ -55,7 +55,7 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) CreateHistoricalDailyStockPr
 		return nil
 	}
 
-	err = si.redisClient.SetEx(
+	err = si.redisClient.Set(
 		ctx,
 		createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey,
 		stockBrands[len(stockBrands)-1].TickerSymbol,

@@ -162,21 +162,6 @@ func (mr *MockStockAPIClientMockRecorder) GetIndexPriceChart(ctx, symbol, interv
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIndexPriceChart", reflect.TypeOf((*MockStockAPIClient)(nil).GetIndexPriceChart), ctx, symbol, interval, dateRange)
 }
 
-// GetOrSetJQuantsAPIIDTokenToRedis mocks base method.
-func (m *MockStockAPIClient) GetOrSetJQuantsAPIIDTokenToRedis(ctx context.Context) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrSetJQuantsAPIIDTokenToRedis", ctx)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrSetJQuantsAPIIDTokenToRedis indicates an expected call of GetOrSetJQuantsAPIIDTokenToRedis.
-func (mr *MockStockAPIClientMockRecorder) GetOrSetJQuantsAPIIDTokenToRedis(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrSetJQuantsAPIIDTokenToRedis", reflect.TypeOf((*MockStockAPIClient)(nil).GetOrSetJQuantsAPIIDTokenToRedis), ctx)
-}
-
 // GetStockBrands mocks base method.
 func (m *MockStockAPIClient) GetStockBrands(ctx context.Context) ([]*gateway.StockBrand, error) {
 	m.ctrl.T.Helper()

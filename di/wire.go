@@ -41,7 +41,6 @@ var driverSet = wire.NewSet(
 var cliSet = wire.NewSet(
 	cli.NewRunner,
 	commands.NewHealthCheckCommand,
-	commands.NewSetJQuantsAPITokenToRedisV1Command,
 	commands.NewUpdateStockBrandsV1Command,
 	commands.NewCreateHistoricalDailyStockPricesV1Command,
 	commands.NewCreateDailyStockPriceV1Command,

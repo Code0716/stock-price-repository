@@ -67,19 +67,21 @@ func TestE2E_CreateHistoricalDailyStockPrices(t *testing.T) {
 				err = stockBrandRepo.UpsertStockBrands(context.Background(), []*models.StockBrand{brand})
 				assert.NoError(t, err)
 
-				// Setup Expectations
+				// 直近1週間分のみ処理するようチェックポイントをセット
+				checkpoint := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+				mr.Set("create_historical_daily_stock_prices_date_checkpoint", checkpoint)
+
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
 
-				mockStockAPI.EXPECT().GetDailyPricesBySymbolAndRange(
+				// 日付ループで呼ばれる: 各平日について全銘柄の価格を返す
+				mockStockAPI.EXPECT().GetAllBrandDailyPricesByDate(
 					gomock.Any(),
-					gateway.StockAPISymbol("9999"),
-					gomock.Any(), // from (5 years ago)
-					gomock.Any(), // to (now)
-				).DoAndReturn(func(_ context.Context, symbol gateway.StockAPISymbol, _, to time.Time) ([]*gateway.StockPrice, error) {
+					gomock.Any(),
+				).DoAndReturn(func(_ context.Context, date time.Time) ([]*gateway.StockPrice, error) {
 					return []*gateway.StockPrice{
 						{
-							Date:            to.AddDate(0, 0, -1),
-							TickerSymbol:    string(symbol),
+							Date:            date,
+							TickerSymbol:    "9999",
 							Open:            decimal.NewFromInt(1000),
 							High:            decimal.NewFromInt(1100),
 							Low:             decimal.NewFromInt(900),
@@ -88,21 +90,20 @@ func TestE2E_CreateHistoricalDailyStockPrices(t *testing.T) {
 							AdjustmentClose: decimal.NewFromInt(1050),
 						},
 					}, nil
-				})
+				}).AnyTimes()
 			},
 			wantErr: false,
 			check: func(t *testing.T) {
-				// Verify Results
 				var prices []*genModel.StockBrandsDailyPrice
 				err = db.Where("stock_brand_id = ?", "1").Find(&prices).Error
 				assert.NoError(t, err)
-				assert.Len(t, prices, 1)
+				assert.NotEmpty(t, prices, "9999の日足データが作成されているべき")
 				assert.Equal(t, 1000.0, prices[0].OpenPrice)
 
 				var analyzePrices []*genModel.StockBrandsDailyPriceForAnalyze
 				err = db.Where("ticker_symbol = ?", "9999").Find(&analyzePrices).Error
 				assert.NoError(t, err)
-				assert.Len(t, analyzePrices, 1)
+				assert.NotEmpty(t, analyzePrices, "9999のanalyzeデータが作成されているべき")
 			},
 		},
 	}
@@ -121,12 +122,9 @@ func TestE2E_CreateHistoricalDailyStockPrices(t *testing.T) {
 				tt.setup(t, mockStockAPI, mockSlackAPI)
 			}
 
-			// 4. Setup Repositories
 			stockBrandRepo := database.NewStockBrandRepositoryImpl(db)
 			dailyPriceRepo := database.NewStockBrandsDailyPriceRepositoryImpl(db)
 			analyzeRepo := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db)
-
-			// 5. Setup Interactor
 			tx := database.NewTransaction(db)
 
 			interactor := usecase.NewStockBrandsDailyPriceInteractor(
@@ -139,7 +137,6 @@ func TestE2E_CreateHistoricalDailyStockPrices(t *testing.T) {
 				mockSlackAPI,
 			)
 
-			// 6. Setup Command
 			cmd := commands.NewCreateHistoricalDailyStockPricesV1Command(interactor)
 
 			runner := helper.NewTestRunner(helper.TestRunnerOptions{

@@ -28,8 +28,6 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	client := driver.OpenRedis()
 	slackAPIClient := driver.NewSlackAPIClient(httpRequest, client)
 	healthCheckCommand := commands.NewHealthCheckCommand(slackAPIClient)
-	stockAPIClient := driver.NewStockAPIClient(httpRequest, client)
-	setJQuantsAPITokenToRedisV1Command := commands.NewSetJQuantsAPITokenToRedisV1Command(stockAPIClient)
 	db, cleanup, err := driver.NewDBConn()
 	if err != nil {
 		return nil, nil, err
@@ -44,6 +42,7 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	stockBrandsDailyPriceRepository := database.NewStockBrandsDailyPriceRepositoryImpl(gormDB)
 	analyzeStockBrandPriceHistoryRepository := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(gormDB)
 	stockBrandsDailyPriceForAnalyzeRepository := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(gormDB)
+	stockAPIClient := driver.NewStockAPIClient(httpRequest, client)
 	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, analyzeStockBrandPriceHistoryRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client)
 	updateStockBrandsV1Command := commands.NewUpdateStockBrandsV1Command(stockBrandInteractor)
 	stockBrandsDailyPriceInteractor := usecase.NewStockBrandsDailyPriceInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client, slackAPIClient)
@@ -59,7 +58,7 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	mySQLDumpClient := driver.NewMySQLDumpClient()
 	exportYearlyDataCommand := commands.NewExportYearlyDataCommand(mySQLDumpClient)
 	exportMasterDataCommand := commands.NewExportMasterDataCommand(mySQLDumpClient)
-	runner := cli.NewRunner(healthCheckCommand, setJQuantsAPITokenToRedisV1Command, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, exportYearlyDataCommand, exportMasterDataCommand, indexInteractor, slackAPIClient)
+	runner := cli.NewRunner(healthCheckCommand, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, exportYearlyDataCommand, exportMasterDataCommand, indexInteractor, slackAPIClient)
 	return runner, func() {
 		cleanup()
 	}, nil
@@ -133,7 +132,7 @@ var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexIn
 
 var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewLogger)
 
-var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewSetJQuantsAPITokenToRedisV1Command, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand)
+var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand)
 
 var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl)
 

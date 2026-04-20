@@ -122,6 +122,7 @@ func TestHighVolumeStockBrandRepositoryImpl_FindAll(t *testing.T) {
 		})
 	}
 }
+
 func TestHighVolumeStockBrandRepositoryImpl_convertToDomainModelWithName(t *testing.T) {
 	now := time.Now()
 

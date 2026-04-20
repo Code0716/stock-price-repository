@@ -300,36 +300,26 @@ func TestE2E_MarketCodeFilter_CreateHistoricalDailyStockPrices(t *testing.T) {
 				err = stockBrandRepo.UpsertStockBrands(context.Background(), brands)
 				assert.NoError(t, err)
 
+				// 直近1週間分のみ処理するようチェックポイントをセット
+				checkpoint := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+				mr.Set("create_historical_daily_stock_prices_date_checkpoint", checkpoint)
+
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
 
-				// 主要市場の2銘柄についてのみAPIコールが行われることを期待
-				for _, symbol := range []string{"2001", "2002"} {
-					mockStockAPI.EXPECT().GetDailyPricesBySymbolAndRange(
-						gomock.Any(),
-						gateway.StockAPISymbol(symbol),
-						gomock.Any(),
-						gomock.Any(),
-					).DoAndReturn(func(_ context.Context, sym gateway.StockAPISymbol, from, to time.Time) ([]*gateway.StockPrice, error) {
-						// 過去5年分のダミーデータを返す（簡略化のため3日分）
-						prices := make([]*gateway.StockPrice, 0, 3)
-						for i := 0; i < 3; i++ {
-							date := to.AddDate(0, 0, -i)
-							prices = append(prices, &gateway.StockPrice{
-								Date:            date,
-								TickerSymbol:    string(sym),
-								Open:            decimal.NewFromInt(100 + int64(i)),
-								High:            decimal.NewFromInt(110 + int64(i)),
-								Low:             decimal.NewFromInt(90 + int64(i)),
-								Close:           decimal.NewFromInt(105 + int64(i)),
-								Volume:          1000,
-								AdjustmentClose: decimal.NewFromInt(105 + int64(i)),
-							})
-						}
-						return prices, nil
-					})
-				}
+				// 日付ループで呼ばれる: 全銘柄（主要市場 + その他）の価格を返す
+				// フィルタはusecase側のFindAllMainMarketsのマップで行われる
+				mockStockAPI.EXPECT().GetAllBrandDailyPricesByDate(
+					gomock.Any(),
+					gomock.Any(),
+				).DoAndReturn(func(_ context.Context, date time.Time) ([]*gateway.StockPrice, error) {
+					return []*gateway.StockPrice{
+						{Date: date, TickerSymbol: "2001", Open: decimal.NewFromInt(100), High: decimal.NewFromInt(110), Low: decimal.NewFromInt(90), Close: decimal.NewFromInt(105), Volume: 1000, AdjustmentClose: decimal.NewFromInt(105)},
+						{Date: date, TickerSymbol: "2002", Open: decimal.NewFromInt(200), High: decimal.NewFromInt(210), Low: decimal.NewFromInt(190), Close: decimal.NewFromInt(205), Volume: 2000, AdjustmentClose: decimal.NewFromInt(205)},
+						{Date: date, TickerSymbol: "2003", Open: decimal.NewFromInt(300), High: decimal.NewFromInt(310), Low: decimal.NewFromInt(290), Close: decimal.NewFromInt(305), Volume: 3000, AdjustmentClose: decimal.NewFromInt(305)},
+					}, nil
+				}).AnyTimes()
 
-				// market_code="888" の銘柄についてはAPIコールされないことを期待
+				// market_code="888" の銘柄はAPIから返されるがusecase層で除外される
 			},
 			wantErr: false,
 			check: func(t *testing.T) {
@@ -337,16 +327,15 @@ func TestE2E_MarketCodeFilter_CreateHistoricalDailyStockPrices(t *testing.T) {
 				var prices []*genModel.StockBrandsDailyPrice
 				err = db.Find(&prices).Error
 				assert.NoError(t, err)
-				// 2銘柄 × 3日分 = 6レコード
-				assert.Len(t, prices, 6, "主要市場の2銘柄のみ日足データが作成されるべき")
+				assert.NotEmpty(t, prices, "主要市場の銘柄の日足データが作成されるべき")
 
 				// その他市場の銘柄（2003）について日足データが作成されていないことを確認
 				var otherMarketPrices []*genModel.StockBrandsDailyPrice
 				err = db.Where("ticker_symbol = ?", "2003").Find(&otherMarketPrices).Error
 				assert.NoError(t, err)
-				assert.Len(t, otherMarketPrices, 0, "market_code=888の銘柄は日足データが作成されないべき")
+				assert.Empty(t, otherMarketPrices, "market_code=888の銘柄は日足データが作成されないべき")
 
-				// 作成された日足データの ticker_symbol のユニーク値を確認
+				// 作成された日足データのticker_symbolは主要市場のみ
 				var uniqueSymbols []string
 				err = db.Model(&genModel.StockBrandsDailyPrice{}).
 					Distinct("ticker_symbol").

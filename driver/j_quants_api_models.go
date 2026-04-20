@@ -13,19 +13,6 @@ import (
 	"github.com/Code0716/stock-price-repository/util"
 )
 
-type jQuantsAPIClientRefreshTokenRequest struct {
-	Mailaddress string `json:"mailaddress"`
-	Password    string `json:"password"`
-}
-
-type jQuantsAPIClientRefreshTokenResponse struct {
-	RefreshToken string `json:"refreshToken"`
-}
-
-type jQuantsAPIClientIDTokenResponse struct {
-	IDToken string `json:"idToken"`
-}
-
 type jQuantsStockBrandsResponse struct {
 	Data []struct {
 		Date               string `json:"Date"`
@@ -43,7 +30,8 @@ type jQuantsStockBrandsResponse struct {
 }
 
 type jQuantsDailyQuotesResponse struct {
-	DailyQuotes []*jQuantsDailyQuote `json:"Data"`
+	DailyQuotes   []*jQuantsDailyQuote `json:"Data"`
+	PaginationKey string               `json:"pagination_key"`
 }
 
 // 日足
@@ -68,17 +56,17 @@ type jQuantsDailyQuote struct {
 
 // 翌営業日に決算発表予定の銘柄
 type jQuantsAnnounceFinsScheduleResponse struct {
-	Announcement []*AnnounceFinSchedule `json:"announcement"`
+	Data []*AnnounceFinSchedule `json:"data"`
 }
 
 // 決算予定
 type AnnounceFinSchedule struct {
 	Date          string `json:"Date"`
 	Code          string `json:"Code"`
-	CompanyName   string `json:"CompanyName"`
-	FiscalYear    string `json:"FiscalYear"`
-	SectorName    string `json:"SectorName"`
-	FiscalQuarter string `json:"FiscalQuarter"`
+	CompanyName   string `json:"CoName"`
+	FiscalYear    string `json:"FY"`
+	SectorName    string `json:"SectorNm"`
+	FiscalQuarter string `json:"FQ"`
 	Section       string `json:"Section"`
 }
 
@@ -211,7 +199,7 @@ func (c *StockAPIClient) jQuantsAnnounceFinsScheduleResponseToResponseInfo(
 	response jQuantsAnnounceFinsScheduleResponse,
 ) []*gateway.AnnounceFinScheduleResponseInfo {
 	var announcements []*gateway.AnnounceFinScheduleResponseInfo
-	for _, v := range response.Announcement {
+	for _, v := range response.Data {
 		date, err := util.FormatStringToDate(v.Date)
 		if err != nil {
 			log.Printf("util.FormatStringToDate: %v", err)

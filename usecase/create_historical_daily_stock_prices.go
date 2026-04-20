@@ -3,8 +3,6 @@ package usecase
 import (
 	"context"
 	"log"
-	"runtime"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,153 +14,113 @@ import (
 )
 
 const (
-	// createHistoricalDailyStockPrices
-	createHistoricalDailyStockPricesLimitAtOnce                                               int           = 4000
-	createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey string        = "create_historical_daily_stock_price_list_toshyo_stock_brands_by_symbol_stock_price_repository_redis_key"
-	createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisTTL time.Duration = 2 * time.Hour
+	createHistoricalDailyStockPricesDateCheckpointRedisKey string        = "create_historical_daily_stock_prices_date_checkpoint"
+	createHistoricalDailyStockPricesDateCheckpointRedisTTL time.Duration = 7 * 24 * time.Hour
 )
 
-// CreateHistoricalDailyStockPrices - 5年分の全銘柄の日足を取得して保存する
+// CreateHistoricalDailyStockPrices - 5年分の全銘柄の日足を日付ループで取得して保存する
 func (si *stockBrandsDailyStockPriceInteractorImpl) CreateHistoricalDailyStockPrices(ctx context.Context, now time.Time) error {
-	symbolFrom, err := si.redisClient.Get(
-		ctx,
-		createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey,
-	).Result()
+	// 全主要市場銘柄を取得してsymbol→IDのマップを作る
+	allBrands, err := si.stockBrandRepository.FindAllMainMarkets(ctx)
+	if err != nil {
+		return errors.Wrap(err, "stockBrandRepository.FindAllMainMarkets error")
+	}
+	brandIDBySymbol := make(map[string]string, len(allBrands))
+	for _, b := range allBrands {
+		brandIDBySymbol[b.TickerSymbol] = b.ID
+	}
+
+	// Redisからチェックポイント日付を取得（再開用）
+	startDate := now.AddDate(-5, 0, 0)
+	checkpointStr, err := si.redisClient.Get(ctx, createHistoricalDailyStockPricesDateCheckpointRedisKey).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return errors.Wrap(err, "redisClient.Get error")
 	}
-	if errors.Is(err, redis.Nil) {
-		// なければ最初から
-		// ってかもういらないね。一発でいけるんだから。
-		symbolFrom = "0"
+	if !errors.Is(err, redis.Nil) {
+		checkpointDate, parseErr := time.Parse("2006-01-02", checkpointStr)
+		if parseErr == nil {
+			startDate = checkpointDate.AddDate(0, 0, 1)
+		}
 	}
 
-	// 銘柄取得
-	// FindAllで取得してもいいが、API次第もあるので一旦制御
-	filter := models.NewStockBrandFilter().
-		WithOnlyMainMarkets().
-		WithPagination(symbolFrom, createHistoricalDailyStockPricesLimitAtOnce)
-	stockBrands, err := si.stockBrandRepository.FindWithFilter(ctx, filter)
-	if err != nil {
-		return errors.Wrap(err, "stockBrandRepository.FindWithFilter error")
-	}
+	// 日付ループ（土日はスキップ、祝日はAPIが空を返す）
+	for d := startDate; !d.After(now); d = d.AddDate(0, 0, 1) {
+		if d.Weekday() == time.Saturday || d.Weekday() == time.Sunday {
+			continue
+		}
 
-	if err = si.createHistoricalDailyStockPrices(ctx, stockBrands, now); err != nil {
-		return errors.Wrap(err, "createHistoricalDailyStockPrices error")
-	}
+		prices, err := si.stockAPIClient.GetAllBrandDailyPricesByDate(ctx, d)
+		if err != nil {
+			log.Printf("GetAllBrandDailyPricesByDate error for %s: %v", d.Format("2006-01-02"), err)
+			// チェックポイントを保存して終了（次回再開可能）
+			return si.saveHistoricalCheckpoint(ctx, d.AddDate(0, 0, -1))
+		}
 
-	if len(stockBrands) == 0 {
-		return nil
-	}
+		if len(prices) == 0 {
+			// 祝日など取引なし
+			continue
+		}
 
-	err = si.redisClient.Set(
-		ctx,
-		createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey,
-		stockBrands[len(stockBrands)-1].TickerSymbol,
-		createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisTTL,
-	).Err()
-	if err != nil {
-		return errors.Wrap(err, "redisClient.Set error")
-	}
-
-	return nil
-}
-
-// createHistoricalDailyStockPrices - 5年分の全銘柄の日足を取得して保存する
-func (si *stockBrandsDailyStockPriceInteractorImpl) createHistoricalDailyStockPrices(ctx context.Context, stockBrands []*models.StockBrand, now time.Time) error {
-	var wg sync.WaitGroup
-	numCPU := runtime.NumCPU()
-	stockBrandsCh := make(chan *models.StockBrand, len(stockBrands))
-	// 数が多くなりすぎるのでnumCPUにしておく。
-	stockBrandDailyPricesCh := make(chan []*models.StockBrandDailyPrice, numCPU)
-	log.Printf("cpu num : %d", numCPU)
-
-	// workerの起動
-	for w := 1; w <= numCPU; w++ {
-		wg.Add(1)
-		go si.createHistoricalDailyStockPricesBySymbol(ctx, &wg, stockBrandsCh, stockBrandDailyPricesCh, now)
-	}
-
-	for _, v := range stockBrands {
-		stockBrandsCh <- v
-	}
-	close(stockBrandsCh)
-
-	go func() {
-		wg.Wait()
-		close(stockBrandDailyPricesCh)
-	}()
-
-	for v := range stockBrandDailyPricesCh {
-		if err := si.stockBrandsDailyStockPriceRepository.CreateStockBrandDailyPrice(ctx, v); err != nil {
-			log.Printf("stockBrandsDailyStockPriceRepository.CreateStockBrandsDailyPrice error: %v", err)
+		dailyPrices := si.newStockBrandDailyPricesForDate(brandIDBySymbol, prices, now)
+		if err := si.stockBrandsDailyStockPriceRepository.CreateStockBrandDailyPrice(ctx, dailyPrices); err != nil {
+			log.Printf("CreateStockBrandDailyPrice error: %v", err)
 		}
 		if err := si.stockBrandsDailyPriceForAnalyzeRepository.
 			CreateStockBrandDailyPriceForAnalyze(
 				ctx,
-				si.newStockBrandDailyPriceForAnalyzeByStockBrandsDailyPrice(v, now),
+				si.newStockBrandDailyPriceForAnalyzeByStockBrandsDailyPrice(dailyPrices, now),
 			); err != nil {
-			log.Printf("stockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandsDailyPriceForAnalyze error: %v", err)
+			log.Printf("CreateStockBrandDailyPriceForAnalyze error: %v", err)
+		}
+
+		if err := si.saveHistoricalCheckpoint(ctx, d); err != nil {
+			log.Printf("saveHistoricalCheckpoint error: %v", err)
 		}
 	}
 
+	// 完了したらチェックポイントを削除
+	si.redisClient.Del(ctx, createHistoricalDailyStockPricesDateCheckpointRedisKey)
 	return nil
 }
 
-// createHistoricalDailyStockPricesBySymbol - 銘柄ごとに5年分の日足を証券コードから作成する
-func (si *stockBrandsDailyStockPriceInteractorImpl) createHistoricalDailyStockPricesBySymbol(
-	ctx context.Context,
-	wg *sync.WaitGroup,
-	stockBrandsCh <-chan *models.StockBrand,
-	stockBrandDailyPricesCh chan<- []*models.StockBrandDailyPrice,
-	now time.Time,
-) {
-	defer wg.Done()
-	for v := range stockBrandsCh {
-		resp, err := si.stockAPIClient.GetDailyPricesBySymbolAndRange(
-			ctx,
-			gateway.StockAPISymbol(v.TickerSymbol),
-			now.AddDate(-5, 0, 0),
-			now,
-		)
-		if err != nil {
-			log.Printf("stockAPIClient.GetDailyPricesBySymbolAndRange error: %v", err)
-			continue
-		}
-
-		stockBrandDailyPricesCh <- si.newStockBrandDailyPricesByStockPrice(v, resp, now)
-	}
+func (si *stockBrandsDailyStockPriceInteractorImpl) saveHistoricalCheckpoint(ctx context.Context, d time.Time) error {
+	return si.redisClient.Set(
+		ctx,
+		createHistoricalDailyStockPricesDateCheckpointRedisKey,
+		d.Format("2006-01-02"),
+		createHistoricalDailyStockPricesDateCheckpointRedisTTL,
+	).Err()
 }
 
-// newStockBrandDailyPricesByStockPrice - models.StockBrandDailyPriceスライスの作成
-func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPricesByStockPrice(stockBrand *models.StockBrand, stockPrices []*gateway.StockPrice, now time.Time) []*models.StockBrandDailyPrice {
-	if stockPrices == nil {
-		return nil
-	}
-
-	log.Printf("newStockBrandDailyPricesByStockPrice: %s(%s), %d", stockBrand.Name, stockBrand.TickerSymbol, len(stockPrices))
-	result := make([]*models.StockBrandDailyPrice, 0, len(stockPrices))
-	for _, v := range stockPrices {
+// newStockBrandDailyPricesForDate - 1日分の全銘柄価格をDBモデルに変換する
+func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPricesForDate(
+	brandIDBySymbol map[string]string,
+	prices []*gateway.StockPrice,
+	now time.Time,
+) []*models.StockBrandDailyPrice {
+	result := make([]*models.StockBrandDailyPrice, 0, len(prices))
+	for _, v := range prices {
 		if v.High.IsZero() && v.Close.IsZero() && v.Low.IsZero() && v.Open.IsZero() {
 			continue
 		}
-
-		result = append(
-			result,
-			models.NewStockBrandDailyPrice(
-				util.GenerateUUID(),
-				stockBrand.ID,
-				v.Date,
-				v.TickerSymbol,
-				v.High,
-				v.Low,
-				v.Open,
-				v.Close,
-				v.Volume,
-				v.AdjustmentClose,
-				now,
-				now,
-			))
+		stockBrandID, ok := brandIDBySymbol[v.TickerSymbol]
+		if !ok {
+			continue
+		}
+		result = append(result, models.NewStockBrandDailyPrice(
+			util.GenerateUUID(),
+			stockBrandID,
+			v.Date,
+			v.TickerSymbol,
+			v.High,
+			v.Low,
+			v.Open,
+			v.Close,
+			v.Volume,
+			v.AdjustmentClose,
+			now,
+			now,
+		))
 	}
 	return result
 }

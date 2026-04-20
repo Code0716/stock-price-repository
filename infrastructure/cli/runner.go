@@ -24,7 +24,6 @@ type Runner struct {
 
 func NewRunner(
 	healthCheckCommand *commands.HealthCheckCommand,
-	setJQuantsAPITokenToRedisV1Command *commands.SetJQuantsAPITokenToRedisV1Command,
 	updateStockBrandsInfoV1Command *commands.UpdateStockBrandsV1Command,
 	createHistoricalDailyStockPricesV1Command *commands.CreateHistoricalDailyStockPricesV1Command,
 	createDailyStockPriceV1Command *commands.CreateDailyStockPriceV1Command,
@@ -38,7 +37,6 @@ func NewRunner(
 	r := &Runner{
 		commands: []*commands.Command{
 			healthCheckCommand.Command(),
-			setJQuantsAPITokenToRedisV1Command.Command(),
 			updateStockBrandsInfoV1Command.Command(),
 			createHistoricalDailyStockPricesV1Command.Command(),
 			createDailyStockPriceV1Command.Command(),

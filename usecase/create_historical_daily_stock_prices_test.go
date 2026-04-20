@@ -18,7 +18,6 @@ import (
 )
 
 func Test_stockBrandsDailyStockPriceInteractorImpl_CreateHistoricalDailyStockPrices(t *testing.T) {
-	// miniredis setup
 	s, err := miniredis.Run()
 	if err != nil {
 		t.Fatalf("miniredis.Run() error = %v", err)
@@ -47,38 +46,32 @@ func Test_stockBrandsDailyStockPriceInteractorImpl_CreateHistoricalDailyStockPri
 		wantErr bool
 	}{
 		{
-			name: "正常系: Redisにキーがない場合、最初から取得して保存する",
+			name: "正常系: チェックポイントなし、全銘柄の日足を日付ループで取得して保存する",
 			fields: fields{
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					mock := mock_repositories.NewMockStockBrandRepository(ctrl)
-					mock.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
-						OnlyMainMarkets: true,
-						MarketCodes:     nil,
-						SymbolFrom:      "0",
-						Limit:           4000,
-					})).Return([]*models.StockBrand{
-						{
-							ID:           "1",
-							TickerSymbol: "1001",
-							Name:         "Test Brand",
-						},
+					mock.EXPECT().FindAllMainMarkets(gomock.Any()).Return([]*models.StockBrand{
+						{ID: "1", TickerSymbol: "1301", Name: "極洋"},
 					}, nil)
 					return mock
 				},
 				stockAPIClient: func(ctrl *gomock.Controller) gateway.StockAPIClient {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
-					mock.EXPECT().GetDailyPricesBySymbolAndRange(gomock.Any(), gateway.StockAPISymbol("1001"), gomock.Any(), gomock.Any()).Return([]*gateway.StockPrice{
+					// 日付ループで呼ばれる。1月4日（水）のみデータを返す
+					mock.EXPECT().GetAllBrandDailyPricesByDate(gomock.Any(), time.Date(2023, 1, 4, 0, 0, 0, 0, time.UTC)).Return([]*gateway.StockPrice{
 						{
-							Date:            time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
-							TickerSymbol:    "1001",
-							Open:            decimal.NewFromInt(100),
-							High:            decimal.NewFromInt(110),
-							Low:             decimal.NewFromInt(90),
-							Close:           decimal.NewFromInt(105),
-							Volume:          1000,
-							AdjustmentClose: decimal.NewFromInt(105),
+							Date:            time.Date(2023, 1, 4, 0, 0, 0, 0, time.UTC),
+							TickerSymbol:    "1301",
+							Open:            decimal.NewFromInt(3000),
+							High:            decimal.NewFromInt(3100),
+							Low:             decimal.NewFromInt(2900),
+							Close:           decimal.NewFromInt(3050),
+							Volume:          10000,
+							AdjustmentClose: decimal.NewFromInt(3050),
 						},
-					}, nil)
+					}, nil).AnyTimes()
+					// それ以外の日は空（祝日扱い）
+					mock.EXPECT().GetAllBrandDailyPricesByDate(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 					return mock
 				},
 				stockBrandsDailyStockPriceRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceRepository {
@@ -94,46 +87,29 @@ func Test_stockBrandsDailyStockPriceInteractorImpl_CreateHistoricalDailyStockPri
 			},
 			args: args{
 				ctx: context.Background(),
-				now: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+				// 1月4日（水）のみ処理対象になるよう直前にチェックポイントを設定するケース
+				now: time.Date(2023, 1, 4, 0, 0, 0, 0, time.UTC),
 			},
 			setup: func() {
 				s.FlushAll()
+				// 1月3日をチェックポイントにセット → 1月4日から開始
+				s.Set(createHistoricalDailyStockPricesDateCheckpointRedisKey, "2023-01-03")
 			},
 			wantErr: false,
 		},
 		{
-			name: "正常系: Redisにキーがある場合、続きから取得して保存する",
+			name: "正常系: チェックポイントあり、続きの日付から取得して保存する",
 			fields: fields{
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					mock := mock_repositories.NewMockStockBrandRepository(ctrl)
-					mock.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
-						OnlyMainMarkets: true,
-						MarketCodes:     nil,
-						SymbolFrom:      "1000",
-						Limit:           4000,
-					})).Return([]*models.StockBrand{
-						{
-							ID:           "2",
-							TickerSymbol: "1002",
-							Name:         "Test Brand 2",
-						},
+					mock.EXPECT().FindAllMainMarkets(gomock.Any()).Return([]*models.StockBrand{
+						{ID: "2", TickerSymbol: "1302", Name: "テスト銘柄2"},
 					}, nil)
 					return mock
 				},
 				stockAPIClient: func(ctrl *gomock.Controller) gateway.StockAPIClient {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
-					mock.EXPECT().GetDailyPricesBySymbolAndRange(gomock.Any(), gateway.StockAPISymbol("1002"), gomock.Any(), gomock.Any()).Return([]*gateway.StockPrice{
-						{
-							Date:            time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
-							TickerSymbol:    "1002",
-							Open:            decimal.NewFromInt(200),
-							High:            decimal.NewFromInt(210),
-							Low:             decimal.NewFromInt(190),
-							Close:           decimal.NewFromInt(205),
-							Volume:          2000,
-							AdjustmentClose: decimal.NewFromInt(205),
-						},
-					}, nil)
+					mock.EXPECT().GetAllBrandDailyPricesByDate(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 					return mock
 				},
 				stockBrandsDailyStockPriceRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceRepository {
@@ -149,11 +125,12 @@ func Test_stockBrandsDailyStockPriceInteractorImpl_CreateHistoricalDailyStockPri
 			},
 			args: args{
 				ctx: context.Background(),
-				now: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+				now: time.Date(2023, 1, 5, 0, 0, 0, 0, time.UTC), // 木曜
 			},
 			setup: func() {
 				s.FlushAll()
-				s.Set(createHistoricalDailyStockPricesListToshyoStockBrandsBySymbolStockPriceRepositoryRedisKey, "1000")
+				// 1月4日をチェックポイント → 1月5日から開始
+				s.Set(createHistoricalDailyStockPricesDateCheckpointRedisKey, "2023-01-04")
 			},
 			wantErr: false,
 		},
@@ -185,7 +162,7 @@ func Test_stockBrandsDailyStockPriceInteractorImpl_CreateHistoricalDailyStockPri
 			}
 
 			if err := si.CreateHistoricalDailyStockPrices(tt.args.ctx, tt.args.now); (err != nil) != tt.wantErr {
-				t.Errorf("stockBrandsDailyStockPriceInteractorImpl.CreateHistoricalDailyStockPrices() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CreateHistoricalDailyStockPrices() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

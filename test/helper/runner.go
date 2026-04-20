@@ -9,7 +9,6 @@ import (
 
 type TestRunnerOptions struct {
 	HealthCheckCommand                        *commands.HealthCheckCommand
-	SetJQuantsAPITokenToRedisV1Command        *commands.SetJQuantsAPITokenToRedisV1Command
 	UpdateStockBrandsV1Command                *commands.UpdateStockBrandsV1Command
 	CreateHistoricalDailyStockPricesV1Command *commands.CreateHistoricalDailyStockPricesV1Command
 	CreateDailyStockPriceV1Command            *commands.CreateDailyStockPriceV1Command
@@ -25,9 +24,6 @@ type TestRunnerOptions struct {
 func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 	if opts.HealthCheckCommand == nil {
 		opts.HealthCheckCommand = commands.NewHealthCheckCommand(nil)
-	}
-	if opts.SetJQuantsAPITokenToRedisV1Command == nil {
-		opts.SetJQuantsAPITokenToRedisV1Command = commands.NewSetJQuantsAPITokenToRedisV1Command(nil)
 	}
 	if opts.UpdateStockBrandsV1Command == nil {
 		opts.UpdateStockBrandsV1Command = commands.NewUpdateStockBrandsV1Command(nil)
@@ -53,7 +49,6 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 
 	return cli.NewRunner(
 		opts.HealthCheckCommand,
-		opts.SetJQuantsAPITokenToRedisV1Command,
 		opts.UpdateStockBrandsV1Command,
 		opts.CreateHistoricalDailyStockPricesV1Command,
 		opts.CreateDailyStockPriceV1Command,

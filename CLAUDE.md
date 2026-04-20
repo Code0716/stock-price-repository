@@ -1,8 +1,12 @@
-# CLAUDE.md — stock-price-repository
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## プロジェクト概要
 
 Go 1.25 製の株価データ収集システム。**j-Quants API** を主軸に Yahoo Finance API からデータを取得し MySQL に保存する。REST API / gRPC API / CLI の3つの実行形態を持つが、**コアはデータ収集 CLI**。Raspberry Pi 上で常時稼働する想定。モジュールパス: `github.com/Code0716/stock-price-repository`。
+
+**応答言語**: コード説明・レビュー・提案はすべて日本語で行う。
 
 ---
 
@@ -34,6 +38,10 @@ make test-unit              # ユニットテストのみ (ENVCODE=unit)
 make test-e2e               # E2Eテストのみ (ENVCODE=e2e, Docker MySQL 必要)
 make lint                   # golangci-lint
 
+# 個別テスト実行
+ENVCODE=unit go test -v -run TestStockBrandInteractor_FindAll ./usecase/
+ENVCODE=e2e  go test -v -run TestE2E_CommandName ./test/e2e/...
+
 # Proto（別リポジトリ: Code0716/stock-price-proto）
 make proto-setup            # 初回のみ proto-definitions/ をクローン
 make proto-pull             # proto 定義を最新に更新
@@ -58,6 +66,7 @@ infrastructure/
     gen_model/    GORM Gen 自動生成 DB 構造体（編集禁止）
     gen_query/    GORM Gen 自動生成クエリ層（編集禁止）
   gateway/        外部 API クライアント（j-Quants, Yahoo Finance, Slack）
+  cli/            CLI コマンド実装
 models/           ドメインエンティティ（gen_model とは別）
 driver/           DB / Redis / ロガー初期化
 di/               Wire DI 設定（wire.go + 生成された wire_gen.go）
@@ -130,15 +139,7 @@ func (r *MyRepositoryImpl) Write(ctx context.Context, ...) error {
 
 `make mock` は `mock/` を全削除してから再生成する。
 
-### 6. テスト方針
-
-- **全テスト**: テーブル駆動テスト形式
-- `ENVCODE=unit`: ユニットテスト、Docker 不要
-- `ENVCODE=e2e`: E2E テスト、Docker MySQL 必須
-- **外部 API（j-Quants, Yahoo Finance, Slack）は必ずモック化**、実 API 呼び出し禁止
-- E2E テスト: `helper.SetupTestDB(t)` でテスト専用 DB を作成、`helper.TruncateAllTables` でケース間クリーンアップ
-
-### 7. DI 登録
+### 6. DI 登録
 
 新規コンポーネント追加時:
 1. `di/wire.go` の該当 `var xxxSet` にコンストラクタを追加
@@ -158,6 +159,119 @@ make di     # 3. Wire
 ```
 
 順序を守らないとコンパイルエラーが発生する。
+
+---
+
+## テスト
+
+### ユニットテスト構造
+
+`fields` 構造体の各フィールドは `func(ctrl *gomock.Controller) Interface` 型とし、テストケースごとに必要なモックのみ初期化する。使用しないフィールドは `nil` で省略する:
+
+```go
+func TestService_Method(t *testing.T) {
+    type fields struct {
+        mainRepo func(ctrl *gomock.Controller) repository.MainRepository
+        subRepo  func(ctrl *gomock.Controller) repository.SubRepository // 不要なケースは nil
+    }
+    tests := []struct {
+        name    string
+        fields  fields
+        args    args
+        want    *model.Result
+        wantErr bool
+    }{
+        {
+            name: "正常系",
+            fields: fields{
+                mainRepo: func(ctrl *gomock.Controller) repository.MainRepository {
+                    m := mockrepository.NewMockMainRepository(ctrl)
+                    m.EXPECT().Find(gomock.Any(), gomock.Eq(uint64(1))).Return(&model.Entity{}, nil)
+                    return m
+                },
+                // subRepo はこのケースで不使用のため省略（nil）
+            },
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            ctrl := gomock.NewController(t)
+            defer ctrl.Finish()
+
+            s := &service{mainRepo: tt.fields.mainRepo(ctrl)}
+            if tt.fields.subRepo != nil {
+                s.subRepo = tt.fields.subRepo(ctrl)
+            }
+
+            got, err := s.Method(tt.args.ctx, tt.args.id)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("Method() error = %v, wantErr %v", err, tt.wantErr)
+            }
+            assert.Equal(t, tt.want, got)
+        })
+    }
+}
+```
+
+- プライベート関数を含む全関数に 1対1 でテスト作成
+- `gomock.Any()` は避け、`gomock.Eq` / `DoAndReturn` で引数を厳密に検証
+
+### E2E テスト構造
+
+```go
+func TestE2E_CommandName(t *testing.T) {
+    db, cleanup := helper.SetupTestDB(t)  // ランダム名の専用 DB を作成・全マイグレーション適用
+    defer cleanup()
+
+    // Redis は miniredis でモック（github.com/alicebob/miniredis）
+    // 外部 API は mock/gateway の MockStockAPIClient を使用
+
+    tests := []struct {
+        name    string
+        setup   func(t *testing.T)
+        wantErr bool
+        check   func(t *testing.T)
+    }{...}
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            helper.TruncateAllTables(t, db)  // defer ではなくループ先頭で呼ぶ
+            if tt.setup != nil { tt.setup(t) }
+
+            err := runner.Run(context.Background(), tt.args.cmdArgs)
+            // assert...
+            if tt.check != nil { tt.check(t) }
+        })
+    }
+}
+```
+
+---
+
+## gateway/ — 外部 API クライアント
+
+`StockAPIClient` (`infrastructure/gateway/stock_api_client.go`) が全メソッドを定義。新規メソッド追加時はインターフェースに先に定義してから実装を書く。
+
+### j-Quants 認証フロー
+
+1. `/token/auth_user` → **リフレッシュトークン**取得
+2. `/token/auth_refresh` → **ID トークン**取得
+3. 全リクエストの `Authorization: Bearer <IDトークン>` ヘッダにセット
+
+リフレッシュトークンは Redis に保存（TTL 管理あり）。ID トークンは毎回リフレッシュから取得する。
+
+### 新規 j-Quants エンドポイント追加手順
+
+1. `stock_api_client.go` にメソッドをインターフェース追加
+2. レスポンス型を `stock_api_response_info_models.go` に定義
+3. `*StockAPIClientImpl` に実装を追加
+4. `make mock` → `make di`
+5. 対応する usecase と CLI コマンドを追加
+
+### レート制限
+
+大量銘柄をループ処理する場合は `time.Sleep` や `errgroup` で制御（既存の `newStockBrandDailyPrices` を参考に）。
 
 ---
 

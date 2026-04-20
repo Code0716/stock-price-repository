@@ -13,19 +13,6 @@ import (
 	"github.com/Code0716/stock-price-repository/util"
 )
 
-type jQuantsAPIClientRefreshTokenRequest struct {
-	Mailaddress string `json:"mailaddress"`
-	Password    string `json:"password"`
-}
-
-type jQuantsAPIClientRefreshTokenResponse struct {
-	RefreshToken string `json:"refreshToken"`
-}
-
-type jQuantsAPIClientIDTokenResponse struct {
-	IDToken string `json:"idToken"`
-}
-
 type jQuantsStockBrandsResponse struct {
 	Data []struct {
 		Date               string `json:"Date"`

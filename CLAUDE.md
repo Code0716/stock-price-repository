@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-Go 1.25 製の株価データ収集システム。**j-Quants API** を主軸に Yahoo Finance API からデータを取得し MySQL に保存する。REST API / gRPC API / CLI の3つの実行形態を持つが、**コアはデータ収集 CLI**。Raspberry Pi 上で常時稼働する想定。モジュールパス: `github.com/Code0716/stock-price-repository`。
+Go 1.26 製の株価データ収集システム。**j-Quants API** を主軸に Yahoo Finance API からデータを取得し MySQL に保存する。REST API / gRPC API / CLI の3つの実行形態を持つが、**コアはデータ収集 CLI**。Raspberry Pi 上で常時稼働する想定。モジュールパス: `github.com/Code0716/stock-price-repository`。
 
 **応答言語**: コード説明・レビュー・提案はすべて日本語で行う。
 

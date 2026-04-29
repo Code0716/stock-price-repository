@@ -341,6 +341,59 @@ BOX_RCLONE_FOLDER_PATH=stock-backup/
 
 > **注**: 自前の Box Custom App（User Authentication / OAuth 2.0）を使う場合は、Developer Console の Redirect URI に `http://127.0.0.1:53682/` を追加し、`rclone config` の `--client-id` / `--client-secret` オプションを渡してください。rclone 同梱の client ID で問題なければ不要です。
 
+### 4. 再認証（トークン失効時）
+
+以下のいずれかに該当する場合は再認証が必要です。
+
+- 60日以上 rclone を Box に対して使わず、refresh_token が失効した
+- Box 側でパスワード変更 / 2FA 再設定 / アプリの認可取り消しを行った
+- ラズパイの `~/.config/rclone/rclone.conf` が破損・消失した
+
+#### パターン A: 既存リモートが残っている場合（推奨）
+
+`rclone config reconnect` で OAuth トークンのみ再取得します。リモート名や設定は維持されます。
+
+**手順 1: Mac から SSH トンネルを張る**
+
+```bash
+ssh -L 53682:localhost:53682 toshi@raspberrypi.local
+```
+
+**手順 2: ラズパイ側で再認証コマンドを実行**
+
+```bash
+rclone config reconnect box:
+```
+
+`Use auto config?` → **`y`** を選択すると、初回設定と同様に `http://127.0.0.1:53682/auth?...` のような URL が表示されます。
+
+**手順 3: Mac のブラウザで URL を開いて承認**
+
+承認するとトークンが `~/.config/rclone/rclone.conf` に上書き保存されます。
+
+**疎通確認:**
+
+```bash
+rclone lsd box:
+```
+
+#### パターン B: rclone.conf が完全に消えている場合
+
+[2. rclone の Box 設定（headless 環境の場合）](#2-rclone-の-box-設定headless-環境の場合) の手順を最初からやり直してリモートを新規作成してください。`.env` / crontab の環境変数はそのままで OK です。
+
+#### トラブル: ポート 53682 が使用中エラー
+
+```
+listen tcp 127.0.0.1:53682: bind: address already in use
+```
+
+過去の `rclone authorize` プロセスが残っている可能性があります。以下で確認・停止します。
+
+```bash
+ss -tlnp | grep 53682            # PID を確認
+kill <PID>                        # 停止
+```
+
 ---
 
 ## Development

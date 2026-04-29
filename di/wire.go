@@ -24,6 +24,7 @@ var usecaseSet = wire.NewSet(
 	usecase.NewIndexInteractor,
 	usecase.NewStockBrandsDailyPriceInteractor,
 	usecase.NewAdjustHistoricalDataForStockSplit,
+	usecase.NewAdjustHistoricalDataForStockConsolidation,
 )
 
 var driverSet = wire.NewSet(
@@ -47,6 +48,7 @@ var cliSet = wire.NewSet(
 	commands.NewCreateDailyStockPriceV1Command,
 	commands.NewCreateNikkeiAndDjiHistoricalDataV1Command,
 	commands.NewAdjustHistoricalDataForStockSplitCommand,
+	commands.NewAdjustHistoricalDataForStockConsolidationCommand,
 	commands.NewExportYearlyDataCommand,
 	commands.NewExportMasterDataCommand,
 )
@@ -61,6 +63,7 @@ var databaseSet = wire.NewSet(
 	database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl,
 	database.NewHighVolumeStockBrandRepositoryImpl,
 	database.NewAppliedStockSplitsHistoryRepositoryImpl,
+	database.NewAppliedStockConsolidationsHistoryRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {

@@ -67,3 +67,24 @@ func (s *StockBrandDailyPriceForAnalyze) AdjustForSplit(splitRatio decimal.Decim
 		time.Now(),
 	)
 }
+
+// AdjustForConsolidation adjusts the stock price for a stock consolidation (reverse split).
+// consolidationRatio は「旧株数 / 新株数」（例: 5株を1株に併合する場合は 5）。
+// 価格は ratio 倍、出来高は 1/ratio になる。
+func (s *StockBrandDailyPriceForAnalyze) AdjustForConsolidation(consolidationRatio decimal.Decimal) *StockBrandDailyPriceForAnalyze {
+	newVolumeDecimal := decimal.NewFromInt(s.Volume).Div(consolidationRatio)
+
+	return NewStockBrandDailyPriceForAnalyze(
+		s.ID,
+		s.Date,
+		s.TickerSymbol,
+		s.High.Mul(consolidationRatio),
+		s.Low.Mul(consolidationRatio),
+		s.Open.Mul(consolidationRatio),
+		s.Close.Mul(consolidationRatio),
+		newVolumeDecimal.IntPart(),
+		s.Adjclose.Mul(consolidationRatio),
+		s.CreatedAt,
+		time.Now(),
+	)
+}

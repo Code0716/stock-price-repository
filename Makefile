@@ -4,7 +4,7 @@
 	down docker-down volume-down format build \
 	proto-setup proto-pull proto-gen proto-clean \
 	grpc-server grpc-server-docker \
-	adjust-split
+	adjust-split export-yearly export-master
 
 ## Init .env file
 # .PHONY: init
@@ -66,8 +66,16 @@ adjust-split:
 		--code ${code} \
 		--split-date ${date} \
 		--split-ratio ${ratio} \
-		$(if $(dry-run),--dry-run,) 
+		$(if $(dry-run),--dry-run,)
 # make adjust-split code=9984 date=2025-12-29 ratio=4 dry-run=true
+
+export-yearly:
+	go run entrypoint/cli/main.go export_yearly_data --year ${year}
+# make export-yearly year=2025
+
+export-master:
+	go run entrypoint/cli/main.go export_master_data
+# make export-master
 
 migrate-file:
 	migrate create -ext sql -dir sql/migrations -seq ${name}

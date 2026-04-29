@@ -24,4 +24,6 @@ type MySQLDumpClient interface {
 	ExportTableAll(ctx context.Context, fileName, tableName string) error
 	// 指定したテーブルを年ごとにexportする
 	ExportTableByYear(ctx context.Context, tableName string, year int) error
+	// 指定したテーブルに存在する年の一覧を昇順で返す
+	GetDistinctYears(ctx context.Context, tableName string) ([]int, error)
 }

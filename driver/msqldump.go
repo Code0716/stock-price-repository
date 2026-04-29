@@ -4,12 +4,14 @@ package driver
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/Code0716/stock-price-repository/config"
@@ -66,6 +68,41 @@ func (c *MySQLDumpClient) ExportTableAll(ctx context.Context, fileName, tableNam
 
 	log.Printf("mysqldump & export success: %s\n", fileName)
 	return nil
+}
+
+// GetDistinctYears 指定したテーブルに存在する年の一覧を昇順で返す
+func (c *MySQLDumpClient) GetDistinctYears(ctx context.Context, tableName string) ([]int, error) {
+	dbConfig := config.GetDatabase()
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+		dbConfig.User, dbConfig.Passwd, dbConfig.Host, dbConfig.Port, dbConfig.DBName,
+	)
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, errors.Wrap(err, "sql.Open error")
+	}
+	defer db.Close()
+
+	query := fmt.Sprintf("SELECT DISTINCT YEAR(date) FROM `%s` ORDER BY YEAR(date) ASC", tableName)
+	rows, err := db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, errors.Wrap(err, "db.QueryContext error")
+	}
+	defer rows.Close()
+
+	var years []int
+	for rows.Next() {
+		var year int
+		if err := rows.Scan(&year); err != nil {
+			return nil, errors.Wrap(err, "rows.Scan error")
+		}
+		years = append(years, year)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "rows.Err")
+	}
+
+	return years, nil
 }
 
 // ExportTableByYear 指定したテーブルを年ごとにexportする

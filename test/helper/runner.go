@@ -19,6 +19,7 @@ type TestRunnerOptions struct {
 	IndexInteractor                           usecase.IndexInteractor
 	SlackAPIClient                            gateway.SlackAPIClient
 	MySQLDumpClient                           gateway.MySQLDumpClient
+	BoxClient                                 gateway.BoxClient
 }
 
 func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
@@ -41,10 +42,10 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.AdjustHistoricalDataForStockSplitCommand = commands.NewAdjustHistoricalDataForStockSplitCommand(nil)
 	}
 	if opts.ExportYearlyDataCommand == nil {
-		opts.ExportYearlyDataCommand = commands.NewExportYearlyDataCommand(opts.MySQLDumpClient)
+		opts.ExportYearlyDataCommand = commands.NewExportYearlyDataCommand(opts.MySQLDumpClient, opts.BoxClient)
 	}
 	if opts.ExportMasterDataCommand == nil {
-		opts.ExportMasterDataCommand = commands.NewExportMasterDataCommand(opts.MySQLDumpClient)
+		opts.ExportMasterDataCommand = commands.NewExportMasterDataCommand(opts.MySQLDumpClient, opts.BoxClient)
 	}
 
 	return cli.NewRunner(

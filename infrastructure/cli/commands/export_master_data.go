@@ -3,21 +3,28 @@ package commands
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/urfave/cli/v2"
 )
 
 type ExportMasterDataCommand struct {
 	mySQLDumpClient gateway.MySQLDumpClient
+	boxClient       gateway.BoxClient
 }
 
 func NewExportMasterDataCommand(
 	mySQLDumpClient gateway.MySQLDumpClient,
+	boxClient gateway.BoxClient,
 ) *ExportMasterDataCommand {
 	return &ExportMasterDataCommand{
 		mySQLDumpClient: mySQLDumpClient,
+		boxClient:       boxClient,
 	}
 }
 
@@ -45,6 +52,17 @@ func (c *ExportMasterDataCommand) Command() *Command {
 				); err != nil {
 					return fmt.Errorf("failed to export table %s: %w", table, err)
 				}
+
+				filePath := filepath.Join(
+					config.GetDatabase().ExportBackupPath,
+					fileName+".sql",
+				)
+				if err := c.boxClient.UploadFile(context.Background(), filePath); err != nil {
+					log.Printf("WARN: box upload failed for %s: %v", filePath, err)
+				} else if err := os.Remove(filePath); err != nil {
+					log.Printf("WARN: failed to remove local file %s: %v", filePath, err)
+				}
+
 				fmt.Printf("Exported %s\n", table)
 			}
 

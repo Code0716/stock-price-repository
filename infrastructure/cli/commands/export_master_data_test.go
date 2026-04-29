@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"flag"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 func TestExportMasterDataCommand_Action(t *testing.T) {
 	type fields struct {
 		mySQLDumpClient func(ctrl *gomock.Controller) gateway.MySQLDumpClient
+		boxClient       func(ctrl *gomock.Controller) gateway.BoxClient
 	}
 	type args struct {
 		ctx *cli.Context
@@ -29,7 +31,6 @@ func TestExportMasterDataCommand_Action(t *testing.T) {
 			fields: fields{
 				mySQLDumpClient: func(ctrl *gomock.Controller) gateway.MySQLDumpClient {
 					mock := mock_gateway.NewMockMySQLDumpClient(ctrl)
-					// 各テーブルのエクスポートが呼ばれることを期待
 					tables := []string{
 						gateway.MySQLDumpTableNameStockBrand,
 						gateway.MySQLDumpTableNameAppliedStockSplitsHistory,
@@ -39,6 +40,32 @@ func TestExportMasterDataCommand_Action(t *testing.T) {
 					for _, table := range tables {
 						mock.EXPECT().ExportTableAll(gomock.Any(), gomock.Any(), table).Return(nil)
 					}
+					return mock
+				},
+				boxClient: func(ctrl *gomock.Controller) gateway.BoxClient {
+					mock := mock_gateway.NewMockBoxClient(ctrl)
+					mock.EXPECT().UploadFile(gomock.Any(), gomock.Any()).Return(nil).Times(4)
+					return mock
+				},
+			},
+			args: args{
+				ctx: cli.NewContext(cli.NewApp(), flag.NewFlagSet("test", 0), nil),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Boxアップロードエラーでもコマンドは成功する",
+			fields: fields{
+				mySQLDumpClient: func(ctrl *gomock.Controller) gateway.MySQLDumpClient {
+					mock := mock_gateway.NewMockMySQLDumpClient(ctrl)
+					mock.EXPECT().ExportTableAll(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(4)
+					return mock
+				},
+				boxClient: func(ctrl *gomock.Controller) gateway.BoxClient {
+					mock := mock_gateway.NewMockBoxClient(ctrl)
+					mock.EXPECT().UploadFile(gomock.Any(), gomock.Any()).Return(
+						errors.New("box upload failed"),
+					).Times(4)
 					return mock
 				},
 			},
@@ -55,8 +82,8 @@ func TestExportMasterDataCommand_Action(t *testing.T) {
 
 			cmd := NewExportMasterDataCommand(
 				tt.fields.mySQLDumpClient(ctrl),
+				tt.fields.boxClient(ctrl),
 			)
-			// cli.CommandのActionを直接呼ぶためにCommand()で取得してからActionを実行
 			cliCmd := cmd.Command()
 			if err := cliCmd.Action(tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("ExportMasterDataCommand.Action() error = %v, wantErr %v", err, tt.wantErr)

@@ -56,8 +56,9 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	adjustHistoricalDataForStockSplit := usecase.NewAdjustHistoricalDataForStockSplit(stockBrandsDailyPriceForAnalyzeRepository, appliedStockSplitsHistoryRepository)
 	adjustHistoricalDataForStockSplitCommand := commands.NewAdjustHistoricalDataForStockSplitCommand(adjustHistoricalDataForStockSplit)
 	mySQLDumpClient := driver.NewMySQLDumpClient()
-	exportYearlyDataCommand := commands.NewExportYearlyDataCommand(mySQLDumpClient)
-	exportMasterDataCommand := commands.NewExportMasterDataCommand(mySQLDumpClient)
+	boxClient := driver.NewBoxAPIClient()
+	exportYearlyDataCommand := commands.NewExportYearlyDataCommand(mySQLDumpClient, boxClient)
+	exportMasterDataCommand := commands.NewExportMasterDataCommand(mySQLDumpClient, boxClient)
 	runner := cli.NewRunner(healthCheckCommand, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, exportYearlyDataCommand, exportMasterDataCommand, indexInteractor, slackAPIClient)
 	return runner, func() {
 		cleanup()
@@ -130,7 +131,7 @@ func InitializeStockServiceServer(ctx context.Context) (*GrpcServerComponents, f
 
 var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit)
 
-var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewLogger)
+var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewBoxAPIClient, driver.NewLogger)
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand)
 

@@ -7,7 +7,8 @@ import (
 )
 
 type BOX struct {
-	PrivateKey string `envconfig:"box_private_key" default:""`
+	RcloneRemoteName string `envconfig:"box_rclone_remote_name" default:"box"`
+	RcloneFolderPath string `envconfig:"box_rclone_folder_path" default:""`
 }
 
 var box BOX

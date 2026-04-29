@@ -49,6 +49,9 @@ func TestE2E_ExportData(t *testing.T) {
 	// 実際のドライバではなくモックを使用する。
 	// これにより、コマンドの結線と成功/失敗時の通知ロジックをテストする。
 	mockMySQLDumpClient := mock_gateway.NewMockMySQLDumpClient(gomock.NewController(t))
+	mockBoxClient := mock_gateway.NewMockBoxClient(gomock.NewController(t))
+	// BoxアップロードはE2Eテストでは成功扱い（実際のBox接続は不要）
+	mockBoxClient.EXPECT().UploadFile(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	type args struct {
 		cmdArgs []string
@@ -117,8 +120,8 @@ func TestE2E_ExportData(t *testing.T) {
 			}
 
 			// Commands
-			exportYearlyCmd := commands.NewExportYearlyDataCommand(mockMySQLDumpClient)
-			exportMasterCmd := commands.NewExportMasterDataCommand(mockMySQLDumpClient)
+			exportYearlyCmd := commands.NewExportYearlyDataCommand(mockMySQLDumpClient, mockBoxClient)
+			exportMasterCmd := commands.NewExportMasterDataCommand(mockMySQLDumpClient, mockBoxClient)
 
 			runner := helper.NewTestRunner(helper.TestRunnerOptions{
 				ExportYearlyDataCommand: exportYearlyCmd,

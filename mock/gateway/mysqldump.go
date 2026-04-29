@@ -67,3 +67,18 @@ func (mr *MockMySQLDumpClientMockRecorder) ExportTableByYear(ctx, tableName, yea
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTableByYear", reflect.TypeOf((*MockMySQLDumpClient)(nil).ExportTableByYear), ctx, tableName, year)
 }
+
+// GetDistinctYears mocks base method.
+func (m *MockMySQLDumpClient) GetDistinctYears(ctx context.Context, tableName string) ([]int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDistinctYears", ctx, tableName)
+	ret0, _ := ret[0].([]int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDistinctYears indicates an expected call of GetDistinctYears.
+func (mr *MockMySQLDumpClientMockRecorder) GetDistinctYears(ctx, tableName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDistinctYears", reflect.TypeOf((*MockMySQLDumpClient)(nil).GetDistinctYears), ctx, tableName)
+}

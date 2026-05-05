@@ -16,11 +16,22 @@ services:
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_general_ci
       TZ: $STOCK_PRICE_REPOSITORY_MYSQL_TIMEZONE
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
   redis:
     image: redis:alpine
     ports:
       - '6379:6379'
     container_name: stock-price-repository-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   api:
     build:
@@ -43,8 +54,10 @@ services:
       - .:/app
       - /app/sql/db_data
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     container_name: stock-price-repository-api
 
@@ -69,8 +82,10 @@ services:
       - .:/app
       - /app/sql/db_data
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     container_name: stock-price-repository-grpc
 

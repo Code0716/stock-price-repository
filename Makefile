@@ -105,7 +105,7 @@ build:
 
 up:
 	@echo "Starting all services (db, redis, api, grpc-server) with Docker Compose..."
-	docker compose up api grpc-server
+	docker compose up
 
 api:
 	@echo "Starting API server with hot reload on port 8080..."

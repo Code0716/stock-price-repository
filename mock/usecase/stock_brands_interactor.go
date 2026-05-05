@@ -42,6 +42,21 @@ func (m *MockStockBrandInteractor) EXPECT() *MockStockBrandInteractorMockRecorde
 	return m.recorder
 }
 
+// GetAnalyzeStockBrandPriceHistories mocks base method.
+func (m *MockStockBrandInteractor) GetAnalyzeStockBrandPriceHistories(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (*models.PaginatedAnalyzeStockBrandPriceHistories, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAnalyzeStockBrandPriceHistories", ctx, filter)
+	ret0, _ := ret[0].(*models.PaginatedAnalyzeStockBrandPriceHistories)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAnalyzeStockBrandPriceHistories indicates an expected call of GetAnalyzeStockBrandPriceHistories.
+func (mr *MockStockBrandInteractorMockRecorder) GetAnalyzeStockBrandPriceHistories(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnalyzeStockBrandPriceHistories", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetAnalyzeStockBrandPriceHistories), ctx, filter)
+}
+
 // GetStockBrands mocks base method.
 func (m *MockStockBrandInteractor) GetStockBrands(ctx context.Context, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error) {
 	m.ctrl.T.Helper()

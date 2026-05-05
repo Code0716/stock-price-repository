@@ -3,7 +3,7 @@
 	migrate-file migrate-up migrate-down migrate-down-all \
 	down docker-down volume-down format build \
 	proto-setup proto-pull proto-gen proto-clean \
-	grpc-server grpc-server-docker \
+	api api-docker grpc-server grpc-server-docker \
 	adjust-split export-yearly export-master
 
 ## Init .env file
@@ -105,11 +105,15 @@ build:
 
 up:
 	@echo "Starting all services (db, redis, api, grpc-server) with Docker Compose..."
-	docker compose up api grpc-server
+	docker compose up
 
 api:
 	@echo "Starting API server with hot reload on port 8080..."
 	air -c .air.toml
+
+api-docker:
+	@echo "Starting REST API development stack (db, redis, api) with hot reload on port 8080..."
+	docker compose up db redis api
 
 # Proto definitions management
 proto-setup:

@@ -169,7 +169,25 @@ make cli command=export_master_data
 
 ## Usage (API Server)
 
-`make api` コマンドを使用して API サーバーを起動します（ホットリロード対応）。
+Docker Compose で MySQL、Redis、API サーバーを起動します。API コンテナは Air を使用するため、ホスト側の Go ファイルを変更すると自動で再ビルド・再起動されます。
+
+```bash
+make api-docker
+```
+
+起動後、REST API は `http://localhost:8080` で利用できます。
+
+```bash
+curl "http://localhost:8080/stock-brands"
+```
+
+停止する場合は次のコマンドを実行します。
+
+```bash
+docker compose down
+```
+
+ホスト上に Air をインストール済みで、DB と Redis を別途起動している場合は、ローカルでも API サーバーを起動できます。
 
 ```bash
 make api

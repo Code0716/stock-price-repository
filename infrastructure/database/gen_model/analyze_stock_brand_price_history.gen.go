@@ -16,7 +16,6 @@ type AnalyzeStockBrandPriceHistory struct {
 	StockBrandID string     `gorm:"column:stock_brand_id;type:char(36);not null;comment:uuid" json:"stock_brand_id"`   // uuid
 	TickerSymbol string     `gorm:"column:ticker_symbol;type:varchar(36);not null;comment:証券コード" json:"ticker_symbol"` // 証券コード
 	TradePrice   float64    `gorm:"column:trade_price;type:decimal(10,4);not null;comment:トレード金額" json:"trade_price"`  // トレード金額
-	CurrentPrice float64    `gorm:"column:current_price;type:decimal(10,4);not null;comment:現在値" json:"current_price"` // 現在値
 	Action       string     `gorm:"column:action;type:varchar(10);not null;comment:売り/買いの別" json:"action"`             // 売り/買いの別
 	Method       string     `gorm:"column:method;type:varchar(255);not null;comment:分析方法" json:"method"`               // 分析方法
 	Memo         *string    `gorm:"column:memo;type:text;comment:メモ" json:"memo"`                                      // メモ

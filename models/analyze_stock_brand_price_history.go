@@ -16,16 +16,17 @@ const (
 )
 
 type AnalyzeStockBrandPriceHistory struct {
-	ID           string          `json:"id"`
-	StockBrandID string          `json:"stockBrandId"`
-	Name         string          `json:"name"`
-	TickerSymbol string          `json:"tickerSymbol"`
-	TradePrice   decimal.Decimal `json:"tradePrice"`
-	CurrentPrice decimal.Decimal `json:"currentPrice"`
-	Action       string          `json:"action"`
-	Method       string          `json:"method"`
-	Memo         *string         `json:"memo"`
-	CreatedAt    time.Time       `json:"createdAt"`
+	ID              string          `json:"id"`
+	StockBrandID    string          `json:"stockBrandId"`
+	Name            string          `json:"name"`
+	TickerSymbol    string          `json:"tickerSymbol"`
+	TradePrice      decimal.Decimal `json:"tradePrice"`
+	CurrentPrice    decimal.Decimal `json:"currentPrice"`
+	PriceDifference decimal.Decimal `json:"priceDifference"`
+	Action          string          `json:"action"`
+	Method          string          `json:"method"`
+	Memo            *string         `json:"memo"`
+	CreatedAt       time.Time       `json:"createdAt"`
 }
 
 type AnalyzeStockBrandPriceHistoryFilter struct {
@@ -55,15 +56,16 @@ func NewAnalyzeStockBrandPriceHistory(
 	createdAt time.Time, // created_at
 ) *AnalyzeStockBrandPriceHistory {
 	return &AnalyzeStockBrandPriceHistory{
-		ID:           id,
-		StockBrandID: stockBrandID,
-		Name:         name,
-		TickerSymbol: tickerSymbol,
-		TradePrice:   tradePrice,
-		CurrentPrice: currentPrice,
-		Action:       action,
-		Method:       method,
-		Memo:         memo,
-		CreatedAt:    createdAt,
+		ID:              id,
+		StockBrandID:    stockBrandID,
+		Name:            name,
+		TickerSymbol:    tickerSymbol,
+		TradePrice:      tradePrice,
+		CurrentPrice:    currentPrice,
+		PriceDifference: currentPrice.Sub(tradePrice),
+		Action:          action,
+		Method:          method,
+		Memo:            memo,
+		CreatedAt:       createdAt,
 	}
 }

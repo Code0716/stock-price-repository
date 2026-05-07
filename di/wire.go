@@ -79,6 +79,7 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 var apiSet = wire.NewSet(
 	handler.NewStockPriceHandler,
 	handler.NewStockBrandHandler,
+	handler.NewAnalyzeStockBrandPriceHistoryHandler,
 	router.NewRouter,
 )
 

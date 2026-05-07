@@ -8,6 +8,8 @@ import (
 )
 
 type AnalyzeStockBrandPriceHistoryRepository interface {
+	// FindWithFilter 条件に一致する分析履歴を取得する
+	FindWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) ([]*models.AnalyzeStockBrandPriceHistory, error)
 	// DeleteByStockBrandIDs 銘柄IDで一致したものを削除する
 	DeleteByStockBrandIDs(ctx context.Context, ids []string) error
 	// CreateOrUpdate 銘柄の価格を更新する

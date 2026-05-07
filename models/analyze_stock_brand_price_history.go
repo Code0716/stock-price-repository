@@ -28,6 +28,20 @@ type AnalyzeStockBrandPriceHistory struct {
 	CreatedAt    time.Time       `json:"createdAt"`
 }
 
+type AnalyzeStockBrandPriceHistoryFilter struct {
+	TickerSymbol string
+	Action       string
+	Method       string
+	Cursor       string
+	Limit        int
+}
+
+type PaginatedAnalyzeStockBrandPriceHistories struct {
+	Histories  []*AnalyzeStockBrandPriceHistory
+	NextCursor *string
+	Limit      int
+}
+
 func NewAnalyzeStockBrandPriceHistory(
 	id string, // uuid
 	stockBrandID string, // 銘柄IDs

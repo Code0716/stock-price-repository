@@ -41,6 +41,21 @@ func (m *MockAnalyzeStockBrandPriceHistoryRepository) EXPECT() *MockAnalyzeStock
 	return m.recorder
 }
 
+// FindWithFilter mocks base method.
+func (m *MockAnalyzeStockBrandPriceHistoryRepository) FindWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) ([]*models.AnalyzeStockBrandPriceHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindWithFilter", ctx, filter)
+	ret0, _ := ret[0].([]*models.AnalyzeStockBrandPriceHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindWithFilter indicates an expected call of FindWithFilter.
+func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) FindWithFilter(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindWithFilter", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).FindWithFilter), ctx, filter)
+}
+
 // CreateOrUpdate mocks base method.
 func (m *MockAnalyzeStockBrandPriceHistoryRepository) CreateOrUpdate(ctx context.Context, histories []*models.AnalyzeStockBrandPriceHistory) error {
 	m.ctrl.T.Helper()

@@ -46,9 +46,9 @@ func TestAnalyzeStockBrandPriceHistoryRepositoryImpl_FindWithFilter(t *testing.T
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 
-		assert.Equal(t, decimal.NewFromFloat(1000.0), results[0].TradePrice)
-		assert.Equal(t, decimal.NewFromFloat(1000.0), results[0].CurrentPrice)
-		assert.Equal(t, decimal.NewFromFloat(0), results[0].PriceDifference)
+		assert.True(t, results[0].TradePrice.Equal(decimal.NewFromFloat(1000.0)))
+		assert.True(t, results[0].CurrentPrice.Equal(decimal.NewFromFloat(1000.0)))
+		assert.True(t, results[0].PriceDifference.IsZero())
 	})
 
 	t.Run("daily_price あり: close_price が current_price になり差額が反映される", func(t *testing.T) {

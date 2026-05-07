@@ -32,7 +32,6 @@ func newAnalyzeStockBrandPriceHistory(db *gorm.DB, opts ...gen.DOOption) analyze
 	_analyzeStockBrandPriceHistory.StockBrandID = field.NewString(tableName, "stock_brand_id")
 	_analyzeStockBrandPriceHistory.TickerSymbol = field.NewString(tableName, "ticker_symbol")
 	_analyzeStockBrandPriceHistory.TradePrice = field.NewFloat64(tableName, "trade_price")
-	_analyzeStockBrandPriceHistory.CurrentPrice = field.NewFloat64(tableName, "current_price")
 	_analyzeStockBrandPriceHistory.Action = field.NewString(tableName, "action")
 	_analyzeStockBrandPriceHistory.Method = field.NewString(tableName, "method")
 	_analyzeStockBrandPriceHistory.Memo = field.NewString(tableName, "memo")
@@ -51,7 +50,6 @@ type analyzeStockBrandPriceHistory struct {
 	StockBrandID field.String  // uuid
 	TickerSymbol field.String  // 証券コード
 	TradePrice   field.Float64 // トレード金額
-	CurrentPrice field.Float64 // 現在値
 	Action       field.String  // 売り/買いの別
 	Method       field.String  // 分析方法
 	Memo         field.String  // メモ
@@ -76,7 +74,6 @@ func (a *analyzeStockBrandPriceHistory) updateTableName(table string) *analyzeSt
 	a.StockBrandID = field.NewString(table, "stock_brand_id")
 	a.TickerSymbol = field.NewString(table, "ticker_symbol")
 	a.TradePrice = field.NewFloat64(table, "trade_price")
-	a.CurrentPrice = field.NewFloat64(table, "current_price")
 	a.Action = field.NewString(table, "action")
 	a.Method = field.NewString(table, "method")
 	a.Memo = field.NewString(table, "memo")
@@ -97,12 +94,11 @@ func (a *analyzeStockBrandPriceHistory) GetFieldByName(fieldName string) (field.
 }
 
 func (a *analyzeStockBrandPriceHistory) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 9)
+	a.fieldMap = make(map[string]field.Expr, 8)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["stock_brand_id"] = a.StockBrandID
 	a.fieldMap["ticker_symbol"] = a.TickerSymbol
 	a.fieldMap["trade_price"] = a.TradePrice
-	a.fieldMap["current_price"] = a.CurrentPrice
 	a.fieldMap["action"] = a.Action
 	a.fieldMap["method"] = a.Method
 	a.fieldMap["memo"] = a.Memo

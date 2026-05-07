@@ -41,6 +41,20 @@ func (m *MockAnalyzeStockBrandPriceHistoryRepository) EXPECT() *MockAnalyzeStock
 	return m.recorder
 }
 
+// DeleteByStockBrandIDs mocks base method.
+func (m *MockAnalyzeStockBrandPriceHistoryRepository) DeleteByStockBrandIDs(ctx context.Context, ids []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteByStockBrandIDs", ctx, ids)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteByStockBrandIDs indicates an expected call of DeleteByStockBrandIDs.
+func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) DeleteByStockBrandIDs(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByStockBrandIDs", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).DeleteByStockBrandIDs), ctx, ids)
+}
+
 // FindWithFilter mocks base method.
 func (m *MockAnalyzeStockBrandPriceHistoryRepository) FindWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) ([]*models.AnalyzeStockBrandPriceHistory, error) {
 	m.ctrl.T.Helper()
@@ -54,32 +68,4 @@ func (m *MockAnalyzeStockBrandPriceHistoryRepository) FindWithFilter(ctx context
 func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) FindWithFilter(ctx, filter any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindWithFilter", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).FindWithFilter), ctx, filter)
-}
-
-// CreateOrUpdate mocks base method.
-func (m *MockAnalyzeStockBrandPriceHistoryRepository) CreateOrUpdate(ctx context.Context, histories []*models.AnalyzeStockBrandPriceHistory) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrUpdate", ctx, histories)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateOrUpdate indicates an expected call of CreateOrUpdate.
-func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) CreateOrUpdate(ctx, histories any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdate", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).CreateOrUpdate), ctx, histories)
-}
-
-// DeleteByStockBrandIDs mocks base method.
-func (m *MockAnalyzeStockBrandPriceHistoryRepository) DeleteByStockBrandIDs(ctx context.Context, ids []string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteByStockBrandIDs", ctx, ids)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteByStockBrandIDs indicates an expected call of DeleteByStockBrandIDs.
-func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) DeleteByStockBrandIDs(ctx, ids any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByStockBrandIDs", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).DeleteByStockBrandIDs), ctx, ids)
 }

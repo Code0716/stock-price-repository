@@ -8,9 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
-	genModel "github.com/Code0716/stock-price-repository/infrastructure/database/gen_model"
 	genQuery "github.com/Code0716/stock-price-repository/infrastructure/database/gen_query"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/repositories"
@@ -42,6 +40,7 @@ type analyzeStockBrandPriceHistoryRow struct {
 }
 
 // FindWithFilter 条件に一致する分析履歴を取得する
+// current_price は stock_brands_daily_price の最新 close_price を JOIN して都度算出する
 func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) ([]*models.AnalyzeStockBrandPriceHistory, error) {
 	db := ai.db.WithContext(ctx).
 		Table("analyze_stock_brand_price_history AS h").
@@ -51,13 +50,18 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindWithFilter(ctx contex
 			COALESCE(s.name, '') AS name,
 			h.ticker_symbol,
 			h.trade_price,
-			h.current_price,
+			COALESCE(d.close_price, h.trade_price) AS current_price,
 			h.action,
 			h.method,
 			h.memo,
 			h.created_at
 		`).
-		Joins("LEFT JOIN stock_brand AS s ON s.id = h.stock_brand_id AND s.deleted_at IS NULL")
+		Joins("LEFT JOIN stock_brand AS s ON s.id = h.stock_brand_id AND s.deleted_at IS NULL").
+		Joins(`LEFT JOIN stock_brands_daily_price AS d ON d.id = (
+			SELECT id FROM stock_brands_daily_price
+			WHERE ticker_symbol = h.ticker_symbol AND deleted_at IS NULL
+			ORDER BY date DESC LIMIT 1
+		)`)
 
 	if filter.TickerSymbol != "" {
 		db = db.Where("h.ticker_symbol = ?", filter.TickerSymbol)
@@ -129,52 +133,4 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) DeleteByStockBrandIDs(ctx
 	}
 
 	return nil
-}
-
-// CreateOrUpdate 銘柄の価格をupdateする
-func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) CreateOrUpdate(ctx context.Context, histories []*models.AnalyzeStockBrandPriceHistory) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = ai.query
-	}
-	err := tx.AnalyzeStockBrandPriceHistory.WithContext(ctx).
-		Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "stock_brand_id"}},
-			DoUpdates: clause.AssignmentColumns(
-				[]string{
-					"current_price",
-				}),
-		}).Create(ai.convertToDBModels(histories)...)
-	if err != nil {
-		return errors.Wrap(err, "AnalyzeStockBrandPriceHistoryRepositoryImpl.CreateOrUpdate error")
-	}
-
-	return nil
-}
-
-// convertToDBModels converts a slice of models to a slice of database models.
-func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) convertToDBModels(histories []*models.AnalyzeStockBrandPriceHistory) []*genModel.AnalyzeStockBrandPriceHistory {
-	var analyzeStockBrandPriceHistoryDB []*genModel.AnalyzeStockBrandPriceHistory
-	for _, v := range histories {
-		analyzeStockBrandPriceHistoryDB = append(analyzeStockBrandPriceHistoryDB, ai.convertToDBModel(v))
-	}
-	return analyzeStockBrandPriceHistoryDB
-}
-
-// convertToDBModel converts a model to a database model.
-func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) convertToDBModel(histories *models.AnalyzeStockBrandPriceHistory) *genModel.AnalyzeStockBrandPriceHistory {
-	tradePrice, _ := histories.TradePrice.Round(4).Float64()
-	currentPrice, _ := histories.CurrentPrice.Round(4).Float64()
-
-	return &genModel.AnalyzeStockBrandPriceHistory{
-		ID:           histories.ID,
-		StockBrandID: histories.StockBrandID,
-		TickerSymbol: histories.TickerSymbol,
-		TradePrice:   tradePrice,
-		CurrentPrice: currentPrice,
-		Action:       histories.Action,
-		Method:       histories.Method,
-		Memo:         histories.Memo,
-		CreatedAt:    &histories.CreatedAt,
-	}
 }

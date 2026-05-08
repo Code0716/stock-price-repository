@@ -7,12 +7,16 @@ import (
 )
 
 const (
-	AnalyzeStockBrandPriceHistoryMethodSector25 string = "analyze_stock_brand_price_by_sector: 25日"
-	AnalyzeStockBrandPriceHistoryMethodSector75 string = "analyze_stock_brand_price_by_sector: 75日"
-	AnalyzeStockBrandPriceHistoryMethodNikkei25 string = "analyze_stock_brand_price_by_nikkei: 25日"
-	AnalyzeStockBrandPriceHistoryMethodNikkei75 string = "analyze_stock_brand_price_by_nikkei: 75日"
-	AnalyzeStockBrandPriceHistoryActionBuy      string = "Buy"
-	AnalyzeStockBrandPriceHistoryActionSell     string = "Sell"
+	AnalyzeStockBrandPriceHistoryMethodSector25          string = "analyze_stock_brand_price_by_sector: 25日"
+	AnalyzeStockBrandPriceHistoryMethodSector75          string = "analyze_stock_brand_price_by_sector: 75日"
+	AnalyzeStockBrandPriceHistoryMethodNikkei25          string = "analyze_stock_brand_price_by_nikkei: 25日"
+	AnalyzeStockBrandPriceHistoryMethodNikkei75          string = "analyze_stock_brand_price_by_nikkei: 75日"
+	AnalyzeStockBrandPriceHistoryMethodFindMACDBullishV1       string = "find_macd_bullish_stock_v1"
+	AnalyzeStockBrandPriceHistoryMethodFindTriangleV1          string = "find_triangle_formation_stock_v1"
+	AnalyzeStockBrandPriceHistoryMethodFindBollingerBreakoutV1 string = "find_bollinger_breakout_stock_v1"
+	AnalyzeStockBrandPriceHistoryMethodFindMLRankedV1          string = "find_ml_ranked_stocks_v1"
+	AnalyzeStockBrandPriceHistoryActionBuy                     string = "Buy"
+	AnalyzeStockBrandPriceHistoryActionSell                    string = "Sell"
 )
 
 type AnalyzeStockBrandPriceHistory struct {

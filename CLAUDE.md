@@ -32,6 +32,11 @@ make migrate-file name=<名前>  # 新規マイグレーションファイル作
 make migrate-up                # 未適用マイグレーションを全適用
 make migrate-down              # 直近1件をロールバック
 
+# DB 直接確認（コンテナ名: stock-price-repository-db）
+docker exec stock-price-repository-db mysql -u root -proot -e "SHOW INDEX FROM stock_price_repository.<テーブル名>;"
+docker exec stock-price-repository-db mysql -u root -proot -e "SELECT * FROM stock_price_repository.<テーブル名> LIMIT 10;"
+docker exec stock-price-repository-db mysql -u root -proot stock_price_repository -e "<SQL>"
+
 # テスト・品質管理
 make test                   # unit + e2e + 脆弱性スキャン（CI相当）
 make test-unit              # ユニットテストのみ (ENVCODE=unit)

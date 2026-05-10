@@ -158,12 +158,12 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindMultipleSignals(ctx c
 	query := fmt.Sprintf(`
 		SELECT
 			h.stock_brand_id,
-			COALESCE(s.name, '') AS name,
+			ANY_VALUE(COALESCE(s.name, '')) AS name,
 			h.ticker_symbol,
 			DATE(h.created_at) AS date,
 			GROUP_CONCAT(DISTINCT h.method ORDER BY h.method ASC SEPARATOR ',') AS methods,
 			COUNT(DISTINCT h.method) AS signal_count,
-			COALESCE(d.close_price, 0) AS current_price
+			ANY_VALUE(COALESCE(d.close_price, 0)) AS current_price
 		FROM analyze_stock_brand_price_history h
 		LEFT JOIN stock_brand AS s ON s.id = h.stock_brand_id AND s.deleted_at IS NULL
 		LEFT JOIN stock_brands_daily_price AS d ON d.id = (

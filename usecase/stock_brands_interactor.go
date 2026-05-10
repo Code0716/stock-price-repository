@@ -26,6 +26,7 @@ type StockBrandInteractor interface {
 	UpdateStockBrands(ctx context.Context, t time.Time) error
 	GetStockBrands(ctx context.Context, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error)
 	GetAnalyzeStockBrandPriceHistories(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (*models.PaginatedAnalyzeStockBrandPriceHistories, error)
+	GetMultipleSignalStocks(ctx context.Context, filter *models.MultipleSignalStockFilter) (*models.PaginatedMultipleSignalStocks, error)
 }
 
 func NewStockBrandInteractor(

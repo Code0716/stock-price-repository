@@ -55,6 +55,21 @@ func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) DeleteByStock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByStockBrandIDs", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).DeleteByStockBrandIDs), ctx, ids)
 }
 
+// FindMultipleSignals mocks base method.
+func (m *MockAnalyzeStockBrandPriceHistoryRepository) FindMultipleSignals(ctx context.Context, filter *models.MultipleSignalStockFilter) ([]*models.MultipleSignalStock, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindMultipleSignals", ctx, filter)
+	ret0, _ := ret[0].([]*models.MultipleSignalStock)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindMultipleSignals indicates an expected call of FindMultipleSignals.
+func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) FindMultipleSignals(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMultipleSignals", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).FindMultipleSignals), ctx, filter)
+}
+
 // FindWithFilter mocks base method.
 func (m *MockAnalyzeStockBrandPriceHistoryRepository) FindWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) ([]*models.AnalyzeStockBrandPriceHistory, error) {
 	m.ctrl.T.Helper()

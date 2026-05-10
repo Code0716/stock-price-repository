@@ -57,6 +57,21 @@ func (mr *MockStockBrandInteractorMockRecorder) GetAnalyzeStockBrandPriceHistori
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnalyzeStockBrandPriceHistories", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetAnalyzeStockBrandPriceHistories), ctx, filter)
 }
 
+// GetMultipleSignalStocks mocks base method.
+func (m *MockStockBrandInteractor) GetMultipleSignalStocks(ctx context.Context, filter *models.MultipleSignalStockFilter) (*models.PaginatedMultipleSignalStocks, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMultipleSignalStocks", ctx, filter)
+	ret0, _ := ret[0].(*models.PaginatedMultipleSignalStocks)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMultipleSignalStocks indicates an expected call of GetMultipleSignalStocks.
+func (mr *MockStockBrandInteractorMockRecorder) GetMultipleSignalStocks(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMultipleSignalStocks", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetMultipleSignalStocks), ctx, filter)
+}
+
 // GetStockBrands mocks base method.
 func (m *MockStockBrandInteractor) GetStockBrands(ctx context.Context, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error) {
 	m.ctrl.T.Helper()

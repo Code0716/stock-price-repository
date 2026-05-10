@@ -10,6 +10,8 @@ import (
 type AnalyzeStockBrandPriceHistoryRepository interface {
 	// FindWithFilter 条件に一致する分析履歴を取得する
 	FindWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) ([]*models.AnalyzeStockBrandPriceHistory, error)
+	// FindMultipleSignals 同一日に2つ以上のシグナルが出た銘柄を集計して取得する
+	FindMultipleSignals(ctx context.Context, filter *models.MultipleSignalStockFilter) ([]*models.MultipleSignalStock, error)
 	// DeleteByStockBrandIDs 銘柄IDで一致したものを削除する
 	DeleteByStockBrandIDs(ctx context.Context, ids []string) error
 }

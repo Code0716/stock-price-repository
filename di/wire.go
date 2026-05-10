@@ -80,6 +80,7 @@ var apiSet = wire.NewSet(
 	handler.NewStockPriceHandler,
 	handler.NewStockBrandHandler,
 	handler.NewAnalyzeStockBrandPriceHistoryHandler,
+	handler.NewMultipleSignalStocksHandler,
 	router.NewRouter,
 )
 

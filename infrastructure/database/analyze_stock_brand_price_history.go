@@ -3,6 +3,8 @@ package database
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -117,6 +119,88 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindWithFilter(ctx contex
 	}
 
 	return histories, nil
+}
+
+// FindMultipleSignals 同一日に2つ以上のシグナルが出た銘柄を集計して返す
+func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindMultipleSignals(ctx context.Context, filter *models.MultipleSignalStockFilter) ([]*models.MultipleSignalStock, error) {
+	type multipleSignalRow struct {
+		StockBrandID string
+		Name         string
+		TickerSymbol string
+		Date         time.Time
+		Methods      string
+		SignalCount  int
+		CurrentPrice float64
+	}
+
+	var dateCondition string
+	args := make([]interface{}, 0, 3)
+
+	if filter.Date != nil {
+		dateCondition = "DATE(h.created_at) = DATE(?)"
+		args = append(args, *filter.Date)
+	} else {
+		dateCondition = "DATE(h.created_at) = (SELECT DATE(MAX(created_at)) FROM analyze_stock_brand_price_history)"
+	}
+
+	whereClause := dateCondition
+	if filter.Cursor != "" {
+		whereClause += " AND h.ticker_symbol > ?"
+		args = append(args, filter.Cursor)
+	}
+
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 100
+	}
+	args = append(args, limit)
+
+	query := fmt.Sprintf(`
+		SELECT
+			h.stock_brand_id,
+			COALESCE(s.name, '') AS name,
+			h.ticker_symbol,
+			DATE(h.created_at) AS date,
+			GROUP_CONCAT(DISTINCT h.method ORDER BY h.method ASC SEPARATOR ',') AS methods,
+			COUNT(DISTINCT h.method) AS signal_count,
+			COALESCE(d.close_price, 0) AS current_price
+		FROM analyze_stock_brand_price_history h
+		LEFT JOIN stock_brand AS s ON s.id = h.stock_brand_id AND s.deleted_at IS NULL
+		LEFT JOIN stock_brands_daily_price AS d ON d.id = (
+			SELECT id FROM stock_brands_daily_price
+			WHERE ticker_symbol = h.ticker_symbol AND deleted_at IS NULL
+			ORDER BY date DESC LIMIT 1
+		)
+		WHERE %s
+		GROUP BY h.stock_brand_id, h.ticker_symbol, DATE(h.created_at)
+		HAVING COUNT(DISTINCT h.method) >= 2
+		ORDER BY h.ticker_symbol ASC
+		LIMIT ?
+	`, whereClause)
+
+	var rows []*multipleSignalRow
+	if err := ai.db.WithContext(ctx).Raw(query, args...).Scan(&rows).Error; err != nil {
+		return nil, errors.Wrap(err, "AnalyzeStockBrandPriceHistoryRepositoryImpl.FindMultipleSignals error")
+	}
+
+	stocks := make([]*models.MultipleSignalStock, 0, len(rows))
+	for _, r := range rows {
+		var methods []string
+		if r.Methods != "" {
+			methods = strings.Split(r.Methods, ",")
+		}
+		stocks = append(stocks, &models.MultipleSignalStock{
+			StockBrandID: r.StockBrandID,
+			Name:         r.Name,
+			TickerSymbol: r.TickerSymbol,
+			Date:         r.Date,
+			Methods:      methods,
+			SignalCount:  r.SignalCount,
+			CurrentPrice: decimal.NewFromFloat(r.CurrentPrice),
+		})
+	}
+
+	return stocks, nil
 }
 
 // DeleteByStockBrandIDs 銘柄IDと一致したものを削除する

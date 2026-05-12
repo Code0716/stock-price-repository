@@ -78,16 +78,16 @@ export-master:
 # make export-master
 
 migrate-file:
-	migrate create -ext sql -dir sql/migrations -seq ${name}
+	migrate create -ext sql -dir db-migrations/migrations -seq ${name}
 
 migrate-up:
-	migrate -path sql/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository up
+	migrate -path db-migrations/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository up
 
 migrate-down:
-	migrate -path sql/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository down 1
+	migrate -path db-migrations/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository down 1
 
 migrate-down-all:
-	migrate -path sql/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository down
+	migrate -path db-migrations/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository down
 
 down: docker-down volume-down
 

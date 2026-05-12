@@ -1,4 +1,0 @@
--- インデックスの削除
-DROP INDEX idx_applied_stock_consolidations_history_symbol_date ON applied_stock_consolidations_history;
-
-DROP TABLE IF EXISTS applied_stock_consolidations_history;

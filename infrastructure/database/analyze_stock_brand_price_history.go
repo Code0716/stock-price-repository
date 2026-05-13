@@ -41,6 +41,35 @@ type analyzeStockBrandPriceHistoryRow struct {
 	CreatedAt    time.Time
 }
 
+func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) buildWhereQuery(db *gorm.DB, filter *models.AnalyzeStockBrandPriceHistoryFilter) *gorm.DB {
+	if filter.TickerSymbol != "" {
+		db = db.Where("h.ticker_symbol = ?", filter.TickerSymbol)
+	}
+	if filter.Action != "" {
+		db = db.Where("h.action = ?", filter.Action)
+	}
+	if filter.Method != "" {
+		db = db.Where("h.method = ?", filter.Method)
+	}
+	return db
+}
+
+func orderClause(sortBy, order string) string {
+	dir := "DESC"
+	if order == models.AnalyzeStockBrandPriceHistoryOrderAsc {
+		dir = "ASC"
+	}
+
+	switch sortBy {
+	case models.AnalyzeStockBrandPriceHistorySortByProfit:
+		return fmt.Sprintf("(COALESCE(d.close_price, h.trade_price) - h.trade_price) %s, h.id %s", dir, dir)
+	case models.AnalyzeStockBrandPriceHistorySortByProfitRate:
+		return fmt.Sprintf("((COALESCE(d.close_price, h.trade_price) - h.trade_price) / h.trade_price) %s, h.id %s", dir, dir)
+	default:
+		return fmt.Sprintf("h.created_at %s, h.id %s", dir, dir)
+	}
+}
+
 // FindWithFilter 条件に一致する分析履歴を取得する
 // current_price は stock_brands_daily_price の最新 close_price を JOIN して都度算出する
 func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) ([]*models.AnalyzeStockBrandPriceHistory, error) {
@@ -65,37 +94,19 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindWithFilter(ctx contex
 			ORDER BY date DESC LIMIT 1
 		)`)
 
-	if filter.TickerSymbol != "" {
-		db = db.Where("h.ticker_symbol = ?", filter.TickerSymbol)
-	}
-	if filter.Action != "" {
-		db = db.Where("h.action = ?", filter.Action)
-	}
-	if filter.Method != "" {
-		db = db.Where("h.method = ?", filter.Method)
-	}
-	if filter.Cursor != "" {
-		var cursorRow struct {
-			CreatedAt time.Time
-			ID        string
-		}
-		if err := ai.db.WithContext(ctx).
-			Table("analyze_stock_brand_price_history").
-			Select("created_at, id").
-			Where("id = ?", filter.Cursor).
-			Take(&cursorRow).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, nil
-			}
-			return nil, errors.Wrap(err, "AnalyzeStockBrandPriceHistoryRepositoryImpl.FindWithFilter cursor error")
-		}
-		db = db.Where("(h.created_at < ? OR (h.created_at = ? AND h.id < ?))", cursorRow.CreatedAt, cursorRow.CreatedAt, cursorRow.ID)
-	}
+	db = ai.buildWhereQuery(db, filter)
+	db = db.Order(orderClause(filter.SortBy, filter.Order))
 
-	db = db.Order("h.created_at DESC").Order("h.id DESC")
-	if filter.Limit > 0 {
-		db = db.Limit(filter.Limit)
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 100
 	}
+	page := filter.Page
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+	db = db.Limit(limit).Offset(offset)
 
 	var rows []*analyzeStockBrandPriceHistoryRow
 	if err := db.Find(&rows).Error; err != nil {
@@ -119,6 +130,21 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindWithFilter(ctx contex
 	}
 
 	return histories, nil
+}
+
+// CountWithFilter 条件に一致する分析履歴の総件数を返す
+func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) CountWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (int64, error) {
+	db := ai.db.WithContext(ctx).
+		Table("analyze_stock_brand_price_history AS h")
+
+	db = ai.buildWhereQuery(db, filter)
+
+	var count int64
+	if err := db.Count(&count).Error; err != nil {
+		return 0, errors.Wrap(err, "AnalyzeStockBrandPriceHistoryRepositoryImpl.CountWithFilter error")
+	}
+
+	return count, nil
 }
 
 // FindMultipleSignals 同一日に2つ以上のシグナルが出た銘柄を集計して返す

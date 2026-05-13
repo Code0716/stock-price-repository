@@ -41,6 +41,21 @@ func (m *MockAnalyzeStockBrandPriceHistoryRepository) EXPECT() *MockAnalyzeStock
 	return m.recorder
 }
 
+// CountWithFilter mocks base method.
+func (m *MockAnalyzeStockBrandPriceHistoryRepository) CountWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountWithFilter", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountWithFilter indicates an expected call of CountWithFilter.
+func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) CountWithFilter(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountWithFilter", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).CountWithFilter), ctx, filter)
+}
+
 // DeleteByStockBrandIDs mocks base method.
 func (m *MockAnalyzeStockBrandPriceHistoryRepository) DeleteByStockBrandIDs(ctx context.Context, ids []string) error {
 	m.ctrl.T.Helper()

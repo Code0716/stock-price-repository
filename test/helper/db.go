@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 
@@ -61,19 +62,13 @@ func SetupTestDB(t *testing.T) (*gorm.DB, func()) {
 	})
 	require.NoError(t, err)
 
-	// SQLファイルからテーブル作成
+	// vendor/db-migrations/migrations の *.up.sql を番号順に適用
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
-	// test/helper/db.go から見て ../../sql/_init_sql/00001_create_database.sql
-	initSQLPath := filepath.Join(baseDir, "../../sql/_init_sql/00001_create_database.sql")
-
-	// 初期SQL実行
-	executeSQLFile(t, testDB, initSQLPath, dbName)
-
-	// マイグレーション実行
-	migrationDir := filepath.Join(baseDir, "../../sql/migrations")
+	migrationDir := filepath.Join(baseDir, "../../db-migrations/migrations")
 	migrationFiles, err := filepath.Glob(filepath.Join(migrationDir, "*.up.sql"))
 	require.NoError(t, err)
+	sort.Strings(migrationFiles)
 
 	for _, migrationFile := range migrationFiles {
 		executeSQLFile(t, testDB, migrationFile, dbName)

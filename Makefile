@@ -1,6 +1,7 @@
 .PHONY: install-tools install-build-tools install-dev-tools \
 	di deps lint gen gorm-gen mock test test-e2e up down-servers cli \
 	migrate-file migrate-up migrate-down migrate-down-all \
+	db-init db-update \
 	down docker-down volume-down format build \
 	proto-setup proto-pull proto-gen proto-clean \
 	api api-docker grpc-server grpc-server-docker \
@@ -78,16 +79,23 @@ export-master:
 # make export-master
 
 migrate-file:
-	migrate create -ext sql -dir sql/migrations -seq ${name}
+	migrate create -ext sql -dir db-migrations/migrations -seq ${name}
 
 migrate-up:
-	migrate -path sql/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository up
+	migrate -path db-migrations/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository up
 
 migrate-down:
-	migrate -path sql/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository down 1
+	migrate -path db-migrations/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository down 1
 
 migrate-down-all:
-	migrate -path sql/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository down
+	migrate -path db-migrations/migrations -database mysql://root:root@tcp\(localhost:3306\)/stock_price_repository down
+
+db-init:
+	git submodule update --init
+
+db-update:
+	git submodule update --remote db-migrations
+	git add db-migrations
 
 down: docker-down volume-down
 

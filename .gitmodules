@@ -1,0 +1,3 @@
+[submodule "db-migrations"]
+	path = db-migrations
+	url = git@github.com:Code0716/stock-price-db.git

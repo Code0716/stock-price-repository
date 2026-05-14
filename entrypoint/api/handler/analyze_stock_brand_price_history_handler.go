@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -9,6 +10,36 @@ import (
 	"github.com/Code0716/stock-price-repository/usecase"
 	"go.uber.org/zap"
 )
+
+// validateAnalyzeHistoryAction は action パラメータを検証する。
+func validateAnalyzeHistoryAction(action string) error {
+	if action == "" ||
+		action == models.AnalyzeStockBrandPriceHistoryActionBuy ||
+		action == models.AnalyzeStockBrandPriceHistoryActionSell {
+		return nil
+	}
+	return &validationError{message: "actionはBuyまたはSellである必要があります"}
+}
+
+// parseBoundedInt はクエリパラメータを正の整数として読み取る。
+// max に 0 を渡すと上限チェックを省略する。値が空文字列の場合は defaultVal を返す。
+func parseBoundedInt(server driver.HTTPServer, r *http.Request, key string, defaultVal, max int) (int, error) {
+	str := server.GetQueryParam(r, key)
+	if str == "" {
+		return defaultVal, nil
+	}
+	v, err := strconv.Atoi(str)
+	if err != nil {
+		return 0, &validationError{message: fmt.Sprintf("%sは数値である必要があります", key)}
+	}
+	if v <= 0 {
+		return 0, &validationError{message: fmt.Sprintf("%sは正の整数である必要があります", key)}
+	}
+	if max > 0 && v > max {
+		return 0, &validationError{message: fmt.Sprintf("%sは%d以下である必要があります", key, max)}
+	}
+	return v, nil
+}
 
 const (
 	defaultAnalyzeStockBrandPriceHistoryLimit = 100
@@ -80,10 +111,8 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) validateGetAnalyzeStockBrandPrice
 	}
 
 	params.action = h.httpServer.GetQueryParam(r, "action")
-	if params.action != "" &&
-		params.action != models.AnalyzeStockBrandPriceHistoryActionBuy &&
-		params.action != models.AnalyzeStockBrandPriceHistoryActionSell {
-		return nil, &validationError{message: "actionはBuyまたはSellである必要があります"}
+	if err := validateAnalyzeHistoryAction(params.action); err != nil {
+		return nil, err
 	}
 
 	params.method = h.httpServer.GetQueryParam(r, "method")
@@ -113,59 +142,29 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) validateGetAnalyzeStockBrandPrice
 		}
 	}
 
-	pageStr := h.httpServer.GetQueryParam(r, "page")
-	if pageStr != "" {
-		page, err := strconv.Atoi(pageStr)
-		if err != nil {
-			return nil, &validationError{message: "pageは数値である必要があります"}
-		}
-		if page <= 0 {
-			return nil, &validationError{message: "pageは正の整数である必要があります"}
-		}
-		params.page = page
+	page, err := parseBoundedInt(h.httpServer, r, "page", 1, 0)
+	if err != nil {
+		return nil, err
 	}
+	params.page = page
 
-	limitStr := h.httpServer.GetQueryParam(r, "limit")
-	if limitStr != "" {
-		limit, err := strconv.Atoi(limitStr)
-		if err != nil {
-			return nil, &validationError{message: "limitは数値である必要があります"}
-		}
-		if limit <= 0 {
-			return nil, &validationError{message: "limitは正の整数である必要があります"}
-		}
-		if limit > maxAnalyzeStockBrandPriceHistoryLimit {
-			return nil, &validationError{message: "limitは1000以下である必要があります"}
-		}
-		params.limit = limit
+	limit, err := parseBoundedInt(h.httpServer, r, "limit", defaultAnalyzeStockBrandPriceHistoryLimit, maxAnalyzeStockBrandPriceHistoryLimit)
+	if err != nil {
+		return nil, err
 	}
+	params.limit = limit
 
-	datePageStr := h.httpServer.GetQueryParam(r, "date_page")
-	if datePageStr != "" {
-		datePage, err := strconv.Atoi(datePageStr)
-		if err != nil {
-			return nil, &validationError{message: "date_pageは数値である必要があります"}
-		}
-		if datePage <= 0 {
-			return nil, &validationError{message: "date_pageは正の整数である必要があります"}
-		}
-		params.datePage = datePage
+	datePage, err := parseBoundedInt(h.httpServer, r, "date_page", 0, 0)
+	if err != nil {
+		return nil, err
 	}
+	params.datePage = datePage
 
-	dateLimitStr := h.httpServer.GetQueryParam(r, "date_limit")
-	if dateLimitStr != "" {
-		dateLimit, err := strconv.Atoi(dateLimitStr)
-		if err != nil {
-			return nil, &validationError{message: "date_limitは数値である必要があります"}
-		}
-		if dateLimit <= 0 {
-			return nil, &validationError{message: "date_limitは正の整数である必要があります"}
-		}
-		if dateLimit > 50 {
-			return nil, &validationError{message: "date_limitは50以下である必要があります"}
-		}
-		params.dateLimit = dateLimit
+	dateLimit, err := parseBoundedInt(h.httpServer, r, "date_limit", 0, 50)
+	if err != nil {
+		return nil, err
 	}
+	params.dateLimit = dateLimit
 
 	return params, nil
 }

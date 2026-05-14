@@ -14,6 +14,10 @@ func (si *stockBrandInteractorImpl) GetAnalyzeStockBrandPriceHistories(ctx conte
 		filter = &models.AnalyzeStockBrandPriceHistoryFilter{}
 	}
 
+	if filter.DatePage > 0 {
+		return si.getAnalyzeStockBrandPriceHistoriesByDate(ctx, filter)
+	}
+
 	if filter.Limit <= 0 {
 		filter.Limit = 100
 	}
@@ -42,5 +46,53 @@ func (si *stockBrandInteractorImpl) GetAnalyzeStockBrandPriceHistories(ctx conte
 		Limit:      filter.Limit,
 		Total:      total,
 		TotalPages: totalPages,
+	}, nil
+}
+
+func (si *stockBrandInteractorImpl) getAnalyzeStockBrandPriceHistoriesByDate(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (*models.PaginatedAnalyzeStockBrandPriceHistories, error) {
+	if filter.DateLimit <= 0 {
+		filter.DateLimit = 10
+	}
+
+	totalDates, err := si.analyzeStockBrandPriceHistoryRepository.CountDistinctDates(ctx, filter)
+	if err != nil {
+		return nil, errors.Wrap(err, "日付総数の取得に失敗しました")
+	}
+
+	dates, err := si.analyzeStockBrandPriceHistoryRepository.FindDistinctDates(ctx, filter)
+	if err != nil {
+		return nil, errors.Wrap(err, "日付一覧の取得に失敗しました")
+	}
+
+	if len(dates) == 0 {
+		totalDatePages := int(math.Ceil(float64(totalDates) / float64(filter.DateLimit)))
+		if totalDatePages < 1 {
+			totalDatePages = 1
+		}
+		return &models.PaginatedAnalyzeStockBrandPriceHistories{
+			Histories:      []*models.AnalyzeStockBrandPriceHistory{},
+			DatePage:       filter.DatePage,
+			DateLimit:      filter.DateLimit,
+			TotalDates:     totalDates,
+			TotalDatePages: totalDatePages,
+		}, nil
+	}
+
+	histories, err := si.analyzeStockBrandPriceHistoryRepository.FindByDates(ctx, filter, dates)
+	if err != nil {
+		return nil, errors.Wrap(err, "分析履歴一覧（日付指定）の取得に失敗しました")
+	}
+
+	totalDatePages := int(math.Ceil(float64(totalDates) / float64(filter.DateLimit)))
+	if totalDatePages < 1 {
+		totalDatePages = 1
+	}
+
+	return &models.PaginatedAnalyzeStockBrandPriceHistories{
+		Histories:      histories,
+		DatePage:       filter.DatePage,
+		DateLimit:      filter.DateLimit,
+		TotalDates:     totalDates,
+		TotalDatePages: totalDatePages,
 	}, nil
 }

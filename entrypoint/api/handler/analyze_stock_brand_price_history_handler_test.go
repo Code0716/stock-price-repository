@@ -20,7 +20,7 @@ import (
 
 func setupAnalyzeHistoryMockHTTPServer(ctrl *gomock.Controller, params map[string]string) *mock_driver.MockHTTPServer {
 	m := mock_driver.NewMockHTTPServer(ctrl)
-	keys := []string{"symbol", "action", "method", "sort_by", "order", "page", "limit"}
+	keys := []string{"symbol", "action", "method", "sort_by", "order", "page", "limit", "date_page", "date_limit"}
 	for _, k := range keys {
 		val := params[k]
 		m.EXPECT().GetQueryParam(gomock.Any(), k).Return(val).AnyTimes()

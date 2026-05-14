@@ -22,19 +22,29 @@ type AnalyzeHistoryPaginationInfo struct {
 	TotalPages int   `json:"total_pages"`
 }
 
+type AnalyzeHistoryDatePaginationInfo struct {
+	DatePage       int   `json:"date_page"`
+	DateLimit      int   `json:"date_limit"`
+	TotalDates     int64 `json:"total_dates"`
+	TotalDatePages int   `json:"total_date_pages"`
+}
+
 type GetAnalyzeStockBrandPriceHistoriesResponse struct {
-	Histories  []*models.AnalyzeStockBrandPriceHistory `json:"histories"`
-	Pagination *AnalyzeHistoryPaginationInfo            `json:"pagination"`
+	Histories      []*models.AnalyzeStockBrandPriceHistory `json:"histories"`
+	Pagination     *AnalyzeHistoryPaginationInfo            `json:"pagination"`
+	DatePagination *AnalyzeHistoryDatePaginationInfo        `json:"date_pagination,omitempty"`
 }
 
 type getAnalyzeStockBrandPriceHistoriesParams struct {
-	symbol string
-	action string
-	method string
-	sortBy string
-	order  string
-	page   int
-	limit  int
+	symbol    string
+	action    string
+	method    string
+	sortBy    string
+	order     string
+	page      int
+	limit     int
+	datePage  int
+	dateLimit int
 }
 
 type AnalyzeStockBrandPriceHistoryHandler struct {
@@ -130,6 +140,33 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) validateGetAnalyzeStockBrandPrice
 		params.limit = limit
 	}
 
+	datePageStr := h.httpServer.GetQueryParam(r, "date_page")
+	if datePageStr != "" {
+		datePage, err := strconv.Atoi(datePageStr)
+		if err != nil {
+			return nil, &validationError{message: "date_pageは数値である必要があります"}
+		}
+		if datePage <= 0 {
+			return nil, &validationError{message: "date_pageは正の整数である必要があります"}
+		}
+		params.datePage = datePage
+	}
+
+	dateLimitStr := h.httpServer.GetQueryParam(r, "date_limit")
+	if dateLimitStr != "" {
+		dateLimit, err := strconv.Atoi(dateLimitStr)
+		if err != nil {
+			return nil, &validationError{message: "date_limitは数値である必要があります"}
+		}
+		if dateLimit <= 0 {
+			return nil, &validationError{message: "date_limitは正の整数である必要があります"}
+		}
+		if dateLimit > 50 {
+			return nil, &validationError{message: "date_limitは50以下である必要があります"}
+		}
+		params.dateLimit = dateLimit
+	}
+
 	return params, nil
 }
 
@@ -152,6 +189,8 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) GetAnalyzeStockBrandPriceHistorie
 		Order:        params.order,
 		Page:         params.page,
 		Limit:        params.limit,
+		DatePage:     params.datePage,
+		DateLimit:    params.dateLimit,
 	})
 	if err != nil {
 		h.logger.Error("failed to get analyze stock brand price histories", zap.Error(err))
@@ -159,7 +198,7 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) GetAnalyzeStockBrandPriceHistorie
 		return
 	}
 
-	respondJSON(w, h.logger, &GetAnalyzeStockBrandPriceHistoriesResponse{
+	resp := &GetAnalyzeStockBrandPriceHistoriesResponse{
 		Histories: result.Histories,
 		Pagination: &AnalyzeHistoryPaginationInfo{
 			Page:       result.Page,
@@ -167,5 +206,14 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) GetAnalyzeStockBrandPriceHistorie
 			Total:      result.Total,
 			TotalPages: result.TotalPages,
 		},
-	})
+	}
+	if params.datePage > 0 {
+		resp.DatePagination = &AnalyzeHistoryDatePaginationInfo{
+			DatePage:       result.DatePage,
+			DateLimit:      result.DateLimit,
+			TotalDates:     result.TotalDates,
+			TotalDatePages: result.TotalDatePages,
+		}
+	}
+	respondJSON(w, h.logger, resp)
 }

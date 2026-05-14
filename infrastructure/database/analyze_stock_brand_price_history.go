@@ -147,6 +147,105 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) CountWithFilter(ctx conte
 	return count, nil
 }
 
+// FindDistinctDates フィルタ条件下でデータが存在する日付を DateLimit 件 (DatePage ページ目) 取得する
+func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindDistinctDates(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) ([]string, error) {
+	dateLimit := filter.DateLimit
+	if dateLimit <= 0 {
+		dateLimit = 10
+	}
+	datePage := filter.DatePage
+	if datePage <= 0 {
+		datePage = 1
+	}
+	offset := (datePage - 1) * dateLimit
+
+	db := ai.db.WithContext(ctx).
+		Table("analyze_stock_brand_price_history AS h").
+		Select("DISTINCT h.created_at").
+		Order("h.created_at DESC").
+		Limit(dateLimit).
+		Offset(offset)
+
+	db = ai.buildWhereQuery(db, filter)
+
+	var dates []string
+	if err := db.Pluck("h.created_at", &dates).Error; err != nil {
+		return nil, errors.Wrap(err, "AnalyzeStockBrandPriceHistoryRepositoryImpl.FindDistinctDates error")
+	}
+
+	return dates, nil
+}
+
+// CountDistinctDates フィルタ条件下でデータが存在する日付の総数を返す
+func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) CountDistinctDates(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (int64, error) {
+	db := ai.db.WithContext(ctx).
+		Table("analyze_stock_brand_price_history AS h")
+
+	db = ai.buildWhereQuery(db, filter)
+
+	var count int64
+	if err := db.Distinct("h.created_at").Count(&count).Error; err != nil {
+		return 0, errors.Wrap(err, "AnalyzeStockBrandPriceHistoryRepositoryImpl.CountDistinctDates error")
+	}
+
+	return count, nil
+}
+
+// FindByDates 指定した日付リストに含まれる分析履歴を全件取得する
+func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindByDates(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter, dates []string) ([]*models.AnalyzeStockBrandPriceHistory, error) {
+	if len(dates) == 0 {
+		return []*models.AnalyzeStockBrandPriceHistory{}, nil
+	}
+
+	db := ai.db.WithContext(ctx).
+		Table("analyze_stock_brand_price_history AS h").
+		Select(`
+			h.id,
+			h.stock_brand_id,
+			COALESCE(s.name, '') AS name,
+			h.ticker_symbol,
+			h.trade_price,
+			COALESCE(d.close_price, h.trade_price) AS current_price,
+			h.action,
+			h.method,
+			h.memo,
+			h.created_at
+		`).
+		Joins("LEFT JOIN stock_brand AS s ON s.id = h.stock_brand_id AND s.deleted_at IS NULL").
+		Joins(`LEFT JOIN stock_brands_daily_price AS d ON d.id = (
+			SELECT id FROM stock_brands_daily_price
+			WHERE ticker_symbol = h.ticker_symbol AND deleted_at IS NULL
+			ORDER BY date DESC LIMIT 1
+		)`).
+		Where("h.created_at IN ?", dates)
+
+	db = ai.buildWhereQuery(db, filter)
+	db = db.Order(orderClause(filter.SortBy, filter.Order))
+
+	var rows []*analyzeStockBrandPriceHistoryRow
+	if err := db.Find(&rows).Error; err != nil {
+		return nil, errors.Wrap(err, "AnalyzeStockBrandPriceHistoryRepositoryImpl.FindByDates error")
+	}
+
+	histories := make([]*models.AnalyzeStockBrandPriceHistory, 0, len(rows))
+	for _, row := range rows {
+		histories = append(histories, models.NewAnalyzeStockBrandPriceHistory(
+			row.ID,
+			row.StockBrandID,
+			row.Name,
+			row.TickerSymbol,
+			decimal.NewFromFloat(row.TradePrice),
+			decimal.NewFromFloat(row.CurrentPrice),
+			row.Action,
+			row.Method,
+			row.Memo,
+			row.CreatedAt,
+		))
+	}
+
+	return histories, nil
+}
+
 // FindMultipleSignals 同一日に2つ以上のシグナルが出た銘柄を集計して返す
 func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindMultipleSignals(ctx context.Context, filter *models.MultipleSignalStockFilter) ([]*models.MultipleSignalStock, error) {
 	type multipleSignalRow struct {

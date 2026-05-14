@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -10,22 +11,71 @@ import (
 	"go.uber.org/zap"
 )
 
+// validateAnalyzeHistoryAction は action パラメータを検証する。
+func validateAnalyzeHistoryAction(action string) error {
+	if action == "" ||
+		action == models.AnalyzeStockBrandPriceHistoryActionBuy ||
+		action == models.AnalyzeStockBrandPriceHistoryActionSell {
+		return nil
+	}
+	return &validationError{message: "actionはBuyまたはSellである必要があります"}
+}
+
+// parseBoundedInt はクエリパラメータを正の整数として読み取る。
+// max に 0 を渡すと上限チェックを省略する。値が空文字列の場合は defaultVal を返す。
+func parseBoundedInt(server driver.HTTPServer, r *http.Request, key string, defaultVal, max int) (int, error) {
+	str := server.GetQueryParam(r, key)
+	if str == "" {
+		return defaultVal, nil
+	}
+	v, err := strconv.Atoi(str)
+	if err != nil {
+		return 0, &validationError{message: fmt.Sprintf("%sは数値である必要があります", key)}
+	}
+	if v <= 0 {
+		return 0, &validationError{message: fmt.Sprintf("%sは正の整数である必要があります", key)}
+	}
+	if max > 0 && v > max {
+		return 0, &validationError{message: fmt.Sprintf("%sは%d以下である必要があります", key, max)}
+	}
+	return v, nil
+}
+
 const (
 	defaultAnalyzeStockBrandPriceHistoryLimit = 100
 	maxAnalyzeStockBrandPriceHistoryLimit     = 1000
 )
 
+type AnalyzeHistoryPaginationInfo struct {
+	Page       int   `json:"page"`
+	Limit      int   `json:"limit"`
+	Total      int64 `json:"total"`
+	TotalPages int   `json:"total_pages"`
+}
+
+type AnalyzeHistoryDatePaginationInfo struct {
+	DatePage       int   `json:"date_page"`
+	DateLimit      int   `json:"date_limit"`
+	TotalDates     int64 `json:"total_dates"`
+	TotalDatePages int   `json:"total_date_pages"`
+}
+
 type GetAnalyzeStockBrandPriceHistoriesResponse struct {
-	Histories  []*models.AnalyzeStockBrandPriceHistory `json:"histories"`
-	Pagination *PaginationInfo                         `json:"pagination,omitempty"`
+	Histories      []*models.AnalyzeStockBrandPriceHistory `json:"histories"`
+	Pagination     *AnalyzeHistoryPaginationInfo            `json:"pagination"`
+	DatePagination *AnalyzeHistoryDatePaginationInfo        `json:"date_pagination,omitempty"`
 }
 
 type getAnalyzeStockBrandPriceHistoriesParams struct {
-	symbol string
-	action string
-	method string
-	cursor string
-	limit  int
+	symbol    string
+	action    string
+	method    string
+	sortBy    string
+	order     string
+	page      int
+	limit     int
+	datePage  int
+	dateLimit int
 }
 
 type AnalyzeStockBrandPriceHistoryHandler struct {
@@ -44,7 +94,10 @@ func NewAnalyzeStockBrandPriceHistoryHandler(u usecase.StockBrandInteractor, h d
 
 func (h *AnalyzeStockBrandPriceHistoryHandler) validateGetAnalyzeStockBrandPriceHistoriesParams(r *http.Request) (*getAnalyzeStockBrandPriceHistoriesParams, error) {
 	params := &getAnalyzeStockBrandPriceHistoriesParams{
-		limit: defaultAnalyzeStockBrandPriceHistoryLimit,
+		limit:  defaultAnalyzeStockBrandPriceHistoryLimit,
+		page:   1,
+		sortBy: models.AnalyzeStockBrandPriceHistorySortByCreatedAt,
+		order:  models.AnalyzeStockBrandPriceHistoryOrderDesc,
 	}
 
 	params.symbol = h.httpServer.GetQueryParam(r, "symbol")
@@ -58,10 +111,8 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) validateGetAnalyzeStockBrandPrice
 	}
 
 	params.action = h.httpServer.GetQueryParam(r, "action")
-	if params.action != "" &&
-		params.action != models.AnalyzeStockBrandPriceHistoryActionBuy &&
-		params.action != models.AnalyzeStockBrandPriceHistoryActionSell {
-		return nil, &validationError{message: "actionはBuyまたはSellである必要があります"}
+	if err := validateAnalyzeHistoryAction(params.action); err != nil {
+		return nil, err
 	}
 
 	params.method = h.httpServer.GetQueryParam(r, "method")
@@ -69,25 +120,51 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) validateGetAnalyzeStockBrandPrice
 		return nil, &validationError{message: "methodが長すぎます"}
 	}
 
-	params.cursor = h.httpServer.GetQueryParam(r, "cursor")
-	if len(params.cursor) > 36 {
-		return nil, &validationError{message: "cursorが長すぎます"}
+	sortBy := h.httpServer.GetQueryParam(r, "sort_by")
+	if sortBy != "" {
+		switch sortBy {
+		case models.AnalyzeStockBrandPriceHistorySortByCreatedAt,
+			models.AnalyzeStockBrandPriceHistorySortByProfit,
+			models.AnalyzeStockBrandPriceHistorySortByProfitRate:
+			params.sortBy = sortBy
+		default:
+			return nil, &validationError{message: "sort_byはcreated_at, profit, profit_rateのいずれかである必要があります"}
+		}
 	}
 
-	limitStr := h.httpServer.GetQueryParam(r, "limit")
-	if limitStr != "" {
-		limit, err := strconv.Atoi(limitStr)
-		if err != nil {
-			return nil, &validationError{message: "limitは数値である必要があります"}
+	order := h.httpServer.GetQueryParam(r, "order")
+	if order != "" {
+		switch order {
+		case models.AnalyzeStockBrandPriceHistoryOrderAsc, models.AnalyzeStockBrandPriceHistoryOrderDesc:
+			params.order = order
+		default:
+			return nil, &validationError{message: "orderはascまたはdescである必要があります"}
 		}
-		if limit <= 0 {
-			return nil, &validationError{message: "limitは正の整数である必要があります"}
-		}
-		if limit > maxAnalyzeStockBrandPriceHistoryLimit {
-			return nil, &validationError{message: "limitは1000以下である必要があります"}
-		}
-		params.limit = limit
 	}
+
+	page, err := parseBoundedInt(h.httpServer, r, "page", 1, 0)
+	if err != nil {
+		return nil, err
+	}
+	params.page = page
+
+	limit, err := parseBoundedInt(h.httpServer, r, "limit", defaultAnalyzeStockBrandPriceHistoryLimit, maxAnalyzeStockBrandPriceHistoryLimit)
+	if err != nil {
+		return nil, err
+	}
+	params.limit = limit
+
+	datePage, err := parseBoundedInt(h.httpServer, r, "date_page", 0, 0)
+	if err != nil {
+		return nil, err
+	}
+	params.datePage = datePage
+
+	dateLimit, err := parseBoundedInt(h.httpServer, r, "date_limit", 0, 50)
+	if err != nil {
+		return nil, err
+	}
+	params.dateLimit = dateLimit
 
 	return params, nil
 }
@@ -107,8 +184,12 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) GetAnalyzeStockBrandPriceHistorie
 		TickerSymbol: params.symbol,
 		Action:       params.action,
 		Method:       params.method,
-		Cursor:       params.cursor,
+		SortBy:       params.sortBy,
+		Order:        params.order,
+		Page:         params.page,
 		Limit:        params.limit,
+		DatePage:     params.datePage,
+		DateLimit:    params.dateLimit,
 	})
 	if err != nil {
 		h.logger.Error("failed to get analyze stock brand price histories", zap.Error(err))
@@ -116,11 +197,22 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) GetAnalyzeStockBrandPriceHistorie
 		return
 	}
 
-	respondJSON(w, h.logger, &GetAnalyzeStockBrandPriceHistoriesResponse{
+	resp := &GetAnalyzeStockBrandPriceHistoriesResponse{
 		Histories: result.Histories,
-		Pagination: &PaginationInfo{
-			NextCursor: result.NextCursor,
+		Pagination: &AnalyzeHistoryPaginationInfo{
+			Page:       result.Page,
 			Limit:      result.Limit,
+			Total:      result.Total,
+			TotalPages: result.TotalPages,
 		},
-	})
+	}
+	if params.datePage > 0 {
+		resp.DatePagination = &AnalyzeHistoryDatePaginationInfo{
+			DatePage:       result.DatePage,
+			DateLimit:      result.DateLimit,
+			TotalDates:     result.TotalDates,
+			TotalDatePages: result.TotalDatePages,
+		}
+	}
+	respondJSON(w, h.logger, resp)
 }

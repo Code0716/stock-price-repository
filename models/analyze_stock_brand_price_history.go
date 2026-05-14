@@ -17,6 +17,12 @@ const (
 	AnalyzeStockBrandPriceHistoryMethodFindMLRankedV1          string = "find_ml_ranked_stocks_v1"
 	AnalyzeStockBrandPriceHistoryActionBuy                     string = "Buy"
 	AnalyzeStockBrandPriceHistoryActionSell                    string = "Sell"
+
+	AnalyzeStockBrandPriceHistorySortByCreatedAt  string = "created_at"
+	AnalyzeStockBrandPriceHistorySortByProfit     string = "profit"
+	AnalyzeStockBrandPriceHistorySortByProfitRate string = "profit_rate"
+	AnalyzeStockBrandPriceHistoryOrderAsc         string = "asc"
+	AnalyzeStockBrandPriceHistoryOrderDesc        string = "desc"
 )
 
 type AnalyzeStockBrandPriceHistory struct {
@@ -37,14 +43,24 @@ type AnalyzeStockBrandPriceHistoryFilter struct {
 	TickerSymbol string
 	Action       string
 	Method       string
-	Cursor       string
+	SortBy       string
+	Order        string
+	Page         int
 	Limit        int
+	DatePage     int // 1-indexed; 0 means normal (non-date-grouped) mode
+	DateLimit    int // number of distinct dates per page; 0 means use default
 }
 
 type PaginatedAnalyzeStockBrandPriceHistories struct {
-	Histories  []*AnalyzeStockBrandPriceHistory
-	NextCursor *string
-	Limit      int
+	Histories      []*AnalyzeStockBrandPriceHistory
+	Page           int
+	Limit          int
+	Total          int64
+	TotalPages     int
+	DatePage       int
+	DateLimit      int
+	TotalDates     int64
+	TotalDatePages int
 }
 
 func NewAnalyzeStockBrandPriceHistory(

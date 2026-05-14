@@ -41,6 +41,36 @@ func (m *MockAnalyzeStockBrandPriceHistoryRepository) EXPECT() *MockAnalyzeStock
 	return m.recorder
 }
 
+// CountDistinctDates mocks base method.
+func (m *MockAnalyzeStockBrandPriceHistoryRepository) CountDistinctDates(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountDistinctDates", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountDistinctDates indicates an expected call of CountDistinctDates.
+func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) CountDistinctDates(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountDistinctDates", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).CountDistinctDates), ctx, filter)
+}
+
+// CountWithFilter mocks base method.
+func (m *MockAnalyzeStockBrandPriceHistoryRepository) CountWithFilter(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountWithFilter", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountWithFilter indicates an expected call of CountWithFilter.
+func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) CountWithFilter(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountWithFilter", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).CountWithFilter), ctx, filter)
+}
+
 // DeleteByStockBrandIDs mocks base method.
 func (m *MockAnalyzeStockBrandPriceHistoryRepository) DeleteByStockBrandIDs(ctx context.Context, ids []string) error {
 	m.ctrl.T.Helper()
@@ -53,6 +83,36 @@ func (m *MockAnalyzeStockBrandPriceHistoryRepository) DeleteByStockBrandIDs(ctx 
 func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) DeleteByStockBrandIDs(ctx, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByStockBrandIDs", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).DeleteByStockBrandIDs), ctx, ids)
+}
+
+// FindByDates mocks base method.
+func (m *MockAnalyzeStockBrandPriceHistoryRepository) FindByDates(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter, dates []string) ([]*models.AnalyzeStockBrandPriceHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByDates", ctx, filter, dates)
+	ret0, _ := ret[0].([]*models.AnalyzeStockBrandPriceHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByDates indicates an expected call of FindByDates.
+func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) FindByDates(ctx, filter, dates any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByDates", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).FindByDates), ctx, filter, dates)
+}
+
+// FindDistinctDates mocks base method.
+func (m *MockAnalyzeStockBrandPriceHistoryRepository) FindDistinctDates(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindDistinctDates", ctx, filter)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindDistinctDates indicates an expected call of FindDistinctDates.
+func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) FindDistinctDates(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDistinctDates", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).FindDistinctDates), ctx, filter)
 }
 
 // FindMultipleSignals mocks base method.

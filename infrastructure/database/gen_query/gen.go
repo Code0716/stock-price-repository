@@ -21,6 +21,8 @@ var (
 	AppliedStockConsolidationsHistory *appliedStockConsolidationsHistory
 	AppliedStockSplitsHistory         *appliedStockSplitsHistory
 	DjiStockAverageDailyStockPrice    *djiStockAverageDailyStockPrice
+	FinAnnouncement                   *finAnnouncement
+	FinStatement                      *finStatement
 	HighVolumeStockBrand              *highVolumeStockBrand
 	NikkeiStockAverageDailyPrice      *nikkeiStockAverageDailyPrice
 	SchemaMigration                   *schemaMigration
@@ -37,6 +39,8 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	AppliedStockConsolidationsHistory = &Q.AppliedStockConsolidationsHistory
 	AppliedStockSplitsHistory = &Q.AppliedStockSplitsHistory
 	DjiStockAverageDailyStockPrice = &Q.DjiStockAverageDailyStockPrice
+	FinAnnouncement = &Q.FinAnnouncement
+	FinStatement = &Q.FinStatement
 	HighVolumeStockBrand = &Q.HighVolumeStockBrand
 	NikkeiStockAverageDailyPrice = &Q.NikkeiStockAverageDailyPrice
 	SchemaMigration = &Q.SchemaMigration
@@ -54,6 +58,8 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		AppliedStockConsolidationsHistory: newAppliedStockConsolidationsHistory(db, opts...),
 		AppliedStockSplitsHistory:         newAppliedStockSplitsHistory(db, opts...),
 		DjiStockAverageDailyStockPrice:    newDjiStockAverageDailyStockPrice(db, opts...),
+		FinAnnouncement:                   newFinAnnouncement(db, opts...),
+		FinStatement:                      newFinStatement(db, opts...),
 		HighVolumeStockBrand:              newHighVolumeStockBrand(db, opts...),
 		NikkeiStockAverageDailyPrice:      newNikkeiStockAverageDailyPrice(db, opts...),
 		SchemaMigration:                   newSchemaMigration(db, opts...),
@@ -72,6 +78,8 @@ type Query struct {
 	AppliedStockConsolidationsHistory appliedStockConsolidationsHistory
 	AppliedStockSplitsHistory         appliedStockSplitsHistory
 	DjiStockAverageDailyStockPrice    djiStockAverageDailyStockPrice
+	FinAnnouncement                   finAnnouncement
+	FinStatement                      finStatement
 	HighVolumeStockBrand              highVolumeStockBrand
 	NikkeiStockAverageDailyPrice      nikkeiStockAverageDailyPrice
 	SchemaMigration                   schemaMigration
@@ -91,6 +99,8 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.clone(db),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.clone(db),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.clone(db),
+		FinAnnouncement:                   q.FinAnnouncement.clone(db),
+		FinStatement:                      q.FinStatement.clone(db),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.clone(db),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.clone(db),
 		SchemaMigration:                   q.SchemaMigration.clone(db),
@@ -117,6 +127,8 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.replaceDB(db),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.replaceDB(db),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.replaceDB(db),
+		FinAnnouncement:                   q.FinAnnouncement.replaceDB(db),
+		FinStatement:                      q.FinStatement.replaceDB(db),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.replaceDB(db),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.replaceDB(db),
 		SchemaMigration:                   q.SchemaMigration.replaceDB(db),
@@ -133,6 +145,8 @@ type queryCtx struct {
 	AppliedStockConsolidationsHistory IAppliedStockConsolidationsHistoryDo
 	AppliedStockSplitsHistory         IAppliedStockSplitsHistoryDo
 	DjiStockAverageDailyStockPrice    IDjiStockAverageDailyStockPriceDo
+	FinAnnouncement                   IFinAnnouncementDo
+	FinStatement                      IFinStatementDo
 	HighVolumeStockBrand              IHighVolumeStockBrandDo
 	NikkeiStockAverageDailyPrice      INikkeiStockAverageDailyPriceDo
 	SchemaMigration                   ISchemaMigrationDo
@@ -149,6 +163,8 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.WithContext(ctx),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.WithContext(ctx),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.WithContext(ctx),
+		FinAnnouncement:                   q.FinAnnouncement.WithContext(ctx),
+		FinStatement:                      q.FinStatement.WithContext(ctx),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.WithContext(ctx),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.WithContext(ctx),
 		SchemaMigration:                   q.SchemaMigration.WithContext(ctx),

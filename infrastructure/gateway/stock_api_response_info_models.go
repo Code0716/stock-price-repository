@@ -122,8 +122,7 @@ type AnnounceFinScheduleResponseInfo struct {
 	Section       string
 }
 
-// J-Quants APIから取得した決算短信の情報。必要なところのみ。
-// 別途必要になっているなら、このモデルを拡張する。
+// J-Quants APIから取得した決算短信の情報。
 type FinancialStatementsResponseInfo struct {
 	DisclosedDate                                 string
 	TickerSymbol                                  string
@@ -135,4 +134,15 @@ type FinancialStatementsResponseInfo struct {
 	NextYearForecastDividendPerShareFiscalYearEnd string // 一株あたり配当予想 翌事業年度期末
 	NextYearForecastDividendPerShareAnnual        string // 一株あたり配当予想 翌事業年度合計
 	NextFiscalYearEndDate                         string // 翌事業年度末日
+	// 業績スナップショット用フィールド
+	NetSales                string // 売上高
+	OperatingProfit         string // 営業利益
+	OrdinaryProfit          string // 経常利益
+	Profit                  string // 当期純利益
+	EarningsPerShare        string // EPS
+	BookValuePerShare       string // BPS
+	ForecastNetSales        string // 通期予想売上高
+	ForecastOperatingProfit string // 通期予想営業利益
+	ForecastProfit          string // 通期予想純利益
+	ForecastEarningsPerShare string // 通期予想EPS
 }

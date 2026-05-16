@@ -85,28 +85,3 @@ type Calendar struct {
 	RevenueAverage  int64
 }
 
-// // TradingCalendarsInfo 相場の営業日の情報
-type TradingCalendarsInfo struct {
-	Date            time.Time
-	HolidayDivision string
-}
-
-// TradingCalendarsInfoFilter カレンダーのフィルター
-type TradingCalendarsInfoFilter struct {
-	From time.Time
-	To   time.Time
-}
-
-type TradingCalendarStatus int
-
-const (
-
-	TradingCalendarStatusClose          TradingCalendarStatus = iota // 非営業日
-
-	TradingCalendarStatusOpen                                        // 営業日
-
-	TradingCalendarStatusHalfDay                                     // 半営業日(前場のみ営業)
-
-	TradingCalendarStatusHolidayButOpen                              // 祝日だが先物は営業している日
-
-)

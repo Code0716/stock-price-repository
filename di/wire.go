@@ -51,6 +51,8 @@ var cliSet = wire.NewSet(
 	commands.NewAdjustHistoricalDataForStockConsolidationCommand,
 	commands.NewExportYearlyDataCommand,
 	commands.NewExportMasterDataCommand,
+	commands.NewSyncFinAnnouncementsCommand,
+	commands.NewSyncFinStatementsCommand,
 )
 
 var databaseSet = wire.NewSet(
@@ -64,6 +66,8 @@ var databaseSet = wire.NewSet(
 	database.NewHighVolumeStockBrandRepositoryImpl,
 	database.NewAppliedStockSplitsHistoryRepositoryImpl,
 	database.NewAppliedStockConsolidationsHistoryRepositoryImpl,
+	database.NewFinAnnouncementRepositoryImpl,
+	database.NewFinStatementRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
@@ -81,6 +85,8 @@ var apiSet = wire.NewSet(
 	handler.NewStockBrandHandler,
 	handler.NewAnalyzeStockBrandPriceHistoryHandler,
 	handler.NewMultipleSignalStocksHandler,
+	handler.NewFinAnnouncementHandler,
+	handler.NewFinStatementHandler,
 	router.NewRouter,
 )
 

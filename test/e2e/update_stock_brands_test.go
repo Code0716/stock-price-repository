@@ -121,6 +121,8 @@ func TestE2E_UpdateStockBrands(t *testing.T) {
 				sbDailyRepo,
 				analyzeRepo,
 				sbDailyAnalyzeRepo,
+				database.NewFinAnnouncementRepositoryImpl(db),
+				database.NewFinStatementRepositoryImpl(db),
 				mockStockAPI,
 				redisClient,
 			)

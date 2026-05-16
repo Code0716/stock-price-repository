@@ -57,6 +57,36 @@ func (mr *MockStockBrandInteractorMockRecorder) GetAnalyzeStockBrandPriceHistori
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnalyzeStockBrandPriceHistories", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetAnalyzeStockBrandPriceHistories), ctx, filter)
 }
 
+// GetFinAnnouncements mocks base method.
+func (m *MockStockBrandInteractor) GetFinAnnouncements(ctx context.Context, filter *models.FinAnnouncementFilter) (*models.PaginatedFinAnnouncements, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFinAnnouncements", ctx, filter)
+	ret0, _ := ret[0].(*models.PaginatedFinAnnouncements)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFinAnnouncements indicates an expected call of GetFinAnnouncements.
+func (mr *MockStockBrandInteractorMockRecorder) GetFinAnnouncements(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFinAnnouncements", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetFinAnnouncements), ctx, filter)
+}
+
+// GetFinStatements mocks base method.
+func (m *MockStockBrandInteractor) GetFinStatements(ctx context.Context, filter *models.FinStatementFilter) ([]*models.FinStatement, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFinStatements", ctx, filter)
+	ret0, _ := ret[0].([]*models.FinStatement)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFinStatements indicates an expected call of GetFinStatements.
+func (mr *MockStockBrandInteractorMockRecorder) GetFinStatements(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFinStatements", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetFinStatements), ctx, filter)
+}
+
 // GetMultipleSignalStocks mocks base method.
 func (m *MockStockBrandInteractor) GetMultipleSignalStocks(ctx context.Context, filter *models.MultipleSignalStockFilter) (*models.PaginatedMultipleSignalStocks, error) {
 	m.ctrl.T.Helper()
@@ -72,6 +102,21 @@ func (mr *MockStockBrandInteractorMockRecorder) GetMultipleSignalStocks(ctx, fil
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMultipleSignalStocks", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetMultipleSignalStocks), ctx, filter)
 }
 
+// GetNextFinAnnouncement mocks base method.
+func (m *MockStockBrandInteractor) GetNextFinAnnouncement(ctx context.Context, tickerSymbol string) (*models.FinAnnouncement, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNextFinAnnouncement", ctx, tickerSymbol)
+	ret0, _ := ret[0].(*models.FinAnnouncement)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNextFinAnnouncement indicates an expected call of GetNextFinAnnouncement.
+func (mr *MockStockBrandInteractorMockRecorder) GetNextFinAnnouncement(ctx, tickerSymbol any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNextFinAnnouncement", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetNextFinAnnouncement), ctx, tickerSymbol)
+}
+
 // GetStockBrands mocks base method.
 func (m *MockStockBrandInteractor) GetStockBrands(ctx context.Context, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error) {
 	m.ctrl.T.Helper()
@@ -85,6 +130,34 @@ func (m *MockStockBrandInteractor) GetStockBrands(ctx context.Context, symbolFro
 func (mr *MockStockBrandInteractorMockRecorder) GetStockBrands(ctx, symbolFrom, limit, onlyMainMarkets any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStockBrands", reflect.TypeOf((*MockStockBrandInteractor)(nil).GetStockBrands), ctx, symbolFrom, limit, onlyMainMarkets)
+}
+
+// SyncFinAnnouncements mocks base method.
+func (m *MockStockBrandInteractor) SyncFinAnnouncements(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncFinAnnouncements", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SyncFinAnnouncements indicates an expected call of SyncFinAnnouncements.
+func (mr *MockStockBrandInteractorMockRecorder) SyncFinAnnouncements(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncFinAnnouncements", reflect.TypeOf((*MockStockBrandInteractor)(nil).SyncFinAnnouncements), ctx)
+}
+
+// SyncFinStatements mocks base method.
+func (m *MockStockBrandInteractor) SyncFinStatements(ctx context.Context, tickerSymbol string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncFinStatements", ctx, tickerSymbol)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SyncFinStatements indicates an expected call of SyncFinStatements.
+func (mr *MockStockBrandInteractorMockRecorder) SyncFinStatements(ctx, tickerSymbol any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncFinStatements", reflect.TypeOf((*MockStockBrandInteractor)(nil).SyncFinStatements), ctx, tickerSymbol)
 }
 
 // UpdateStockBrands mocks base method.

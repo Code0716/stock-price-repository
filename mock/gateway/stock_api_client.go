@@ -192,21 +192,6 @@ func (mr *MockStockAPIClientMockRecorder) GetStockPriceChart(ctx, symbol, interv
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStockPriceChart", reflect.TypeOf((*MockStockAPIClient)(nil).GetStockPriceChart), ctx, symbol, interval, dateRange)
 }
 
-// GetTradingCalendarsInfo mocks base method.
-func (m *MockStockAPIClient) GetTradingCalendarsInfo(ctx context.Context, filter gateway.TradingCalendarsInfoFilter) ([]*gateway.TradingCalendarsInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTradingCalendarsInfo", ctx, filter)
-	ret0, _ := ret[0].([]*gateway.TradingCalendarsInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetTradingCalendarsInfo indicates an expected call of GetTradingCalendarsInfo.
-func (mr *MockStockAPIClientMockRecorder) GetTradingCalendarsInfo(ctx, filter any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTradingCalendarsInfo", reflect.TypeOf((*MockStockAPIClient)(nil).GetTradingCalendarsInfo), ctx, filter)
-}
-
 // GetWeeklyIndexPriceChart mocks base method.
 func (m *MockStockAPIClient) GetWeeklyIndexPriceChart(ctx context.Context, symbol gateway.StockAPISymbol, dateRange gateway.StockAPIValidRange) (*gateway.StockChartWithRangeAPIResponseInfo, error) {
 	m.ctrl.T.Helper()

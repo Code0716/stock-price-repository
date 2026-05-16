@@ -32,6 +32,8 @@ func NewRunner(
 	adjustHistoricalDataForStockConsolidationCommand *commands.AdjustHistoricalDataForStockConsolidationCommand,
 	exportYearlyDataCommand *commands.ExportYearlyDataCommand,
 	exportMasterDataCommand *commands.ExportMasterDataCommand,
+	syncFinAnnouncementsCommand *commands.SyncFinAnnouncementsCommand,
+	syncFinStatementsCommand *commands.SyncFinStatementsCommand,
 	indexInteractor usecase.IndexInteractor,
 	slackAPIClient gateway.SlackAPIClient,
 ) *Runner {
@@ -46,6 +48,8 @@ func NewRunner(
 			adjustHistoricalDataForStockConsolidationCommand.Command(),
 			exportYearlyDataCommand.Command(),
 			exportMasterDataCommand.Command(),
+			syncFinAnnouncementsCommand.Command(),
+			syncFinStatementsCommand.Command(),
 		},
 		indexInteractor: indexInteractor,
 		slackAPIClient:  slackAPIClient,

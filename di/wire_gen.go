@@ -42,8 +42,10 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	stockBrandsDailyPriceRepository := database.NewStockBrandsDailyPriceRepositoryImpl(gormDB)
 	analyzeStockBrandPriceHistoryRepository := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(gormDB)
 	stockBrandsDailyPriceForAnalyzeRepository := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(gormDB)
+	finAnnouncementRepository := database.NewFinAnnouncementRepositoryImpl(gormDB)
+	finStatementRepository := database.NewFinStatementRepositoryImpl(gormDB)
 	stockAPIClient := driver.NewStockAPIClient(httpRequest, client)
-	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, analyzeStockBrandPriceHistoryRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client)
+	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, analyzeStockBrandPriceHistoryRepository, stockBrandsDailyPriceForAnalyzeRepository, finAnnouncementRepository, finStatementRepository, stockAPIClient, client)
 	updateStockBrandsV1Command := commands.NewUpdateStockBrandsV1Command(stockBrandInteractor)
 	stockBrandsDailyPriceInteractor := usecase.NewStockBrandsDailyPriceInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client, slackAPIClient)
 	createHistoricalDailyStockPricesV1Command := commands.NewCreateHistoricalDailyStockPricesV1Command(stockBrandsDailyPriceInteractor)
@@ -62,7 +64,9 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	boxClient := driver.NewBoxAPIClient()
 	exportYearlyDataCommand := commands.NewExportYearlyDataCommand(mySQLDumpClient, boxClient)
 	exportMasterDataCommand := commands.NewExportMasterDataCommand(mySQLDumpClient, boxClient)
-	runner := cli.NewRunner(healthCheckCommand, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, adjustHistoricalDataForStockConsolidationCommand, exportYearlyDataCommand, exportMasterDataCommand, indexInteractor, slackAPIClient)
+	syncFinAnnouncementsCommand := commands.NewSyncFinAnnouncementsCommand(stockBrandInteractor)
+	syncFinStatementsCommand := commands.NewSyncFinStatementsCommand(stockBrandInteractor)
+	runner := cli.NewRunner(healthCheckCommand, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, adjustHistoricalDataForStockConsolidationCommand, exportYearlyDataCommand, exportMasterDataCommand, syncFinAnnouncementsCommand, syncFinStatementsCommand, indexInteractor, slackAPIClient)
 	return runner, func() {
 		cleanup()
 	}, nil
@@ -95,11 +99,15 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	}
 	stockPriceHandler := handler.NewStockPriceHandler(stockBrandsDailyPriceInteractor, httpServer, logger)
 	analyzeStockBrandPriceHistoryRepository := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(gormDB)
-	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, analyzeStockBrandPriceHistoryRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client)
+	finAnnouncementRepository := database.NewFinAnnouncementRepositoryImpl(gormDB)
+	finStatementRepository := database.NewFinStatementRepositoryImpl(gormDB)
+	stockBrandInteractor := usecase.NewStockBrandInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, analyzeStockBrandPriceHistoryRepository, stockBrandsDailyPriceForAnalyzeRepository, finAnnouncementRepository, finStatementRepository, stockAPIClient, client)
 	stockBrandHandler := handler.NewStockBrandHandler(stockBrandInteractor, httpServer, logger)
 	analyzeStockBrandPriceHistoryHandler := handler.NewAnalyzeStockBrandPriceHistoryHandler(stockBrandInteractor, httpServer, logger)
 	multipleSignalStocksHandler := handler.NewMultipleSignalStocksHandler(stockBrandInteractor, httpServer, logger)
-	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler)
+	finAnnouncementHandler := handler.NewFinAnnouncementHandler(stockBrandInteractor, httpServer, logger)
+	finStatementHandler := handler.NewFinStatementHandler(stockBrandInteractor, httpServer, logger)
+	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler)
 	return serveMux, func() {
 		cleanup()
 	}, nil
@@ -138,11 +146,11 @@ var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexIn
 
 var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewBoxAPIClient, driver.NewLogger)
 
-var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewAdjustHistoricalDataForStockConsolidationCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand)
+var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewAdjustHistoricalDataForStockConsolidationCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand, commands.NewSyncFinAnnouncementsCommand, commands.NewSyncFinStatementsCommand)
 
-var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl)
+var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl)
 
-var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, router.NewRouter)
+var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, router.NewRouter)
 
 var grpcSet = wire.NewSet(server.NewStockServiceServer, usecase.NewGetHighVolumeStockBrandsUseCase, wire.Struct(new(GrpcServerComponents), "*"))
 

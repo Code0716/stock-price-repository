@@ -84,12 +84,3 @@ func (c *StockAPIClient) GetFinancialStatementsByDate(ctx context.Context, date 
 	return response, nil
 }
 
-// GetTradingCalendarsInfo 期間内の営業日を取得する。
-func (c *StockAPIClient) GetTradingCalendarsInfo(ctx context.Context, filter gateway.TradingCalendarsInfoFilter) ([]*gateway.TradingCalendarsInfo, error) {
-	results, err := c.getTradingCalendarsInfo(ctx, filter)
-	if err != nil {
-		return nil, errors.Wrap(err, "GetTradingCalendarsInfo error")
-	}
-
-	return results, nil
-}

@@ -6,7 +6,14 @@ import (
 	"github.com/Code0716/stock-price-repository/entrypoint/api/handler"
 )
 
-func NewRouter(stockPriceHandler *handler.StockPriceHandler, stockBrandHandler *handler.StockBrandHandler, analyzeStockBrandPriceHistoryHandler *handler.AnalyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler *handler.MultipleSignalStocksHandler) *http.ServeMux {
+func NewRouter(
+	stockPriceHandler *handler.StockPriceHandler,
+	stockBrandHandler *handler.StockBrandHandler,
+	analyzeStockBrandPriceHistoryHandler *handler.AnalyzeStockBrandPriceHistoryHandler,
+	multipleSignalStocksHandler *handler.MultipleSignalStocksHandler,
+	finAnnouncementHandler *handler.FinAnnouncementHandler,
+	finStatementHandler *handler.FinStatementHandler,
+) *http.ServeMux {
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
 		mux.HandleFunc("/daily-prices", stockPriceHandler.GetDailyPrices)
@@ -19,6 +26,13 @@ func NewRouter(stockPriceHandler *handler.StockPriceHandler, stockBrandHandler *
 	}
 	if multipleSignalStocksHandler != nil {
 		mux.HandleFunc("/multiple-signal-stocks", multipleSignalStocksHandler.GetMultipleSignalStocks)
+	}
+	if finAnnouncementHandler != nil {
+		mux.HandleFunc("/fin-announcements", finAnnouncementHandler.GetFinAnnouncements)
+		mux.HandleFunc("/fin-announcements/next", finAnnouncementHandler.GetNextFinAnnouncement)
+	}
+	if finStatementHandler != nil {
+		mux.HandleFunc("/fin-statements", finStatementHandler.GetFinStatements)
 	}
 	return mux
 }

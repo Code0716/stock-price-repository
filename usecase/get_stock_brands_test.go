@@ -557,7 +557,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			defer ctrl.Finish()
 
 			r := tt.fields.stockBrandRepository(ctrl)
-			si := NewStockBrandInteractor(nil, r, nil, nil, nil, nil, nil)
+			si := NewStockBrandInteractor(nil, r, nil, nil, nil, nil, nil, nil, nil)
 
 			got, err := si.GetStockBrands(tt.args.ctx, tt.args.symbolFrom, tt.args.limit, tt.args.onlyMainMarkets)
 			if (err != nil) != tt.wantErr {

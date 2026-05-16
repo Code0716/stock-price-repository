@@ -24,5 +24,4 @@ type StockAPIClient interface {
 	GetAllBrandDailyPricesByDate(ctx context.Context, date time.Time) ([]*StockPrice, error)
 	GetFinancialStatementsBySymbol(ctx context.Context, symbol StockAPISymbol) ([]*FinancialStatementsResponseInfo, error)
 	GetFinancialStatementsByDate(ctx context.Context, date time.Time) ([]*FinancialStatementsResponseInfo, error)
-	GetTradingCalendarsInfo(ctx context.Context, filter TradingCalendarsInfoFilter) ([]*TradingCalendarsInfo, error)
 }

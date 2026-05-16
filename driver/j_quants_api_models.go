@@ -184,17 +184,6 @@ type jQuantsFinancialStatement struct {
 	NextYearForecastNonConsolidatedEarningsPerShare                              string `json:"NxFNCEPS"`
 }
 
-// TradingCalendarsInfo 相場の営業日の情報のスライス
-type TradingCalendarsResponse struct {
-	TradingCalendars []TradingCalendar `json:"data"`
-}
-
-// TradingCalendar 相場の営業日の情報
-type TradingCalendar struct {
-	Date            string `json:"Date"`
-	HolidayDivision string `json:"HolDiv"`
-}
-
 func (c *StockAPIClient) jQuantsAnnounceFinsScheduleResponseToResponseInfo(
 	response jQuantsAnnounceFinsScheduleResponse,
 ) []*gateway.AnnounceFinScheduleResponseInfo {
@@ -333,24 +322,16 @@ func (c *StockAPIClient) jQuantsFinancialStatementToGatewayModel(statement jQuan
 		NextYearForecastDividendPerShareFiscalYearEnd: statement.NextYearForecastDividendPerShareFiscalYearEnd,
 		NextYearForecastDividendPerShareAnnual:        statement.NextYearForecastDividendPerShareAnnual,
 		NextFiscalYearEndDate:                         statement.NextFiscalYearEndDate,
+		NetSales:                statement.NetSales,
+		OperatingProfit:         statement.OperatingProfit,
+		OrdinaryProfit:          statement.OrdinaryProfit,
+		Profit:                  statement.Profit,
+		EarningsPerShare:        statement.EarningsPerShare,
+		BookValuePerShare:       statement.BookValuePerShare,
+		ForecastNetSales:        statement.ForecastNetSales,
+		ForecastOperatingProfit: statement.ForecastOperatingProfit,
+		ForecastProfit:          statement.ForecastProfit,
+		ForecastEarningsPerShare: statement.ForecastEarningsPerShare,
 	}
 }
 
-func (c *StockAPIClient) jQuantsTradingCalendarsToGatewayModels(response TradingCalendarsResponse) []*gateway.TradingCalendarsInfo {
-	if len(response.TradingCalendars) == 0 {
-		return nil
-	}
-	responseInfo := make([]*gateway.TradingCalendarsInfo, 0, len(response.TradingCalendars))
-	for _, v := range response.TradingCalendars {
-		date, err := util.FormatStringToDate(v.Date)
-		if err != nil {
-			log.Printf("util.FormatStringToDate: %v", err)
-			continue
-		}
-		responseInfo = append(responseInfo, &gateway.TradingCalendarsInfo{
-			Date:            date,
-			HolidayDivision: v.HolidayDivision,
-		})
-	}
-	return responseInfo
-}

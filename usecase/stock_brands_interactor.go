@@ -18,6 +18,8 @@ type stockBrandInteractorImpl struct {
 	stockBrandsDailyPriceRepository           repositories.StockBrandsDailyPriceRepository
 	analyzeStockBrandPriceHistoryRepository   repositories.AnalyzeStockBrandPriceHistoryRepository
 	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository
+	finAnnouncementRepository                 repositories.FinAnnouncementRepository
+	finStatementRepository                    repositories.FinStatementRepository
 	stockAPIClient                            gateway.StockAPIClient
 	redisClient                               *redis.Client
 }
@@ -27,6 +29,11 @@ type StockBrandInteractor interface {
 	GetStockBrands(ctx context.Context, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error)
 	GetAnalyzeStockBrandPriceHistories(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (*models.PaginatedAnalyzeStockBrandPriceHistories, error)
 	GetMultipleSignalStocks(ctx context.Context, filter *models.MultipleSignalStockFilter) (*models.PaginatedMultipleSignalStocks, error)
+	SyncFinAnnouncements(ctx context.Context) error
+	GetFinAnnouncements(ctx context.Context, filter *models.FinAnnouncementFilter) (*models.PaginatedFinAnnouncements, error)
+	GetNextFinAnnouncement(ctx context.Context, tickerSymbol string) (*models.FinAnnouncement, error)
+	SyncFinStatements(ctx context.Context, tickerSymbol string) error
+	GetFinStatements(ctx context.Context, filter *models.FinStatementFilter) ([]*models.FinStatement, error)
 }
 
 func NewStockBrandInteractor(
@@ -35,16 +42,20 @@ func NewStockBrandInteractor(
 	stockBrandsDailyPriceRepository repositories.StockBrandsDailyPriceRepository,
 	analyzeStockBrandPriceHistoryRepository repositories.AnalyzeStockBrandPriceHistoryRepository,
 	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository,
+	finAnnouncementRepository repositories.FinAnnouncementRepository,
+	finStatementRepository repositories.FinStatementRepository,
 	stockAPIClient gateway.StockAPIClient,
 	redisClient *redis.Client,
 ) StockBrandInteractor {
 	return &stockBrandInteractorImpl{
-		tx,
-		stockBrandRepository,
-		stockBrandsDailyPriceRepository,
-		analyzeStockBrandPriceHistoryRepository,
-		stockBrandsDailyPriceForAnalyzeRepository,
-		stockAPIClient,
-		redisClient,
+		tx:                                        tx,
+		stockBrandRepository:                      stockBrandRepository,
+		stockBrandsDailyPriceRepository:           stockBrandsDailyPriceRepository,
+		analyzeStockBrandPriceHistoryRepository:   analyzeStockBrandPriceHistoryRepository,
+		stockBrandsDailyPriceForAnalyzeRepository: stockBrandsDailyPriceForAnalyzeRepository,
+		finAnnouncementRepository:                 finAnnouncementRepository,
+		finStatementRepository:                    finStatementRepository,
+		stockAPIClient:                            stockAPIClient,
+		redisClient:                               redisClient,
 	}
 }

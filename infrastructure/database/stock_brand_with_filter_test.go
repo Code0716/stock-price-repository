@@ -143,12 +143,12 @@ func TestStockBrandRepositoryImpl_FindWithFilter(t *testing.T) {
 			},
 		},
 		{
-			name:    "ページネーション_symbolFrom指定",
+			name:    "ページネーション_symbolFrom指定 (inclusive)",
 			filter:  models.NewStockBrandFilter().WithPagination("1002", 0),
-			wantLen: 3,
+			wantLen: 4,
 			wantErr: false,
 			checkFirst: func(t *testing.T, brands []*models.StockBrand) {
-				assert.Equal(t, "1003", brands[0].TickerSymbol)
+				assert.Equal(t, "1002", brands[0].TickerSymbol)
 			},
 		},
 		{
@@ -162,8 +162,8 @@ func TestStockBrandRepositoryImpl_FindWithFilter(t *testing.T) {
 			},
 		},
 		{
-			name:    "ページネーション_symbolFromとlimit両方指定",
-			filter:  models.NewStockBrandFilter().WithPagination("1001", 2),
+			name:    "ページネーション_symbolFromとlimit両方指定 (inclusive)",
+			filter:  models.NewStockBrandFilter().WithPagination("1002", 2),
 			wantLen: 2,
 			wantErr: false,
 			checkFirst: func(t *testing.T, brands []*models.StockBrand) {
@@ -172,10 +172,10 @@ func TestStockBrandRepositoryImpl_FindWithFilter(t *testing.T) {
 			},
 		},
 		{
-			name: "主要市場とページネーション組み合わせ",
+			name: "主要市場とページネーション組み合わせ (inclusive)",
 			filter: models.NewStockBrandFilter().
 				WithOnlyMainMarkets().
-				WithPagination("1002", 2),
+				WithPagination("1003", 2),
 			wantLen: 2,
 			wantErr: false,
 			checkFirst: func(t *testing.T, brands []*models.StockBrand) {
@@ -186,6 +186,32 @@ func TestStockBrandRepositoryImpl_FindWithFilter(t *testing.T) {
 					assert.Contains(t, []string{"111", "112", "113"}, b.MarketCode)
 				}
 			},
+		},
+		{
+			name:    "前方一致_symbolPrefix指定",
+			filter:  models.NewStockBrandFilter().WithSymbolPrefix("100"),
+			wantLen: 5,
+			wantErr: false,
+			checkFirst: func(t *testing.T, brands []*models.StockBrand) {
+				for _, b := range brands {
+					assert.True(t, len(b.TickerSymbol) >= 3 && b.TickerSymbol[:3] == "100")
+				}
+			},
+		},
+		{
+			name:    "前方一致_symbolPrefixで絞り込み",
+			filter:  models.NewStockBrandFilter().WithSymbolPrefix("1003"),
+			wantLen: 1,
+			wantErr: false,
+			checkFirst: func(t *testing.T, brands []*models.StockBrand) {
+				assert.Equal(t, "1003", brands[0].TickerSymbol)
+			},
+		},
+		{
+			name:    "前方一致_symbolPrefixに一致なし",
+			filter:  models.NewStockBrandFilter().WithSymbolPrefix("9999"),
+			wantLen: 0,
+			wantErr: false,
 		},
 		{
 			name: "主要市場フラグとMarketCodes両方指定_主要市場フラグが優先される",

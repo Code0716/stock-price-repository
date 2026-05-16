@@ -65,10 +65,9 @@ func (u *getHighVolumeStockBrandsInteractor) ExecuteWithPagination(
 
 	// Set next cursor if there are more results
 	if limit > 0 && len(brands) > limit {
-		// NextCursorは現在のページの最後の要素のTickerSymbol
-		lastBrand := brands[limit-1]
-		result.NextCursor = &lastBrand.TickerSymbol
-		result.Brands = brands[:limit] // Trim to requested limit
+		nextBrand := brands[limit]
+		result.NextCursor = &nextBrand.TickerSymbol
+		result.Brands = brands[:limit]
 	}
 
 	return result, nil

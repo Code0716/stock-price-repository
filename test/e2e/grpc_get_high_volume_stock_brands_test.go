@@ -172,8 +172,8 @@ func TestE2E_GetHighVolumeStockBrands(t *testing.T) {
 				
 				require.NotNil(t, resp.Pagination)
 				assert.Equal(t, int32(2), resp.Pagination.Limit)
-				// 次のカーソルは2件目のTickerSymbol
-				assert.Equal(t, "2002", resp.Pagination.NextCursor)
+				// 次のカーソルは次ページ先頭のTickerSymbol (inclusive)
+				assert.Equal(t, "2003", resp.Pagination.NextCursor)
 			},
 		},
 		{
@@ -201,13 +201,13 @@ func TestE2E_GetHighVolumeStockBrands(t *testing.T) {
 				}
 			},
 			req: &pb.GetHighVolumeStockBrandsRequest{
-				SymbolFrom: "3001",
+				SymbolFrom: "3002",
 				Limit:      2,
 			},
 			check: func(t *testing.T, resp *pb.GetHighVolumeStockBrandsResponse, err error) {
 				require.NoError(t, err)
 				require.Len(t, resp.Brands, 2)
-				// 3001より大きいものから取得開始 -> 3002, 3003
+				// 3002以降 (inclusive) から取得開始 -> 3002, 3003
 				assert.Equal(t, "3002", resp.Brands[0].TickerSymbol)
 				assert.Equal(t, "3003", resp.Brands[1].TickerSymbol)
 

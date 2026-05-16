@@ -61,7 +61,7 @@ func (r *HighVolumeStockBrandRepositoryImpl) FindWithPagination(
 
 	// Apply cursor condition
 	if symbolFrom != "" {
-		query = query.Where(hvb.TickerSymbol.Gt(symbolFrom))
+		query = query.Where(hvb.TickerSymbol.Gte(symbolFrom))
 	}
 
 	// Apply limit

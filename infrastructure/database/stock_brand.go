@@ -109,9 +109,14 @@ func (si *StockBrandRepositoryImpl) FindWithFilter(ctx context.Context, filter *
 		q = q.Where(tx.StockBrand.MarketCode.In(filter.MarketCodes...))
 	}
 
-	// ページネーション: シンボル開始位置
+	// 前方一致フィルタ
+	if filter.SymbolPrefix != "" {
+		q = q.Where(tx.StockBrand.TickerSymbol.Like(filter.SymbolPrefix + "%"))
+	}
+
+	// ページネーション: シンボル開始位置 (inclusive)
 	if filter.SymbolFrom != "" {
-		q = q.Where(tx.StockBrand.TickerSymbol.Gt(filter.SymbolFrom))
+		q = q.Where(tx.StockBrand.TickerSymbol.Gte(filter.SymbolFrom))
 	}
 
 	// ソート: シンボル昇順

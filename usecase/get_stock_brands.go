@@ -9,10 +9,11 @@ import (
 )
 
 // GetStockBrands 銘柄一覧を取得する
-// symbolFrom: 取得開始シンボル（ページネーション用）
+// symbolPrefix: 銘柄コードの前方一致フィルタ（空文字列の場合はフィルタなし）
+// symbolFrom: ページネーション用の開始シンボル（inclusive、空文字列の場合は最初から）
 // limit: 取得件数上限
 // onlyMainMarkets: true の場合、マーケットコード 111, 112, 113 のみを取得
-func (si *stockBrandInteractorImpl) GetStockBrands(ctx context.Context, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error) {
+func (si *stockBrandInteractorImpl) GetStockBrands(ctx context.Context, symbolPrefix string, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error) {
 	// limitが指定されている場合、次ページの有無を判定するため+1件取得
 	fetchLimit := limit
 	if limit > 0 {
@@ -20,6 +21,9 @@ func (si *stockBrandInteractorImpl) GetStockBrands(ctx context.Context, symbolFr
 	}
 
 	filter := models.NewStockBrandFilter().WithPagination(symbolFrom, fetchLimit)
+	if symbolPrefix != "" {
+		filter = filter.WithSymbolPrefix(symbolPrefix)
+	}
 	if onlyMainMarkets {
 		filter = filter.WithOnlyMainMarkets()
 	}

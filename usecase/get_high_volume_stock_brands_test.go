@@ -182,7 +182,7 @@ func TestGetHighVolumeStockBrandsInteractor_ExecuteWithPagination(t *testing.T) 
 				limit:      2,
 			},
 			want: func() *models.PaginatedHighVolumeStockBrands {
-				nextCursor := "1002"
+				nextCursor := "1003"
 				return &models.PaginatedHighVolumeStockBrands{
 					Brands: []*models.HighVolumeStockBrand{
 						models.NewHighVolumeStockBrand("uuid-1", "1001", "Test Brand 1", 1000000, now),
@@ -195,12 +195,12 @@ func TestGetHighVolumeStockBrandsInteractor_ExecuteWithPagination(t *testing.T) 
 			wantErr: false,
 		},
 		{
-			name: "正常系: symbolFromを指定して次ページを取得",
+			name: "正常系: symbolFromを指定して次ページを取得 (inclusive)",
 			fields: fields{
 				highVolumeStockBrandRepo: func(ctrl *gomock.Controller) *mock_repositories.MockHighVolumeStockBrandRepository {
 					mock := mock_repositories.NewMockHighVolumeStockBrandRepository(ctrl)
 					mock.EXPECT().
-						FindWithPagination(gomock.Any(), gomock.Eq("1002"), gomock.Eq(3)).
+						FindWithPagination(gomock.Any(), gomock.Eq("1003"), gomock.Eq(3)).
 						Return([]*models.HighVolumeStockBrand{
 							models.NewHighVolumeStockBrand("uuid-3", "1003", "Test Brand 3", 3000000, now),
 							models.NewHighVolumeStockBrand("uuid-4", "1004", "Test Brand 4", 4000000, now),
@@ -211,11 +211,11 @@ func TestGetHighVolumeStockBrandsInteractor_ExecuteWithPagination(t *testing.T) 
 			},
 			args: args{
 				ctx:        context.Background(),
-				symbolFrom: "1002",
+				symbolFrom: "1003",
 				limit:      2,
 			},
 			want: func() *models.PaginatedHighVolumeStockBrands {
-				nextCursor := "1004"
+				nextCursor := "1005"
 				return &models.PaginatedHighVolumeStockBrands{
 					Brands: []*models.HighVolumeStockBrand{
 						models.NewHighVolumeStockBrand("uuid-3", "1003", "Test Brand 3", 3000000, now),

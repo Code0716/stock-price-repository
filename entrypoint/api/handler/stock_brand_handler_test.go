@@ -39,7 +39,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
 					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
 					m.EXPECT().
-						GetStockBrands(gomock.Any(), "", 0, false).
+						GetStockBrands(gomock.Any(), "", "", 0, false).
 						Return(&models.PaginatedStockBrands{
 							Brands: []*models.StockBrand{
 								{
@@ -56,6 +56,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("")
@@ -85,7 +86,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 					nextCursor := "5678"
 					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
 					m.EXPECT().
-						GetStockBrands(gomock.Any(), "1000", 10, false).
+						GetStockBrands(gomock.Any(), "", "1000", 10, false).
 						Return(&models.PaginatedStockBrands{
 							Brands: []*models.StockBrand{
 								{
@@ -102,6 +103,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("1000")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("10")
 					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("")
@@ -131,12 +133,58 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 			}(),
 		},
 		{
+			name: "正常系: symbol_prefix前方一致検索",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
+					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
+					m.EXPECT().
+						GetStockBrands(gomock.Any(), "7203", "", 0, false).
+						Return(&models.PaginatedStockBrands{
+							Brands: []*models.StockBrand{
+								{
+									ID:           "1",
+									TickerSymbol: "7203",
+									Name:         "トヨタ自動車",
+									MarketCode:   "111",
+								},
+							},
+							NextCursor: nil,
+							Limit:      0,
+						}, nil)
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("7203")
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("")
+					return m
+				},
+			},
+			args: args{
+				req: httptest.NewRequest(http.MethodGet, "/stock-brands?symbol_prefix=7203", nil),
+			},
+			wantStatusCode: http.StatusOK,
+			wantBody: &GetStockBrandsResponse{
+				StockBrands: []*models.StockBrand{
+					{
+						ID:           "1",
+						TickerSymbol: "7203",
+						Name:         "トヨタ自動車",
+						MarketCode:   "111",
+					},
+				},
+				Pagination: nil,
+			},
+		},
+		{
 			name: "正常系: 主要市場のみフィルタリング",
 			fields: fields{
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
 					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
 					m.EXPECT().
-						GetStockBrands(gomock.Any(), "", 0, true).
+						GetStockBrands(gomock.Any(), "", "", 0, true).
 						Return(&models.PaginatedStockBrands{
 							Brands: []*models.StockBrand{
 								{
@@ -153,6 +201,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("true")
@@ -176,6 +225,42 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 			},
 		},
 		{
+			name: "異常系: symbol_prefixが長すぎる",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
+					return mock_usecase.NewMockStockBrandInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("12345678901")
+					return m
+				},
+			},
+			args: args{
+				req: httptest.NewRequest(http.MethodGet, "/stock-brands?symbol_prefix=12345678901", nil),
+			},
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "symbol_prefixが長すぎます\n",
+		},
+		{
+			name: "異常系: symbol_prefixに不正な文字が含まれる",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
+					return mock_usecase.NewMockStockBrandInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("7203%")
+					return m
+				},
+			},
+			args: args{
+				req: httptest.NewRequest(http.MethodGet, "/stock-brands?symbol_prefix=7203%25", nil),
+			},
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "symbol_prefixは英数字である必要があります\n",
+		},
+		{
 			name: "異常系: symbol_fromが長すぎる",
 			fields: fields{
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
@@ -183,6 +268,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("12345678901")
 					return m
 				},
@@ -201,6 +287,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("1234@")
 					return m
 				},
@@ -219,6 +306,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("abc")
 					return m
@@ -238,6 +326,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("0")
 					return m
@@ -257,6 +346,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("10001")
 					return m
@@ -276,6 +366,7 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("invalid")
@@ -294,12 +385,13 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
 					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
 					m.EXPECT().
-						GetStockBrands(gomock.Any(), "", 0, false).
+						GetStockBrands(gomock.Any(), "", "", 0, false).
 						Return(nil, errors.New("db error"))
 					return m
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("")
@@ -318,12 +410,13 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
 					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
 					m.EXPECT().
-						GetStockBrands(gomock.Any(), "", 0, true).
+						GetStockBrands(gomock.Any(), "", "", 0, true).
 						Return(nil, errors.New("db error"))
 					return m
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("true")
@@ -342,12 +435,13 @@ func TestStockBrandHandler_GetStockBrands(t *testing.T) {
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandInteractor {
 					m := mock_usecase.NewMockStockBrandInteractor(ctrl)
 					m.EXPECT().
-						GetStockBrands(gomock.Any(), "1301", 0, true).
+						GetStockBrands(gomock.Any(), "", "1301", 0, true).
 						Return(nil, errors.New("db error"))
 					return m
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_prefix").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol_from").Return("1301")
 					m.EXPECT().GetQueryParam(gomock.Any(), "limit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "only_main_markets").Return("true")

@@ -212,7 +212,7 @@ func TestHighVolumeStockBrandRepositoryImpl_FindWithPagination(t *testing.T) {
 				err = query.HighVolumeStockBrand.Create(hvStockBrand1, hvStockBrand2, hvStockBrand3)
 				require.NoError(t, err)
 			},
-			symbolFrom: "3001",
+			symbolFrom: "3002",
 			limit:      2,
 			wantCount:  2,
 			wantFirst:  "3002",

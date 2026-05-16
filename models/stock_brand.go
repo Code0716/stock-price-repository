@@ -39,7 +39,9 @@ type StockBrandFilter struct {
 	// MarketCodes 指定された市場コードでフィルタ（nilの場合は全市場）
 	// OnlyMainMarketsがtrueの場合、このフィールドは無視される
 	MarketCodes []string
-	// SymbolFrom ページネーション用の開始シンボル（空文字列の場合は最初から）
+	// SymbolPrefix 銘柄コードの前方一致フィルタ（空文字列の場合はフィルタなし）
+	SymbolPrefix string
+	// SymbolFrom ページネーション用の開始シンボル（空文字列の場合は最初から、inclusive）
 	SymbolFrom string
 	// Limit 取得件数上限（0の場合は全件取得）
 	Limit int
@@ -50,6 +52,7 @@ func NewStockBrandFilter() *StockBrandFilter {
 	return &StockBrandFilter{
 		OnlyMainMarkets: false,
 		MarketCodes:     nil,
+		SymbolPrefix:    "",
 		SymbolFrom:      "",
 		Limit:           0,
 	}
@@ -64,6 +67,12 @@ func (f *StockBrandFilter) WithOnlyMainMarkets() *StockBrandFilter {
 // WithMarketCodes 指定市場コードに絞り込む
 func (f *StockBrandFilter) WithMarketCodes(codes ...string) *StockBrandFilter {
 	f.MarketCodes = codes
+	return f
+}
+
+// WithSymbolPrefix 銘柄コードの前方一致フィルタを設定
+func (f *StockBrandFilter) WithSymbolPrefix(prefix string) *StockBrandFilter {
+	f.SymbolPrefix = prefix
 	return f
 }
 

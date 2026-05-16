@@ -188,7 +188,7 @@ func TestE2E_GetStockBrands(t *testing.T) {
 				err := stockBrandRepo.UpsertStockBrands(context.Background(), brands)
 				require.NoError(t, err)
 			},
-			query:      "?symbol_from=1301&limit=2",
+			query:      "?symbol_from=1332&limit=2",
 			wantStatus: http.StatusOK,
 			check: func(t *testing.T, body []byte) {
 				var res handler.GetStockBrandsResponse
@@ -298,7 +298,7 @@ func TestE2E_GetStockBrands(t *testing.T) {
 				err := stockBrandRepo.UpsertStockBrands(context.Background(), brands)
 				require.NoError(t, err)
 			},
-			query:      "?symbol_from=1301&limit=10&only_main_markets=true",
+			query:      "?symbol_from=1332&limit=10&only_main_markets=true",
 			wantStatus: http.StatusOK,
 			check: func(t *testing.T, body []byte) {
 				var res handler.GetStockBrandsResponse

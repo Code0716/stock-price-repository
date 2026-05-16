@@ -33,6 +33,7 @@ type PaginationInfo struct {
 
 // getStockBrandsParams GetStockBrandsのリクエストパラメータ
 type getStockBrandsParams struct {
+	symbolPrefix    string
 	symbolFrom      string
 	limit           int
 	onlyMainMarkets bool
@@ -55,6 +56,17 @@ func NewStockBrandHandler(u usecase.StockBrandInteractor, h driver.HTTPServer, l
 // validateGetStockBrandsParams GetStockBrandsのリクエストパラメータをバリデーションする
 func (h *StockBrandHandler) validateGetStockBrandsParams(r *http.Request) (*getStockBrandsParams, error) {
 	params := &getStockBrandsParams{}
+
+	// symbol_prefix パラメータの取得とバリデーション
+	params.symbolPrefix = h.httpServer.GetQueryParam(r, "symbol_prefix")
+	if params.symbolPrefix != "" {
+		if len(params.symbolPrefix) > 10 {
+			return nil, &validationError{message: "symbol_prefixが長すぎます"}
+		}
+		if !alphanumericOptionalRegex.MatchString(params.symbolPrefix) {
+			return nil, &validationError{message: "symbol_prefixは英数字である必要があります"}
+		}
+	}
 
 	// symbolFrom パラメータの取得とバリデーション
 	params.symbolFrom = h.httpServer.GetQueryParam(r, "symbol_from")
@@ -126,7 +138,7 @@ func (h *StockBrandHandler) GetStockBrands(w http.ResponseWriter, r *http.Reques
 	}
 
 	// ユースケース呼び出し
-	result, err := h.usecase.GetStockBrands(r.Context(), params.symbolFrom, params.limit, params.onlyMainMarkets)
+	result, err := h.usecase.GetStockBrands(r.Context(), params.symbolPrefix, params.symbolFrom, params.limit, params.onlyMainMarkets)
 	if err != nil {
 		h.logger.Error("failed to get stock brands", zap.Error(err))
 		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)

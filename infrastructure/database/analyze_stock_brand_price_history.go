@@ -270,7 +270,7 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindMultipleSignals(ctx c
 
 	whereClause := dateCondition
 	if filter.Cursor != "" {
-		whereClause += " AND h.ticker_symbol > ?"
+		whereClause += " AND h.ticker_symbol >= ?"
 		args = append(args, filter.Cursor)
 	}
 

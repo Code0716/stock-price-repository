@@ -33,7 +33,7 @@ Go 標準の `testing` パッケージを基本に、既存箇所では `testify
 
 直近の履歴では、`feat:` や `fix:` などの conventional commit 接頭辞に、簡潔な日本語または英語の説明を続けています。例: `feat: 決算カレンダーAPIを追加`、`fix: handle empty symbol prefix`
 
-Pull Request には、課題と解決内容の要約、影響するコマンドや API、実行したテスト、関連 Issue を記載します。API 変更ではリクエスト・レスポンス例を添えてください。マイグレーションを含む場合は、番号と `db-migrations/schema/schema.sql` 更新有無を明記します。
+Pull Request のタイトル、本文、レビューコメントは日本語で記載します。本文には、課題と解決内容の要約、影響するコマンドや API、実行したテスト、関連 Issue を記載します。API 変更ではリクエスト・レスポンス例を添えてください。マイグレーションを含む場合は、番号と `db-migrations/schema/schema.sql` 更新有無を明記します。
 
 ## セキュリティと設定
 

@@ -57,6 +57,17 @@ func NewRunner(
 	return r
 }
 
+// formatTimeTakenMessage は Slack 通知用の経過時間メッセージを生成する。
+// 成功時・失敗時の両方で同じテンプレートを使い、運用ログでの統一感を保つ。
+func formatTimeTakenMessage(commandName string, elapsed time.Duration) string {
+	return fmt.Sprintf(
+		"env: %s*\n*command name: %s*\n*time taken: %v",
+		config.GetApp().AppEnv,
+		commandName,
+		elapsed,
+	)
+}
+
 func (r *Runner) Run(ctx context.Context, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("not enough arguments")
@@ -72,27 +83,22 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 	}
 
 	start := time.Now()
-	msg := fmt.Sprintf("command: %s finished \n", commandName)
-	if err := app.RunContext(ctx, args); err != nil {
-		log.Print(msg, args, errors.Wrap(err, "command failed"))
+	runErr := app.RunContext(ctx, args)
+	elapsed := time.Since(start)
+	timeTakenMessage := formatTimeTakenMessage(commandName, elapsed)
+
+	if runErr != nil {
+		log.Printf("command: %s failed (elapsed=%v): %+v", commandName, elapsed, runErr)
+		// エラー時にも経過時間を含めて Slack へ通知する。
 		slackErr := r.slackAPIClient.SendErrMessageNotification(
 			ctx,
-			errors.Wrap(err, fmt.Sprintf("Error command name: %s failed.", commandName)),
+			errors.Wrap(runErr, fmt.Sprintf("Error command name: %s failed. %s", commandName, timeTakenMessage)),
 		)
 		if slackErr != nil {
 			return slackErr
 		}
-		return err
+		return runErr
 	}
-
-	// FIXME: commandにかかった時間を通知する
-	end := time.Now()
-	timeTakenMessage := fmt.Sprintf(
-		"env: %s*\n*command name: %s*\n*time taken: %v",
-		config.GetApp().AppEnv,
-		commandName,
-		end.Sub(start),
-	)
 
 	if _, err := r.slackAPIClient.SendMessageByStrings(ctx, gateway.SlackChannelNameDevNotification, timeTakenMessage, nil, nil); err != nil {
 		err := r.slackAPIClient.SendErrMessageNotification(
@@ -103,6 +109,6 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 			return err
 		}
 	}
-	log.Printf("%s command success", msg)
+	log.Printf("command: %s finished (elapsed=%v)", commandName, elapsed)
 	return nil
 }

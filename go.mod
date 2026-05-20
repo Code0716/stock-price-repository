@@ -3,7 +3,7 @@ module github.com/Code0716/stock-price-repository
 go 1.26.3
 
 require (
-	github.com/alicebob/miniredis/v2 v2.37.0
+	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.7.0
@@ -18,7 +18,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gen v0.3.27

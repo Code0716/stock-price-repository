@@ -37,6 +37,7 @@
 
 <!-- レビュー前に確認してください -->
 
+- [ ] **CI が全ジョブ green であることを確認してからマージする**（Lint / Vulnerability Check / Test）
 - [ ] エラーハンドリングは `github.com/pkg/errors` を使用しているか
 - [ ] 命名規則 (Go idiomatic) に従っているか
 - [ ] Linter (`golangci-lint` 等) のチェックを通したか

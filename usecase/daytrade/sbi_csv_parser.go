@@ -149,7 +149,7 @@ func buildExecution(record []string, now time.Time) (*models.DaytradeExecution, 
 		MarginKind:   marginKind,
 		TickerSymbol: tickerSymbol,
 		BrandName:    brandName,
-		Quantity:     uint32(quantity),
+		Quantity:     quantity,
 		TradeAmount:  tradeAmount,
 		UnitPrice:    unitPrice,
 		AverageCost:  averageCost,
@@ -171,10 +171,11 @@ func splitBrand(v string) (name, code string, err error) {
 	return strings.TrimSpace(m[1]), m[2], nil
 }
 
-func parseUintComma(s string) (uint64, error) {
+func parseUintComma(s string) (uint32, error) {
 	s = strings.TrimSpace(s)
 	s = strings.ReplaceAll(s, ",", "")
-	return strconv.ParseUint(s, 10, 64)
+	v, err := strconv.ParseUint(s, 10, 32)
+	return uint32(v), err
 }
 
 func parseIntComma(s string) (int64, error) {

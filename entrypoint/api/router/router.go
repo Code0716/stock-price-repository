@@ -13,6 +13,7 @@ func NewRouter(
 	multipleSignalStocksHandler *handler.MultipleSignalStocksHandler,
 	finAnnouncementHandler *handler.FinAnnouncementHandler,
 	finStatementHandler *handler.FinStatementHandler,
+	daytradeHandler *handler.DaytradeHandler,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
@@ -33,6 +34,12 @@ func NewRouter(
 	}
 	if finStatementHandler != nil {
 		mux.HandleFunc("/fin-statements", finStatementHandler.GetFinStatements)
+	}
+	if daytradeHandler != nil {
+		mux.HandleFunc("/daytrade/executions/import", daytradeHandler.ImportSBICsv)
+		mux.HandleFunc("/daytrade/summary", daytradeHandler.GetSummary)
+		mux.HandleFunc("/daytrade/executions", daytradeHandler.GetExecutionsByDate)
+		mux.HandleFunc("/daytrade/range", daytradeHandler.GetCoveredRange)
 	}
 	return mux
 }

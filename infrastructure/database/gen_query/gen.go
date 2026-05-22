@@ -20,6 +20,7 @@ var (
 	AnalyzeStockBrandPriceHistory     *analyzeStockBrandPriceHistory
 	AppliedStockConsolidationsHistory *appliedStockConsolidationsHistory
 	AppliedStockSplitsHistory         *appliedStockSplitsHistory
+	DaytradeExecution                 *daytradeExecution
 	DjiStockAverageDailyStockPrice    *djiStockAverageDailyStockPrice
 	FinAnnouncement                   *finAnnouncement
 	FinStatement                      *finStatement
@@ -38,6 +39,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	AnalyzeStockBrandPriceHistory = &Q.AnalyzeStockBrandPriceHistory
 	AppliedStockConsolidationsHistory = &Q.AppliedStockConsolidationsHistory
 	AppliedStockSplitsHistory = &Q.AppliedStockSplitsHistory
+	DaytradeExecution = &Q.DaytradeExecution
 	DjiStockAverageDailyStockPrice = &Q.DjiStockAverageDailyStockPrice
 	FinAnnouncement = &Q.FinAnnouncement
 	FinStatement = &Q.FinStatement
@@ -57,6 +59,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		AnalyzeStockBrandPriceHistory:     newAnalyzeStockBrandPriceHistory(db, opts...),
 		AppliedStockConsolidationsHistory: newAppliedStockConsolidationsHistory(db, opts...),
 		AppliedStockSplitsHistory:         newAppliedStockSplitsHistory(db, opts...),
+		DaytradeExecution:                 newDaytradeExecution(db, opts...),
 		DjiStockAverageDailyStockPrice:    newDjiStockAverageDailyStockPrice(db, opts...),
 		FinAnnouncement:                   newFinAnnouncement(db, opts...),
 		FinStatement:                      newFinStatement(db, opts...),
@@ -77,6 +80,7 @@ type Query struct {
 	AnalyzeStockBrandPriceHistory     analyzeStockBrandPriceHistory
 	AppliedStockConsolidationsHistory appliedStockConsolidationsHistory
 	AppliedStockSplitsHistory         appliedStockSplitsHistory
+	DaytradeExecution                 daytradeExecution
 	DjiStockAverageDailyStockPrice    djiStockAverageDailyStockPrice
 	FinAnnouncement                   finAnnouncement
 	FinStatement                      finStatement
@@ -98,6 +102,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		AnalyzeStockBrandPriceHistory:     q.AnalyzeStockBrandPriceHistory.clone(db),
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.clone(db),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.clone(db),
+		DaytradeExecution:                 q.DaytradeExecution.clone(db),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.clone(db),
 		FinAnnouncement:                   q.FinAnnouncement.clone(db),
 		FinStatement:                      q.FinStatement.clone(db),
@@ -126,6 +131,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		AnalyzeStockBrandPriceHistory:     q.AnalyzeStockBrandPriceHistory.replaceDB(db),
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.replaceDB(db),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.replaceDB(db),
+		DaytradeExecution:                 q.DaytradeExecution.replaceDB(db),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.replaceDB(db),
 		FinAnnouncement:                   q.FinAnnouncement.replaceDB(db),
 		FinStatement:                      q.FinStatement.replaceDB(db),
@@ -144,6 +150,7 @@ type queryCtx struct {
 	AnalyzeStockBrandPriceHistory     IAnalyzeStockBrandPriceHistoryDo
 	AppliedStockConsolidationsHistory IAppliedStockConsolidationsHistoryDo
 	AppliedStockSplitsHistory         IAppliedStockSplitsHistoryDo
+	DaytradeExecution                 IDaytradeExecutionDo
 	DjiStockAverageDailyStockPrice    IDjiStockAverageDailyStockPriceDo
 	FinAnnouncement                   IFinAnnouncementDo
 	FinStatement                      IFinStatementDo
@@ -162,6 +169,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		AnalyzeStockBrandPriceHistory:     q.AnalyzeStockBrandPriceHistory.WithContext(ctx),
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.WithContext(ctx),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.WithContext(ctx),
+		DaytradeExecution:                 q.DaytradeExecution.WithContext(ctx),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.WithContext(ctx),
 		FinAnnouncement:                   q.FinAnnouncement.WithContext(ctx),
 		FinStatement:                      q.FinStatement.WithContext(ctx),

@@ -1,0 +1,211 @@
+package database
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"time"
+
+	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
+	genModel "github.com/Code0716/stock-price-repository/infrastructure/database/gen_model"
+	genQuery "github.com/Code0716/stock-price-repository/infrastructure/database/gen_query"
+	"github.com/Code0716/stock-price-repository/models"
+	"github.com/Code0716/stock-price-repository/repositories"
+)
+
+type DaytradeExecutionRepositoryImpl struct {
+	query *genQuery.Query
+	db    *gorm.DB
+}
+
+func NewDaytradeExecutionRepositoryImpl(db *gorm.DB) repositories.DaytradeExecutionRepository {
+	return &DaytradeExecutionRepositoryImpl{
+		query: genQuery.Use(db),
+		db:    db,
+	}
+}
+
+func (r *DaytradeExecutionRepositoryImpl) BulkInsertIgnore(ctx context.Context, executions []*models.DaytradeExecution) (int, error) {
+	db, ok := GetTxDB(ctx)
+	if !ok {
+		db = r.db
+	}
+
+	rows := r.convertToDBModels(executions)
+	result := db.WithContext(ctx).
+		Clauses(clause.Insert{Modifier: "IGNORE"}).
+		CreateInBatches(rows, 500)
+	if result.Error != nil {
+		return 0, errors.Wrap(result.Error, "DaytradeExecutionRepositoryImpl.BulkInsertIgnore error")
+	}
+	return int(result.RowsAffected), nil
+}
+
+type aggregateRow struct {
+	BucketDate sql.NullString `gorm:"column:bucket_date"`
+	ProfitLoss int64          `gorm:"column:profit_loss"`
+	TradeCount int            `gorm:"column:trade_count"`
+}
+
+func (r *DaytradeExecutionRepositoryImpl) Aggregate(ctx context.Context, from, to *time.Time, g models.DaytradeSummaryGranularity) ([]*models.DaytradeSummaryBucket, error) {
+	db, ok := GetTxDB(ctx)
+	if !ok {
+		db = r.db
+	}
+
+	var selectExpr, groupByExpr string
+	switch g {
+	case models.DaytradeSummaryGranularityDaily:
+		selectExpr = "DATE_FORMAT(executed_on, '%Y-%m-%d') AS bucket_date"
+		groupByExpr = "bucket_date"
+	case models.DaytradeSummaryGranularityMonthly:
+		selectExpr = "DATE_FORMAT(executed_on, '%Y-%m-01') AS bucket_date"
+		groupByExpr = "bucket_date"
+	case models.DaytradeSummaryGranularityYearly:
+		selectExpr = "DATE_FORMAT(executed_on, '%Y-01-01') AS bucket_date"
+		groupByExpr = "bucket_date"
+	case models.DaytradeSummaryGranularityAll:
+		selectExpr = "NULL AS bucket_date"
+		groupByExpr = ""
+	default:
+		return nil, errors.Errorf("unknown granularity: %s", g)
+	}
+
+	query := db.WithContext(ctx).
+		Table("daytrade_executions").
+		Select(fmt.Sprintf("%s, SUM(profit_loss) AS profit_loss, COUNT(*) AS trade_count", selectExpr))
+
+	if from != nil {
+		query = query.Where("executed_on >= ?", from.Format("2006-01-02"))
+	}
+	if to != nil {
+		query = query.Where("executed_on <= ?", to.Format("2006-01-02"))
+	}
+
+	if groupByExpr != "" {
+		query = query.Group(groupByExpr).Order("bucket_date ASC")
+	}
+
+	var rows []aggregateRow
+	if err := query.Scan(&rows).Error; err != nil {
+		return nil, errors.Wrap(err, "DaytradeExecutionRepositoryImpl.Aggregate error")
+	}
+
+	buckets := make([]*models.DaytradeSummaryBucket, 0, len(rows))
+	for _, row := range rows {
+		bucket := &models.DaytradeSummaryBucket{
+			ProfitLoss: row.ProfitLoss,
+			TradeCount: row.TradeCount,
+		}
+		if row.BucketDate.Valid {
+			s := row.BucketDate.String
+			bucket.BucketDate = &s
+		}
+		buckets = append(buckets, bucket)
+	}
+	return buckets, nil
+}
+
+func (r *DaytradeExecutionRepositoryImpl) FindByDate(ctx context.Context, date time.Time) ([]*models.DaytradeExecution, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = r.query
+	}
+
+	q := tx.DaytradeExecution
+	rows, err := q.WithContext(ctx).
+		Where(q.ExecutedOn.Eq(date)).
+		Order(q.ID.Asc()).
+		Find()
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.Wrap(err, "DaytradeExecutionRepositoryImpl.FindByDate error")
+	}
+
+	results := make([]*models.DaytradeExecution, 0, len(rows))
+	for _, row := range rows {
+		results = append(results, r.convertToDomainModel(row))
+	}
+	return results, nil
+}
+
+type coveredRangeRow struct {
+	MinDate sql.NullTime `gorm:"column:min_date"`
+	MaxDate sql.NullTime `gorm:"column:max_date"`
+}
+
+func (r *DaytradeExecutionRepositoryImpl) GetCoveredRange(ctx context.Context) (*time.Time, *time.Time, error) {
+	db, ok := GetTxDB(ctx)
+	if !ok {
+		db = r.db
+	}
+
+	var row coveredRangeRow
+	if err := db.WithContext(ctx).
+		Table("daytrade_executions").
+		Select("MIN(executed_on) AS min_date, MAX(executed_on) AS max_date").
+		Scan(&row).Error; err != nil {
+		return nil, nil, errors.Wrap(err, "DaytradeExecutionRepositoryImpl.GetCoveredRange error")
+	}
+
+	var minDate, maxDate *time.Time
+	if row.MinDate.Valid {
+		t := row.MinDate.Time
+		minDate = &t
+	}
+	if row.MaxDate.Valid {
+		t := row.MaxDate.Time
+		maxDate = &t
+	}
+	return minDate, maxDate, nil
+}
+
+func (r *DaytradeExecutionRepositoryImpl) convertToDomainModel(m *genModel.DaytradeExecution) *models.DaytradeExecution {
+	return &models.DaytradeExecution{
+		ID:           m.ID,
+		ExecutedOn:   m.ExecutedOn,
+		TradeKind:    m.TradeKind,
+		MarginKind:   m.MarginKind,
+		TickerSymbol: m.TickerSymbol,
+		BrandName:    m.BrandName,
+		Quantity:     m.Quantity,
+		TradeAmount:  m.TradeAmount,
+		UnitPrice:    decimal.NewFromFloat(m.UnitPrice),
+		AverageCost:  decimal.NewFromFloat(m.AverageCost),
+		ProfitLoss:   m.ProfitLoss,
+		Source:       m.Source,
+		CreatedAt:    m.CreatedAt,
+		UpdatedAt:    m.UpdatedAt,
+	}
+}
+
+func (r *DaytradeExecutionRepositoryImpl) convertToDBModel(m *models.DaytradeExecution) *genModel.DaytradeExecution {
+	unitPrice, _ := m.UnitPrice.Float64()
+	averageCost, _ := m.AverageCost.Float64()
+	return &genModel.DaytradeExecution{
+		ExecutedOn:   m.ExecutedOn,
+		TradeKind:    m.TradeKind,
+		MarginKind:   m.MarginKind,
+		TickerSymbol: m.TickerSymbol,
+		BrandName:    m.BrandName,
+		Quantity:     m.Quantity,
+		TradeAmount:  m.TradeAmount,
+		UnitPrice:    unitPrice,
+		AverageCost:  averageCost,
+		ProfitLoss:   m.ProfitLoss,
+		Source:       m.Source,
+		CreatedAt:    m.CreatedAt,
+		UpdatedAt:    m.UpdatedAt,
+	}
+}
+
+func (r *DaytradeExecutionRepositoryImpl) convertToDBModels(executions []*models.DaytradeExecution) []*genModel.DaytradeExecution {
+	rows := make([]*genModel.DaytradeExecution, 0, len(executions))
+	for _, e := range executions {
+		rows = append(rows, r.convertToDBModel(e))
+	}
+	return rows
+}

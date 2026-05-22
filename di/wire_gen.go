@@ -107,7 +107,10 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	multipleSignalStocksHandler := handler.NewMultipleSignalStocksHandler(stockBrandInteractor, httpServer, logger)
 	finAnnouncementHandler := handler.NewFinAnnouncementHandler(stockBrandInteractor, httpServer, logger)
 	finStatementHandler := handler.NewFinStatementHandler(stockBrandInteractor, httpServer, logger)
-	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler)
+	daytradeExecutionRepository := database.NewDaytradeExecutionRepositoryImpl(gormDB)
+	daytradeInteractor := usecase.NewDaytradeInteractor(transaction, daytradeExecutionRepository)
+	daytradeHandler := handler.NewDaytradeHandler(daytradeInteractor, httpServer, logger)
+	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler, daytradeHandler)
 	return serveMux, func() {
 		cleanup()
 	}, nil
@@ -142,15 +145,15 @@ func InitializeStockServiceServer(ctx context.Context) (*GrpcServerComponents, f
 
 // wire.go:
 
-var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation)
+var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation, usecase.NewDaytradeInteractor)
 
 var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewBoxAPIClient, driver.NewLogger)
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewAdjustHistoricalDataForStockConsolidationCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand, commands.NewSyncFinAnnouncementsCommand, commands.NewSyncFinStatementsCommand)
 
-var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl)
+var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl)
 
-var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, router.NewRouter)
+var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, router.NewRouter)
 
 var grpcSet = wire.NewSet(server.NewStockServiceServer, usecase.NewGetHighVolumeStockBrandsUseCase, wire.Struct(new(GrpcServerComponents), "*"))
 

@@ -25,6 +25,7 @@ var usecaseSet = wire.NewSet(
 	usecase.NewStockBrandsDailyPriceInteractor,
 	usecase.NewAdjustHistoricalDataForStockSplit,
 	usecase.NewAdjustHistoricalDataForStockConsolidation,
+	usecase.NewDaytradeInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -68,6 +69,7 @@ var databaseSet = wire.NewSet(
 	database.NewAppliedStockConsolidationsHistoryRepositoryImpl,
 	database.NewFinAnnouncementRepositoryImpl,
 	database.NewFinStatementRepositoryImpl,
+	database.NewDaytradeExecutionRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
@@ -87,6 +89,7 @@ var apiSet = wire.NewSet(
 	handler.NewMultipleSignalStocksHandler,
 	handler.NewFinAnnouncementHandler,
 	handler.NewFinStatementHandler,
+	handler.NewDaytradeHandler,
 	router.NewRouter,
 )
 

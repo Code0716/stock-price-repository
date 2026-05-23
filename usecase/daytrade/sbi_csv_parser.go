@@ -53,6 +53,27 @@ var defaultColumnMap = columnMap{
 	profitLoss:   8,
 }
 
+// resolveColumn は candidates の順に idx を引き、最初にマッチした列インデックスを返す。
+func resolveColumn(idx map[string]int, candidates ...string) (int, bool) {
+	for _, name := range candidates {
+		if i, ok := idx[name]; ok {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+// findProfitLossColumn は「損益」を含む列名を record から探してインデックスを返す。
+func findProfitLossColumn(idx map[string]int, record []string) (int, bool) {
+	for _, name := range record {
+		n := strings.TrimSpace(name)
+		if strings.Contains(n, "損益") {
+			return idx[n], true
+		}
+	}
+	return 0, false
+}
+
 // detectColumnMap ヘッダ行 (「約定日」を含む行) から列名→インデックスの map を構築する。
 // 旧フォーマット: 「信用」列あり → tradeKind=取引列, marginKind=信用列
 // 新フォーマット: 「口座」列あり / 「信用」列なし → tradeKind="", marginKind=取引列
@@ -62,79 +83,55 @@ func detectColumnMap(record []string) (columnMap, bool) {
 		idx[strings.TrimSpace(v)] = i
 	}
 
-	// 必須: 約定日
 	if _, ok := idx["約定日"]; !ok {
 		return columnMap{}, false
 	}
 
-	cm := columnMap{}
-
-	// 銘柄列: 旧=「銘柄」/ 新=「銘柄名」
-	if i, ok := idx["銘柄名"]; ok {
-		cm.brand = i
-	} else if i, ok := idx["銘柄"]; ok {
-		cm.brand = i
-	} else {
-		return columnMap{}, false
-	}
-
-	// 数量
-	i, ok := idx["数量"]
+	brand, ok := resolveColumn(idx, "銘柄名", "銘柄")
 	if !ok {
 		return columnMap{}, false
 	}
-	cm.quantity = i
-
-	// 約定代金: 旧=「約定代金」/ 新=「売却/決済額」
-	if i, ok = idx["売却/決済額"]; ok {
-		cm.tradeAmount = i
-	} else if i, ok = idx["約定代金"]; ok {
-		cm.tradeAmount = i
-	} else {
+	quantity, ok := idx["数量"]
+	if !ok {
+		return columnMap{}, false
+	}
+	tradeAmount, ok := resolveColumn(idx, "売却/決済額", "約定代金")
+	if !ok {
+		return columnMap{}, false
+	}
+	unitPrice, ok := idx["単価"]
+	if !ok {
+		return columnMap{}, false
+	}
+	averageCost, ok := resolveColumn(idx, "平均取得価額", "平均取得単価")
+	if !ok {
+		return columnMap{}, false
+	}
+	profitLoss, ok := findProfitLossColumn(idx, record)
+	if !ok {
 		return columnMap{}, false
 	}
 
-	// 単価
-	if i, ok = idx["単価"]; !ok {
-		return columnMap{}, false
-	}
-	cm.unitPrice = i
-
-	// 平均取得単価: 旧=「平均取得単価」/ 新=「平均取得価額」
-	if i, ok = idx["平均取得価額"]; ok {
-		cm.averageCost = i
-	} else if i, ok = idx["平均取得単価"]; ok {
-		cm.averageCost = i
-	} else {
-		return columnMap{}, false
-	}
-
-	// 損益: 旧=「売買損益(税引前・円)」/ 新=「実現損益(税引前・円)」
-	foundPL := false
-	for _, name := range record {
-		n := strings.TrimSpace(name)
-		if strings.Contains(n, "損益") {
-			cm.profitLoss = idx[n]
-			foundPL = true
-			break
-		}
-	}
-	if !foundPL {
-		return columnMap{}, false
+	cm := columnMap{
+		brand:       brand,
+		quantity:    quantity,
+		tradeAmount: tradeAmount,
+		unitPrice:   unitPrice,
+		averageCost: averageCost,
+		profitLoss:  profitLoss,
 	}
 
 	// フォーマット判別: 「信用」列があれば旧、なければ新
-	if i, ok = idx["信用"]; ok {
-		// 旧フォーマット
+	if shinyo, hasShinyo := idx["信用"]; hasShinyo {
 		cm.tradeKindCol = idx["取引"]
-		cm.marginKind = i
+		cm.marginKind = shinyo
 	} else {
-		// 新フォーマット: 「取引」列が marginKind に相当
 		cm.tradeKindCol = -1
-		if i, ok = idx["取引"]; !ok {
+		torihiki, hasTorihiki := idx["取引"]
+		if !hasTorihiki {
 			return columnMap{}, false
 		}
-		cm.marginKind = i
+		cm.marginKind = torihiki
 	}
 
 	return cm, true

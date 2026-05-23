@@ -72,6 +72,21 @@ func (mr *MockDaytradeExecutionRepositoryMockRecorder) AggregateByTickerSymbol(c
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AggregateByTickerSymbol", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).AggregateByTickerSymbol), ctx, from, to)
 }
 
+// AggregateStats mocks base method.
+func (m *MockDaytradeExecutionRepository) AggregateStats(ctx context.Context, from, to *time.Time) (*models.DaytradeStatsAggregate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AggregateStats", ctx, from, to)
+	ret0, _ := ret[0].(*models.DaytradeStatsAggregate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AggregateStats indicates an expected call of AggregateStats.
+func (mr *MockDaytradeExecutionRepositoryMockRecorder) AggregateStats(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AggregateStats", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).AggregateStats), ctx, from, to)
+}
+
 // BulkInsertIgnore mocks base method.
 func (m *MockDaytradeExecutionRepository) BulkInsertIgnore(ctx context.Context, executions []*models.DaytradeExecution) (int, error) {
 	m.ctrl.T.Helper()

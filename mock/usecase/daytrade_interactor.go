@@ -75,6 +75,21 @@ func (mr *MockDaytradeInteractorMockRecorder) GetExecutionsByDate(ctx, date any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExecutionsByDate", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetExecutionsByDate), ctx, date)
 }
 
+// GetPeriodStats mocks base method.
+func (m *MockDaytradeInteractor) GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPeriodStats", ctx, from, to)
+	ret0, _ := ret[0].(*models.DaytradePeriodStats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPeriodStats indicates an expected call of GetPeriodStats.
+func (mr *MockDaytradeInteractorMockRecorder) GetPeriodStats(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeriodStats", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetPeriodStats), ctx, from, to)
+}
+
 // GetSummary mocks base method.
 func (m *MockDaytradeInteractor) GetSummary(ctx context.Context, from, to *time.Time, g models.DaytradeSummaryGranularity) ([]*models.DaytradeSummaryBucket, error) {
 	m.ctrl.T.Helper()

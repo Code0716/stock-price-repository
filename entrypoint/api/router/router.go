@@ -41,6 +41,7 @@ func NewRouter(
 		mux.HandleFunc("/daytrade/summary-by-symbol", daytradeHandler.GetSummaryByTickerSymbol)
 		mux.HandleFunc("/daytrade/executions", daytradeHandler.GetExecutionsByDate)
 		mux.HandleFunc("/daytrade/range", daytradeHandler.GetCoveredRange)
+		mux.HandleFunc("/daytrade/stats", daytradeHandler.GetStats)
 	}
 	return mux
 }

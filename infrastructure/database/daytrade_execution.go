@@ -203,6 +203,67 @@ func (r *DaytradeExecutionRepositoryImpl) AggregateByTickerSymbol(ctx context.Co
 	return results, nil
 }
 
+type statsAggregateRow struct {
+	ProfitLoss  sql.NullInt64 `gorm:"column:profit_loss"`
+	TradeCount  int           `gorm:"column:trade_count"`
+	GrossProfit int64         `gorm:"column:gross_profit"`
+	GrossLoss   int64         `gorm:"column:gross_loss"`
+	WinCount    int           `gorm:"column:win_count"`
+	LossCount   int           `gorm:"column:loss_count"`
+	MaxProfit   sql.NullInt64 `gorm:"column:max_profit"`
+	MaxLoss     sql.NullInt64 `gorm:"column:max_loss"`
+}
+
+func (r *DaytradeExecutionRepositoryImpl) AggregateStats(ctx context.Context, from, to *time.Time) (*models.DaytradeStatsAggregate, error) {
+	db, ok := GetTxDB(ctx)
+	if !ok {
+		db = r.db
+	}
+
+	query := db.WithContext(ctx).
+		Table("daytrade_executions").
+		Select(
+			"SUM(profit_loss) AS profit_loss," +
+				" COUNT(*) AS trade_count," +
+				" COALESCE(SUM(CASE WHEN profit_loss > 0 THEN profit_loss ELSE 0 END), 0) AS gross_profit," +
+				" COALESCE(SUM(CASE WHEN profit_loss < 0 THEN profit_loss ELSE 0 END), 0) AS gross_loss," +
+				" COALESCE(SUM(CASE WHEN profit_loss > 0 THEN 1 ELSE 0 END), 0) AS win_count," +
+				" COALESCE(SUM(CASE WHEN profit_loss < 0 THEN 1 ELSE 0 END), 0) AS loss_count," +
+				" MAX(profit_loss) AS max_profit," +
+				" MIN(profit_loss) AS max_loss",
+		)
+
+	if from != nil {
+		query = query.Where("executed_on >= ?", from.Format("2006-01-02"))
+	}
+	if to != nil {
+		query = query.Where("executed_on <= ?", to.Format("2006-01-02"))
+	}
+
+	var row statsAggregateRow
+	if err := query.Scan(&row).Error; err != nil {
+		return nil, errors.Wrap(err, "DaytradeExecutionRepositoryImpl.AggregateStats error")
+	}
+
+	result := &models.DaytradeStatsAggregate{
+		TradeCount:  row.TradeCount,
+		GrossProfit: row.GrossProfit,
+		GrossLoss:   row.GrossLoss,
+		WinCount:    row.WinCount,
+		LossCount:   row.LossCount,
+	}
+	if row.ProfitLoss.Valid {
+		result.ProfitLoss = row.ProfitLoss.Int64
+	}
+	if row.MaxProfit.Valid {
+		result.MaxProfit = row.MaxProfit.Int64
+	}
+	if row.MaxLoss.Valid {
+		result.MaxLoss = row.MaxLoss.Int64
+	}
+	return result, nil
+}
+
 func (r *DaytradeExecutionRepositoryImpl) FindByDate(ctx context.Context, date time.Time) ([]*models.DaytradeExecution, error) {
 	tx, ok := GetTxQuery(ctx)
 	if !ok {

@@ -178,6 +178,31 @@ func (h *DaytradeHandler) GetSummaryByTickerSymbol(w http.ResponseWriter, r *htt
 	respondJSON(w, h.logger, resp)
 }
 
+func (h *DaytradeHandler) GetStats(w http.ResponseWriter, r *http.Request) {
+	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	if err != nil {
+		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
+	if err != nil {
+		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+	if from != nil && to != nil && from.After(*to) {
+		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		return
+	}
+
+	stats, err := h.usecase.GetPeriodStats(r.Context(), from, to)
+	if err != nil {
+		h.logger.Error("daytrade stats failed", zap.Error(err))
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		return
+	}
+	respondJSON(w, h.logger, stats)
+}
+
 type daytradeRangeResponse struct {
 	Min *string `json:"min"`
 	Max *string `json:"max"`

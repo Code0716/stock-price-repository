@@ -140,6 +140,52 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
+	// --- /daytrade/stats エンドポイントのテスト ---
+
+	t.Run("period stats_全期間で正しい集計が返る", func(t *testing.T) {
+		// 事前条件: sbi_sample_sjis.csv の 3 件が挿入済み
+		// profitLoss: +1460(9984), +2040(9984), -800(5803) = 合計 2700
+		// maxProfit=2040, maxLoss=-800, winCount=2, lossCount=1
+		resp, err := http.Get(ts.URL + "/daytrade/stats")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var body models.DaytradePeriodStats
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+
+		assert.Equal(t, int64(2700), body.ProfitLoss)
+		assert.Equal(t, 3, body.TradeCount)
+		assert.Equal(t, int64(3500), body.GrossProfit)
+		assert.Equal(t, int64(-800), body.GrossLoss)
+		assert.Equal(t, 2, body.WinCount)
+		assert.Equal(t, 1, body.LossCount)
+		assert.Equal(t, int64(2040), body.MaxProfit)
+		assert.Equal(t, int64(-800), body.MaxLoss)
+		assert.GreaterOrEqual(t, body.MaxDrawdown, int64(0))
+		assert.GreaterOrEqual(t, body.MaxLossStreak, 0)
+	})
+
+	t.Run("period stats_from/toで絞り込み", func(t *testing.T) {
+		resp, err := http.Get(ts.URL + "/daytrade/stats?from=2026-05-21&to=2026-05-21")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var body models.DaytradePeriodStats
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+
+		assert.Equal(t, int64(660), body.ProfitLoss)   // 1460 + (-800)
+		assert.Equal(t, 2, body.TradeCount)
+	})
+
+	t.Run("period stats_from>toで400", func(t *testing.T) {
+		resp, err := http.Get(ts.URL + "/daytrade/stats?from=2026-05-31&to=2026-05-01")
+		require.NoError(t, err)
+		resp.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
 	t.Run("fileフィールドなしで400", func(t *testing.T) {
 		resp, err := http.Post(ts.URL+"/daytrade/executions/import", "multipart/form-data; boundary=xxx", bytes.NewReader([]byte("--xxx--")))
 		require.NoError(t, err)

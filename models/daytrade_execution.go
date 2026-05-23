@@ -45,9 +45,13 @@ func (g DaytradeSummaryGranularity) Valid() bool {
 }
 
 type DaytradeSummaryBucket struct {
-	BucketDate *string `json:"date"`
-	ProfitLoss int64   `json:"profitLoss"`
-	TradeCount int     `json:"tradeCount"`
+	BucketDate  *string `json:"date"`
+	ProfitLoss  int64   `json:"profitLoss"`
+	TradeCount  int     `json:"tradeCount"`
+	GrossProfit int64   `json:"grossProfit"`
+	GrossLoss   int64   `json:"grossLoss"`
+	WinCount    int     `json:"winCount"`
+	LossCount   int     `json:"lossCount"`
 }
 
 type DaytradeImportResult struct {
@@ -63,6 +67,8 @@ type DaytradeSymbolSummary struct {
 	BrandName    string `json:"brandName"`
 	ProfitLoss   int64  `json:"profitLoss"`
 	TradeCount   int    `json:"tradeCount"`
+	GrossProfit  int64  `json:"grossProfit"`
+	GrossLoss    int64  `json:"grossLoss"`
 	WinCount     int    `json:"winCount"`
 	LossCount    int    `json:"lossCount"`
 }

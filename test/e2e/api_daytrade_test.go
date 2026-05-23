@@ -71,7 +71,7 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var body struct {
-			Granularity string                         `json:"granularity"`
+			Granularity string                          `json:"granularity"`
 			Buckets     []*models.DaytradeSummaryBucket `json:"buckets"`
 		}
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
@@ -92,6 +92,10 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Len(t, body.Buckets, 1)
 		assert.Nil(t, body.Buckets[0].BucketDate)
 		assert.Equal(t, 3, body.Buckets[0].TradeCount)
+		assert.Equal(t, int64(3500), body.Buckets[0].GrossProfit)
+		assert.Equal(t, int64(-800), body.Buckets[0].GrossLoss)
+		assert.Equal(t, 2, body.Buckets[0].WinCount)
+		assert.Equal(t, 1, body.Buckets[0].LossCount)
 	})
 
 	t.Run("指定日の明細取得", func(t *testing.T) {
@@ -153,8 +157,8 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var body struct {
-			From  *string                        `json:"from"`
-			To    *string                        `json:"to"`
+			From  *string                         `json:"from"`
+			To    *string                         `json:"to"`
 			Items []*models.DaytradeSymbolSummary `json:"items"`
 		}
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
@@ -166,11 +170,15 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Equal(t, "9984", body.Items[0].TickerSymbol)
 		assert.Equal(t, int64(3500), body.Items[0].ProfitLoss) // 1460 + 2040
 		assert.Equal(t, 2, body.Items[0].TradeCount)
+		assert.Equal(t, int64(3500), body.Items[0].GrossProfit)
+		assert.Equal(t, int64(0), body.Items[0].GrossLoss)
 		assert.Equal(t, 2, body.Items[0].WinCount)
 		assert.Equal(t, 0, body.Items[0].LossCount)
 
 		assert.Equal(t, "5803", body.Items[1].TickerSymbol)
 		assert.Equal(t, int64(-800), body.Items[1].ProfitLoss)
+		assert.Equal(t, int64(0), body.Items[1].GrossProfit)
+		assert.Equal(t, int64(-800), body.Items[1].GrossLoss)
 		assert.Equal(t, 1, body.Items[1].TradeCount)
 		assert.Equal(t, 0, body.Items[1].WinCount)
 		assert.Equal(t, 1, body.Items[1].LossCount)
@@ -184,8 +192,8 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var body struct {
-			From  *string                        `json:"from"`
-			To    *string                        `json:"to"`
+			From  *string                         `json:"from"`
+			To    *string                         `json:"to"`
 			Items []*models.DaytradeSymbolSummary `json:"items"`
 		}
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
@@ -199,6 +207,8 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Equal(t, "9984", body.Items[0].TickerSymbol)
 		assert.Equal(t, int64(1460), body.Items[0].ProfitLoss)
 		assert.Equal(t, 1, body.Items[0].TradeCount)
+		assert.Equal(t, int64(1460), body.Items[0].GrossProfit)
+		assert.Equal(t, int64(0), body.Items[0].GrossLoss)
 	})
 
 	t.Run("銘柄別集計_from>toで400", func(t *testing.T) {
@@ -262,7 +272,7 @@ func TestE2E_Daytrade(t *testing.T) {
 		// 論理削除済みなので b.name は NULL → d.brand_name にフォールバック
 		assert.Equal(t, "9984", body.Items[0].TickerSymbol)
 		assert.NotEqual(t, "削除済み銘柄名", body.Items[0].BrandName) // 削除済み名は使わない
-		assert.NotEmpty(t, body.Items[0].BrandName)                  // CSV 由来の名前
+		assert.NotEmpty(t, body.Items[0].BrandName)            // CSV 由来の名前
 	})
 
 	// --- replace モード ---
@@ -283,8 +293,8 @@ func TestE2E_Daytrade(t *testing.T) {
 		require.NoError(t, json.NewDecoder(resp2.Body).Decode(&result))
 		resp2.Body.Close()
 
-		assert.Equal(t, 3, result.Deleted)   // 旧 3 件が削除された
-		assert.Equal(t, 3, result.Inserted)  // 新 3 件が挿入された
+		assert.Equal(t, 3, result.Deleted)  // 旧 3 件が削除された
+		assert.Equal(t, 3, result.Inserted) // 新 3 件が挿入された
 		assert.Equal(t, 0, result.Skipped)
 		assert.Equal(t, 3, result.TotalRow)
 	})

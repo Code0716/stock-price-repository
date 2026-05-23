@@ -61,9 +61,13 @@ func (r *DaytradeExecutionRepositoryImpl) BulkInsertIgnore(ctx context.Context, 
 }
 
 type aggregateRow struct {
-	BucketDate sql.NullString `gorm:"column:bucket_date"`
-	ProfitLoss int64          `gorm:"column:profit_loss"`
-	TradeCount int            `gorm:"column:trade_count"`
+	BucketDate  sql.NullString `gorm:"column:bucket_date"`
+	ProfitLoss  int64          `gorm:"column:profit_loss"`
+	TradeCount  int            `gorm:"column:trade_count"`
+	GrossProfit int64          `gorm:"column:gross_profit"`
+	GrossLoss   int64          `gorm:"column:gross_loss"`
+	WinCount    int            `gorm:"column:win_count"`
+	LossCount   int            `gorm:"column:loss_count"`
 }
 
 func (r *DaytradeExecutionRepositoryImpl) Aggregate(ctx context.Context, from, to *time.Time, g models.DaytradeSummaryGranularity) ([]*models.DaytradeSummaryBucket, error) {
@@ -92,7 +96,16 @@ func (r *DaytradeExecutionRepositoryImpl) Aggregate(ctx context.Context, from, t
 
 	query := db.WithContext(ctx).
 		Table("daytrade_executions").
-		Select(fmt.Sprintf("%s, SUM(profit_loss) AS profit_loss, COUNT(*) AS trade_count", selectExpr))
+		Select(fmt.Sprintf(
+			"%s,"+
+				" SUM(profit_loss) AS profit_loss,"+
+				" COUNT(*) AS trade_count,"+
+				" COALESCE(SUM(CASE WHEN profit_loss > 0 THEN profit_loss ELSE 0 END), 0) AS gross_profit,"+
+				" COALESCE(SUM(CASE WHEN profit_loss < 0 THEN profit_loss ELSE 0 END), 0) AS gross_loss,"+
+				" COALESCE(SUM(CASE WHEN profit_loss > 0 THEN 1 ELSE 0 END), 0) AS win_count,"+
+				" COALESCE(SUM(CASE WHEN profit_loss < 0 THEN 1 ELSE 0 END), 0) AS loss_count",
+			selectExpr,
+		))
 
 	if from != nil {
 		query = query.Where("executed_on >= ?", from.Format("2006-01-02"))
@@ -113,8 +126,12 @@ func (r *DaytradeExecutionRepositoryImpl) Aggregate(ctx context.Context, from, t
 	buckets := make([]*models.DaytradeSummaryBucket, 0, len(rows))
 	for _, row := range rows {
 		bucket := &models.DaytradeSummaryBucket{
-			ProfitLoss: row.ProfitLoss,
-			TradeCount: row.TradeCount,
+			ProfitLoss:  row.ProfitLoss,
+			TradeCount:  row.TradeCount,
+			GrossProfit: row.GrossProfit,
+			GrossLoss:   row.GrossLoss,
+			WinCount:    row.WinCount,
+			LossCount:   row.LossCount,
 		}
 		if row.BucketDate.Valid {
 			s := row.BucketDate.String
@@ -130,6 +147,8 @@ type symbolSummaryRow struct {
 	BrandName    string `gorm:"column:brand_name"`
 	ProfitLoss   int64  `gorm:"column:profit_loss"`
 	TradeCount   int    `gorm:"column:trade_count"`
+	GrossProfit  int64  `gorm:"column:gross_profit"`
+	GrossLoss    int64  `gorm:"column:gross_loss"`
 	WinCount     int    `gorm:"column:win_count"`
 	LossCount    int    `gorm:"column:loss_count"`
 }
@@ -148,8 +167,10 @@ func (r *DaytradeExecutionRepositoryImpl) AggregateByTickerSymbol(ctx context.Co
 				" COALESCE(MAX(b.name), MAX(d.brand_name)) AS brand_name," +
 				" SUM(d.profit_loss) AS profit_loss," +
 				" COUNT(*) AS trade_count," +
-				" SUM(CASE WHEN d.profit_loss > 0 THEN 1 ELSE 0 END) AS win_count," +
-				" SUM(CASE WHEN d.profit_loss < 0 THEN 1 ELSE 0 END) AS loss_count",
+				" COALESCE(SUM(CASE WHEN d.profit_loss > 0 THEN d.profit_loss ELSE 0 END), 0) AS gross_profit," +
+				" COALESCE(SUM(CASE WHEN d.profit_loss < 0 THEN d.profit_loss ELSE 0 END), 0) AS gross_loss," +
+				" COALESCE(SUM(CASE WHEN d.profit_loss > 0 THEN 1 ELSE 0 END), 0) AS win_count," +
+				" COALESCE(SUM(CASE WHEN d.profit_loss < 0 THEN 1 ELSE 0 END), 0) AS loss_count",
 		).
 		Group("d.ticker_symbol").
 		Order("profit_loss DESC")
@@ -173,6 +194,8 @@ func (r *DaytradeExecutionRepositoryImpl) AggregateByTickerSymbol(ctx context.Co
 			BrandName:    row.BrandName,
 			ProfitLoss:   row.ProfitLoss,
 			TradeCount:   row.TradeCount,
+			GrossProfit:  row.GrossProfit,
+			GrossLoss:    row.GrossLoss,
 			WinCount:     row.WinCount,
 			LossCount:    row.LossCount,
 		})

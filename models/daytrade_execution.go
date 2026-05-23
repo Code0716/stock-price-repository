@@ -18,6 +18,7 @@ type DaytradeExecution struct {
 	UnitPrice    decimal.Decimal `json:"unitPrice"`
 	AverageCost  decimal.Decimal `json:"averageCost"`
 	ProfitLoss   int64           `json:"profitLoss"`
+	OccurrenceNo uint32          `json:"occurrenceNo"`
 	Source       string          `json:"source"`
 	CreatedAt    time.Time       `json:"createdAt"`
 	UpdatedAt    time.Time       `json:"updatedAt"`
@@ -52,5 +53,16 @@ type DaytradeSummaryBucket struct {
 type DaytradeImportResult struct {
 	Inserted int `json:"inserted"`
 	Skipped  int `json:"skipped"`
+	Deleted  int `json:"deleted"`
 	TotalRow int `json:"totalRow"`
+}
+
+// DaytradeSymbolSummary 銘柄毎のデイトレ損益集計
+type DaytradeSymbolSummary struct {
+	TickerSymbol string `json:"tickerSymbol"`
+	BrandName    string `json:"brandName"`
+	ProfitLoss   int64  `json:"profitLoss"`
+	TradeCount   int    `json:"tradeCount"`
+	WinCount     int    `json:"winCount"`
+	LossCount    int    `json:"lossCount"`
 }

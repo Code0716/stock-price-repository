@@ -39,7 +39,7 @@ func TestE2E_Daytrade(t *testing.T) {
 	t.Run("初回インポートで3件挿入される", func(t *testing.T) {
 		helper.TruncateAllTables(t, db)
 
-		resp := postCSV(t, ts.URL, nil)
+		resp := postCSV(t, ts.URL, "../../usecase/daytrade/testdata/sbi_sample_sjis.csv", false)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var result models.DaytradeImportResult
@@ -52,7 +52,7 @@ func TestE2E_Daytrade(t *testing.T) {
 	})
 
 	t.Run("同じCSVを再インポートすると重複スキップ", func(t *testing.T) {
-		resp := postCSV(t, ts.URL, nil)
+		resp := postCSV(t, ts.URL, "../../usecase/daytrade/testdata/sbi_sample_sjis.csv", false)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var result models.DaytradeImportResult
@@ -142,19 +142,221 @@ func TestE2E_Daytrade(t *testing.T) {
 		resp.Body.Close()
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
+
+	// --- 銘柄別集計エンドポイントのテスト ---
+
+	t.Run("銘柄別集計_全期間で2銘柄返りprofitLoss降順", func(t *testing.T) {
+		// 事前条件: CSV 3件（9984×2, 5803×1）が挿入済み
+		resp, err := http.Get(ts.URL + "/daytrade/summary-by-symbol")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var body struct {
+			From  *string                        `json:"from"`
+			To    *string                        `json:"to"`
+			Items []*models.DaytradeSymbolSummary `json:"items"`
+		}
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		assert.Nil(t, body.From)
+		assert.Nil(t, body.To)
+		require.Len(t, body.Items, 2)
+
+		// profit_loss DESC: 9984 (3500) が先、5803 (-800) が後
+		assert.Equal(t, "9984", body.Items[0].TickerSymbol)
+		assert.Equal(t, int64(3500), body.Items[0].ProfitLoss) // 1460 + 2040
+		assert.Equal(t, 2, body.Items[0].TradeCount)
+		assert.Equal(t, 2, body.Items[0].WinCount)
+		assert.Equal(t, 0, body.Items[0].LossCount)
+
+		assert.Equal(t, "5803", body.Items[1].TickerSymbol)
+		assert.Equal(t, int64(-800), body.Items[1].ProfitLoss)
+		assert.Equal(t, 1, body.Items[1].TradeCount)
+		assert.Equal(t, 0, body.Items[1].WinCount)
+		assert.Equal(t, 1, body.Items[1].LossCount)
+	})
+
+	t.Run("銘柄別集計_from/toで絞り込み", func(t *testing.T) {
+		// 2026-05-21 のみ: 9984(+1460) と 5803(-800) が対象
+		resp, err := http.Get(ts.URL + "/daytrade/summary-by-symbol?from=2026-05-21&to=2026-05-21")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var body struct {
+			From  *string                        `json:"from"`
+			To    *string                        `json:"to"`
+			Items []*models.DaytradeSymbolSummary `json:"items"`
+		}
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		require.NotNil(t, body.From)
+		require.NotNil(t, body.To)
+		assert.Equal(t, "2026-05-21", *body.From)
+		assert.Equal(t, "2026-05-21", *body.To)
+		require.Len(t, body.Items, 2)
+
+		// 2026-05-21 の 9984 は 1 件 (+1460)
+		assert.Equal(t, "9984", body.Items[0].TickerSymbol)
+		assert.Equal(t, int64(1460), body.Items[0].ProfitLoss)
+		assert.Equal(t, 1, body.Items[0].TradeCount)
+	})
+
+	t.Run("銘柄別集計_from>toで400", func(t *testing.T) {
+		resp, err := http.Get(ts.URL + "/daytrade/summary-by-symbol?from=2026-05-31&to=2026-05-01")
+		require.NoError(t, err)
+		resp.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("銘柄別集計_stock_brand登録済みは最新名、未登録はCSV名にフォールバック", func(t *testing.T) {
+		// stock_brand に 9984 を登録（有効なレコード）
+		require.NoError(t, db.Exec(
+			"INSERT INTO stock_brand (id, ticker_symbol, name, market_code, market_name, created_at, updated_at)"+
+				" VALUES (UUID(), '9984', 'ソフトバンクグループ株式会社', '111', '東証プライム', NOW(), NOW())",
+		).Error)
+		defer func() {
+			db.Exec("DELETE FROM stock_brand WHERE ticker_symbol = '9984'")
+		}()
+
+		resp, err := http.Get(ts.URL + "/daytrade/summary-by-symbol")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var body struct {
+			Items []*models.DaytradeSymbolSummary `json:"items"`
+		}
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		require.Len(t, body.Items, 2)
+
+		// 9984: stock_brand の name を使う
+		assert.Equal(t, "9984", body.Items[0].TickerSymbol)
+		assert.Equal(t, "ソフトバンクグループ株式会社", body.Items[0].BrandName)
+
+		// 5803: stock_brand 未登録なので CSV の brand_name
+		assert.Equal(t, "5803", body.Items[1].TickerSymbol)
+		assert.NotEmpty(t, body.Items[1].BrandName)
+	})
+
+	t.Run("銘柄別集計_stock_brand論理削除済みはCSV名にフォールバック", func(t *testing.T) {
+		// 論理削除済みの stock_brand を登録
+		require.NoError(t, db.Exec(
+			"INSERT INTO stock_brand (id, ticker_symbol, name, market_code, market_name, created_at, updated_at, deleted_at)"+
+				" VALUES (UUID(), '9984', '削除済み銘柄名', '111', '東証プライム', NOW(), NOW(), NOW())",
+		).Error)
+		defer func() {
+			db.Exec("DELETE FROM stock_brand WHERE ticker_symbol = '9984'")
+		}()
+
+		resp, err := http.Get(ts.URL + "/daytrade/summary-by-symbol")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var body struct {
+			Items []*models.DaytradeSymbolSummary `json:"items"`
+		}
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		require.Len(t, body.Items, 2)
+
+		// 論理削除済みなので b.name は NULL → d.brand_name にフォールバック
+		assert.Equal(t, "9984", body.Items[0].TickerSymbol)
+		assert.NotEqual(t, "削除済み銘柄名", body.Items[0].BrandName) // 削除済み名は使わない
+		assert.NotEmpty(t, body.Items[0].BrandName)                  // CSV 由来の名前
+	})
+
+	// --- replace モード ---
+
+	t.Run("replaceモード_旧データ全削除して新フォーマットで再挿入", func(t *testing.T) {
+		helper.TruncateAllTables(t, db)
+
+		// まず旧フォーマット CSV を 3 件挿入
+		resp := postCSV(t, ts.URL, "../../usecase/daytrade/testdata/sbi_sample_sjis.csv", false)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		resp.Body.Close()
+
+		// replace=true で新フォーマット CSV (同 3 件) を投入
+		resp2 := postCSV(t, ts.URL, "../../usecase/daytrade/testdata/sbi_sample_new_sjis.csv", true)
+		require.Equal(t, http.StatusOK, resp2.StatusCode)
+
+		var result models.DaytradeImportResult
+		require.NoError(t, json.NewDecoder(resp2.Body).Decode(&result))
+		resp2.Body.Close()
+
+		assert.Equal(t, 3, result.Deleted)   // 旧 3 件が削除された
+		assert.Equal(t, 3, result.Inserted)  // 新 3 件が挿入された
+		assert.Equal(t, 0, result.Skipped)
+		assert.Equal(t, 3, result.TotalRow)
+	})
+
+	t.Run("新フォーマットCSV_tradeKindが空文字でmarginKindが正しい", func(t *testing.T) {
+		helper.TruncateAllTables(t, db)
+
+		resp := postCSV(t, ts.URL, "../../usecase/daytrade/testdata/sbi_sample_new_sjis.csv", false)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		resp.Body.Close()
+
+		// 新フォーマットで取り込まれたレコードの trade_kind / margin_kind を確認
+		resp2, err := http.Get(ts.URL + "/daytrade/executions?date=2026-05-21")
+		require.NoError(t, err)
+		defer resp2.Body.Close()
+
+		var body struct {
+			Executions []*models.DaytradeExecution `json:"executions"`
+		}
+		require.NoError(t, json.NewDecoder(resp2.Body).Decode(&body))
+		require.NotEmpty(t, body.Executions)
+
+		for _, ex := range body.Executions {
+			assert.Equal(t, "", ex.TradeKind, "新フォーマットはtradeKind空文字")
+			assert.Contains(t, []string{"返済売", "返済買"}, ex.MarginKind)
+		}
+	})
+
+	t.Run("occurrence_no_重複約定が全件挿入される", func(t *testing.T) {
+		helper.TruncateAllTables(t, db)
+
+		// 同一自然キーの行を 2 行含む inline CSV を POST
+		header := `"約定日","取引","銘柄","信用","数量","約定代金","単価","平均取得単価","売買損益(税引前・円)"` + "\n"
+		row := `"2026/5/14","売建","ソフトバンクグループ 9984","返済売","100","596,940","5,969.4","5,960","+840"` + "\n"
+		csvContent := []byte(header + row + row) // 2 行同一キー
+
+		var buf bytes.Buffer
+		mw := multipart.NewWriter(&buf)
+		fw, err := mw.CreateFormFile("file", "dup.csv")
+		require.NoError(t, err)
+		_, err = fw.Write(csvContent)
+		require.NoError(t, err)
+		require.NoError(t, mw.Close())
+
+		resp, err := http.Post(ts.URL+"/daytrade/executions/import", mw.FormDataContentType(), &buf)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var result models.DaytradeImportResult
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+
+		assert.Equal(t, 2, result.TotalRow)
+		assert.Equal(t, 2, result.Inserted) // occurrence_no で区別されるため 2 件とも挿入
+		assert.Equal(t, 0, result.Skipped)
+	})
 }
 
-func postCSV(t *testing.T, baseURL string, _ []byte) *http.Response {
+func postCSV(t *testing.T, baseURL string, csvPath string, replace bool) *http.Response {
 	t.Helper()
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)
 	fw, err := mw.CreateFormFile("file", "test.csv")
 	require.NoError(t, err)
 
-	csvBytes, err := os.ReadFile("../../usecase/daytrade/testdata/sbi_sample_sjis.csv")
+	csvBytes, err := os.ReadFile(csvPath)
 	require.NoError(t, err)
 	_, err = fw.Write(csvBytes)
 	require.NoError(t, err)
+	if replace {
+		require.NoError(t, mw.WriteField("replace", "true"))
+	}
 	require.NoError(t, mw.Close())
 
 	resp, err := http.Post(baseURL+"/daytrade/executions/import", mw.FormDataContentType(), &buf)

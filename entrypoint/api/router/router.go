@@ -38,6 +38,7 @@ func NewRouter(
 	if daytradeHandler != nil {
 		mux.HandleFunc("/daytrade/executions/import", daytradeHandler.ImportSBICsv)
 		mux.HandleFunc("/daytrade/summary", daytradeHandler.GetSummary)
+		mux.HandleFunc("/daytrade/summary-by-symbol", daytradeHandler.GetSummaryByTickerSymbol)
 		mux.HandleFunc("/daytrade/executions", daytradeHandler.GetExecutionsByDate)
 		mux.HandleFunc("/daytrade/range", daytradeHandler.GetCoveredRange)
 	}

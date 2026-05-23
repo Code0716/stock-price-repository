@@ -36,7 +36,10 @@ func (h *DaytradeHandler) ImportSBICsv(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	result, err := h.usecase.ImportSBICsv(r.Context(), file)
+	opts := usecase.ImportOptions{
+		Replace: r.FormValue("replace") == "true",
+	}
+	result, err := h.usecase.ImportSBICsv(r.Context(), file, opts)
 	if err != nil {
 		if errors.Is(err, daytrade.ErrParse) {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -132,6 +135,47 @@ func (h *DaytradeHandler) GetExecutionsByDate(w http.ResponseWriter, r *http.Req
 		Date:       dateStr,
 		Executions: executions,
 	})
+}
+
+type daytradeSymbolSummaryResponse struct {
+	From  *string                        `json:"from"`
+	To    *string                        `json:"to"`
+	Items []*models.DaytradeSymbolSummary `json:"items"`
+}
+
+func (h *DaytradeHandler) GetSummaryByTickerSymbol(w http.ResponseWriter, r *http.Request) {
+	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	if err != nil {
+		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
+	if err != nil {
+		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+	if from != nil && to != nil && from.After(*to) {
+		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		return
+	}
+
+	items, err := h.usecase.GetSummaryByTickerSymbol(r.Context(), from, to)
+	if err != nil {
+		h.logger.Error("daytrade summary by ticker symbol failed", zap.Error(err))
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		return
+	}
+
+	resp := &daytradeSymbolSummaryResponse{Items: items}
+	if from != nil {
+		s := from.Format(util.DateLayout)
+		resp.From = &s
+	}
+	if to != nil {
+		s := to.Format(util.DateLayout)
+		resp.To = &s
+	}
+	respondJSON(w, h.logger, resp)
 }
 
 type daytradeRangeResponse struct {

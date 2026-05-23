@@ -57,6 +57,21 @@ func (mr *MockDaytradeExecutionRepositoryMockRecorder) Aggregate(ctx, from, to, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).Aggregate), ctx, from, to, g)
 }
 
+// AggregateByTickerSymbol mocks base method.
+func (m *MockDaytradeExecutionRepository) AggregateByTickerSymbol(ctx context.Context, from, to *time.Time) ([]*models.DaytradeSymbolSummary, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AggregateByTickerSymbol", ctx, from, to)
+	ret0, _ := ret[0].([]*models.DaytradeSymbolSummary)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AggregateByTickerSymbol indicates an expected call of AggregateByTickerSymbol.
+func (mr *MockDaytradeExecutionRepositoryMockRecorder) AggregateByTickerSymbol(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AggregateByTickerSymbol", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).AggregateByTickerSymbol), ctx, from, to)
+}
+
 // BulkInsertIgnore mocks base method.
 func (m *MockDaytradeExecutionRepository) BulkInsertIgnore(ctx context.Context, executions []*models.DaytradeExecution) (int, error) {
 	m.ctrl.T.Helper()
@@ -70,6 +85,21 @@ func (m *MockDaytradeExecutionRepository) BulkInsertIgnore(ctx context.Context, 
 func (mr *MockDaytradeExecutionRepositoryMockRecorder) BulkInsertIgnore(ctx, executions any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BulkInsertIgnore", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).BulkInsertIgnore), ctx, executions)
+}
+
+// DeleteBySource mocks base method.
+func (m *MockDaytradeExecutionRepository) DeleteBySource(ctx context.Context, source string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteBySource", ctx, source)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteBySource indicates an expected call of DeleteBySource.
+func (mr *MockDaytradeExecutionRepositoryMockRecorder) DeleteBySource(ctx, source any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBySource", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).DeleteBySource), ctx, source)
 }
 
 // FindByDate mocks base method.

@@ -388,6 +388,124 @@ curl "http://localhost:8080/fin-announcements/next?symbol=7203"
 }
 ```
 
+#### デイトレード実現損益サマリー取得
+
+SBI CSV でインポートしたデイトレード取引の損益サマリーを集計します。
+
+- **URL**: `/daytrade/summary`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `granularity` (必須): 集計粒度 `daily` / `monthly` / `yearly` / `all`
+  - `from` (任意): 開始日 (YYYY-MM-DD)
+  - `to` (任意): 終了日 (YYYY-MM-DD)
+
+**Example Request:**
+
+```bash
+curl "http://localhost:8080/daytrade/summary?granularity=monthly&from=2026-01-01&to=2026-05-31"
+```
+
+#### デイトレード銘柄別サマリー取得
+
+- **URL**: `/daytrade/summary-by-symbol`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `from` (任意): 開始日 (YYYY-MM-DD)
+  - `to` (任意): 終了日 (YYYY-MM-DD)
+
+#### デイトレード約定一覧取得
+
+指定日の約定履歴を取得します。
+
+- **URL**: `/daytrade/executions`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `date` (必須): 約定日 (YYYY-MM-DD)
+
+#### デイトレードデータ期間取得
+
+インポート済みデータの最古・最新の約定日を返します。
+
+- **URL**: `/daytrade/range`
+- **Method**: `GET`
+
+#### SBI CSV インポート
+
+SBI 証券の信用取引約定履歴 CSV をインポートします。
+
+- **URL**: `/daytrade/executions/import`
+- **Method**: `POST`
+- **Content-Type**: `multipart/form-data`
+- **Form Fields**:
+  - `file` (必須): SBI CSV ファイル（Shift-JIS エンコード）
+  - `replace` (任意): `true` を指定すると既存の SBI インポートデータを全削除してから再挿入する（デフォルト: 増分インポート）
+
+**Example Request:**
+
+```bash
+# 増分インポート（重複はスキップ）
+curl -X POST http://localhost:8080/daytrade/executions/import \
+  -F "file=@DOMESTIC_STOCK_20260523090406.csv"
+
+# 置換インポート（既存 SBI データを全削除して再挿入）
+curl -X POST http://localhost:8080/daytrade/executions/import \
+  -F "file=@DOMESTIC_STOCK_20260523090406.csv" \
+  -F "replace=true"
+```
+
+**Response Example:**
+
+```json
+{
+  "inserted": 1128,
+  "skipped":  0,
+  "deleted":  1128
+}
+```
+
+- `inserted`: 今回挿入した件数
+- `skipped`: UNIQUE 制約の重複によりスキップした件数
+- `deleted`: 置換モード時に削除した件数（通常インポート時は `null`）
+
+---
+
+### SBI CSV フォーマットについて
+
+#### 新旧フォーマットの違い
+
+SBI 証券の約定履歴 CSV は時期によってカラム順序が異なります。パーサは**ヘッダ行を動的に解析**するため、新旧どちらのフォーマットも自動的に処理します。
+
+| カラム | 旧フォーマット | 新フォーマット（`DOMESTIC_STOCK_*`） |
+|---|---|---|
+| ファイル判別 | `信用` カラムあり | `口座` カラムあり |
+| 取引種別 (`trade_kind`) | `取引` 列の値（例: `売建`） | 空文字（カラムなし） |
+| 建玉種別 (`margin_kind`) | `信用` 列の値（例: `返済売`） | `取引` 列の値（例: `返済売`） |
+
+#### 同一取引の重複識別 (`occurrence_no`)
+
+同じ約定日・銘柄・価格・数量を複数同日約定した場合（部分約定の積み重ねや同一値段での複数約定）、UNIQUE キーが衝突します。これを識別するため `occurrence_no`（0 始まりの連番）を UNIQUE キーに含めています。
+
+```
+UNIQUE KEY: (executed_on, ticker_symbol, trade_kind, margin_kind,
+             quantity, trade_amount, unit_price, profit_loss, occurrence_no)
+```
+
+#### SBI Web 表示と CSV の損益差異について
+
+SBI の「信用取引損益照会」画面と約定履歴 CSV のエクスポートでは、実現損益が**数円〜十数円程度ずれることがあります**。これは SBI の仕様です。
+
+確認済みの原因：
+- **平均取得単価の精度差**: SBI 内部システムはより高精度で平均取得単価を管理しているが、CSV エクスポートでは小数点以下 0〜1 桁に丸めて出力される。この丸め差が多数の取引で積み重なる
+- **集計基準の違い**: Web 画面の損益集計と CSV エクスポートで、端数処理や集計ロジックが微妙に異なる場合がある
+
+このシステムは **SBI 公式の CSV（信用決済明細）の合計値と一致する値を表示**しています。
+
+#### 制度信用 日計りの諸費用
+
+一般信用の売り在庫がない場合に制度信用で売建てを行った取引では、**同日決済（日計り）でも貸株料・金利が 1 日分発生します**。これらの諸費用は CSV の `実現損益(税引前・円)` にあらかじめ差し引き済みの値として含まれているため、インポート後の損益集計に自動的に反映されます。
+
+---
+
 #### 財務情報取得
 
 指定した銘柄の財務情報（業績）の直近 N 四半期分を取得します。

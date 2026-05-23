@@ -185,3 +185,66 @@ func TestParseSBIDaytradeCSV_LimitsSize(t *testing.T) {
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, ErrParse)
 }
+
+func TestParseSBIDaytradeCSV_NewFormat_ShiftJIS(t *testing.T) {
+	f, err := os.Open("testdata/sbi_sample_new_sjis.csv")
+	require.NoError(t, err)
+	defer f.Close()
+
+	got, err := ParseSBIDaytradeCSV(f, testNow)
+	require.NoError(t, err)
+	require.Len(t, got, 3)
+
+	// 新フォーマット: tradeKind="" / marginKind=取引列の値
+	e := got[0]
+	assert.Equal(t, "9984", e.TickerSymbol)
+	assert.Equal(t, "ソフトバンクグループ", e.BrandName)
+	assert.Equal(t, "", e.TradeKind, "新フォーマットはtradeKindが空")
+	assert.Equal(t, "返済売", e.MarginKind)
+	assert.Equal(t, uint32(200), e.Quantity)
+	assert.Equal(t, int64(1188860), e.TradeAmount)
+	assert.Equal(t, int64(1460), e.ProfitLoss)
+	assert.True(t, decimal.NewFromFloat(5944.3).Equal(e.UnitPrice), "unitPrice mismatch: %s", e.UnitPrice)
+	assert.True(t, decimal.NewFromFloat(5937).Equal(e.AverageCost), "averageCost mismatch: %s", e.AverageCost)
+	assert.Equal(t, "sbi", e.Source)
+	assert.Equal(t, time.Date(2026, 5, 21, 0, 0, 0, 0, time.Local), e.ExecutedOn)
+
+	// 2行目: マイナス損益
+	assert.Equal(t, int64(-800), got[1].ProfitLoss)
+	assert.Equal(t, "", got[1].TradeKind)
+
+	// 3行目: 返済買
+	assert.Equal(t, "返済買", got[2].MarginKind)
+}
+
+func TestParseSBIDaytradeCSV_OccurrenceNo_UniqueRows(t *testing.T) {
+	// 重複のない場合は全行 occurrence_no = 0
+	f, err := os.Open("testdata/sbi_sample_sjis.csv")
+	require.NoError(t, err)
+	defer f.Close()
+
+	got, err := ParseSBIDaytradeCSV(f, testNow)
+	require.NoError(t, err)
+	for i, e := range got {
+		assert.Equal(t, uint32(0), e.OccurrenceNo, "row %d should have occurrence_no=0", i)
+	}
+}
+
+func TestParseSBIDaytradeCSV_OccurrenceNo_Duplicates(t *testing.T) {
+	// 同一自然キーが3行ある場合 → 0, 1, 2 と採番される
+	header := `"約定日","取引","銘柄","信用","数量","約定代金","単価","平均取得単価","売買損益(税引前・円)"` + "\n"
+	row := `"2026/5/14","売建","ソフトバンクグループ 9984","返済売","100","596,940","5,969.4","5,960","+840"` + "\n"
+	rowDiff := `"2026/5/14","売建","ソフトバンクグループ 9984","返済売","100","596,940","5,969.4","5,960","-100"` + "\n"
+	content := header + row + row + row + rowDiff
+
+	got, err := ParseSBIDaytradeCSV(bytes.NewReader([]byte(content)), testNow)
+	require.NoError(t, err)
+	require.Len(t, got, 4)
+
+	// 最初の3行は同一キー → 0, 1, 2
+	assert.Equal(t, uint32(0), got[0].OccurrenceNo)
+	assert.Equal(t, uint32(1), got[1].OccurrenceNo)
+	assert.Equal(t, uint32(2), got[2].OccurrenceNo)
+	// 4行目は損益が違う別キー → 0
+	assert.Equal(t, uint32(0), got[3].OccurrenceNo)
+}

@@ -16,6 +16,7 @@ import (
 	time "time"
 
 	models "github.com/Code0716/stock-price-repository/models"
+	usecase "github.com/Code0716/stock-price-repository/usecase"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -89,17 +90,32 @@ func (mr *MockDaytradeInteractorMockRecorder) GetSummary(ctx, from, to, g any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSummary", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetSummary), ctx, from, to, g)
 }
 
-// ImportSBICsv mocks base method.
-func (m *MockDaytradeInteractor) ImportSBICsv(ctx context.Context, r io.Reader) (*models.DaytradeImportResult, error) {
+// GetSummaryByTickerSymbol mocks base method.
+func (m *MockDaytradeInteractor) GetSummaryByTickerSymbol(ctx context.Context, from, to *time.Time) ([]*models.DaytradeSymbolSummary, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ImportSBICsv", ctx, r)
+	ret := m.ctrl.Call(m, "GetSummaryByTickerSymbol", ctx, from, to)
+	ret0, _ := ret[0].([]*models.DaytradeSymbolSummary)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSummaryByTickerSymbol indicates an expected call of GetSummaryByTickerSymbol.
+func (mr *MockDaytradeInteractorMockRecorder) GetSummaryByTickerSymbol(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSummaryByTickerSymbol", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetSummaryByTickerSymbol), ctx, from, to)
+}
+
+// ImportSBICsv mocks base method.
+func (m *MockDaytradeInteractor) ImportSBICsv(ctx context.Context, r io.Reader, opts usecase.ImportOptions) (*models.DaytradeImportResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ImportSBICsv", ctx, r, opts)
 	ret0, _ := ret[0].(*models.DaytradeImportResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ImportSBICsv indicates an expected call of ImportSBICsv.
-func (mr *MockDaytradeInteractorMockRecorder) ImportSBICsv(ctx, r any) *gomock.Call {
+func (mr *MockDaytradeInteractorMockRecorder) ImportSBICsv(ctx, r, opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportSBICsv", reflect.TypeOf((*MockDaytradeInteractor)(nil).ImportSBICsv), ctx, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportSBICsv", reflect.TypeOf((*MockDaytradeInteractor)(nil).ImportSBICsv), ctx, r, opts)
 }

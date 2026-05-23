@@ -27,10 +27,132 @@ const (
 // ErrParse CSV パースエラーの sentinel
 var ErrParse = errors.New("csv parse error")
 
+// columnMap ヘッダ行から検出した各カラムの列インデックス。
+// tradeKindCol == -1 は新フォーマット (tradeKind は空文字固定)。
+type columnMap struct {
+	brand       int
+	tradeKindCol int // -1 = 新フォーマット (取引 列が marginKind を意味する)
+	marginKind  int
+	quantity    int
+	tradeAmount int
+	unitPrice   int
+	averageCost int
+	profitLoss  int
+}
+
+// defaultColumnMap 旧フォーマット固定位置フォールバック。
+// ヘッダ行が検出できなかった場合に使用 (後方互換)。
+var defaultColumnMap = columnMap{
+	brand:        2,
+	tradeKindCol: 1,
+	marginKind:   3,
+	quantity:     4,
+	tradeAmount:  5,
+	unitPrice:    6,
+	averageCost:  7,
+	profitLoss:   8,
+}
+
+// resolveColumn は candidates の順に idx を引き、最初にマッチした列インデックスを返す。
+func resolveColumn(idx map[string]int, candidates ...string) (int, bool) {
+	for _, name := range candidates {
+		if i, ok := idx[name]; ok {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+// findProfitLossColumn は「損益」を含む列名を record から探してインデックスを返す。
+func findProfitLossColumn(idx map[string]int, record []string) (int, bool) {
+	for _, name := range record {
+		n := strings.TrimSpace(name)
+		if strings.Contains(n, "損益") {
+			return idx[n], true
+		}
+	}
+	return 0, false
+}
+
+// detectColumnMap ヘッダ行 (「約定日」を含む行) から列名→インデックスの map を構築する。
+// 旧フォーマット: 「信用」列あり → tradeKind=取引列, marginKind=信用列
+// 新フォーマット: 「口座」列あり / 「信用」列なし → tradeKind="", marginKind=取引列
+func detectColumnMap(record []string) (columnMap, bool) {
+	idx := make(map[string]int, len(record))
+	for i, v := range record {
+		idx[strings.TrimSpace(v)] = i
+	}
+
+	if _, ok := idx["約定日"]; !ok {
+		return columnMap{}, false
+	}
+
+	brand, ok := resolveColumn(idx, "銘柄名", "銘柄")
+	if !ok {
+		return columnMap{}, false
+	}
+	quantity, ok := idx["数量"]
+	if !ok {
+		return columnMap{}, false
+	}
+	tradeAmount, ok := resolveColumn(idx, "売却/決済額", "約定代金")
+	if !ok {
+		return columnMap{}, false
+	}
+	unitPrice, ok := idx["単価"]
+	if !ok {
+		return columnMap{}, false
+	}
+	averageCost, ok := resolveColumn(idx, "平均取得価額", "平均取得単価")
+	if !ok {
+		return columnMap{}, false
+	}
+	profitLoss, ok := findProfitLossColumn(idx, record)
+	if !ok {
+		return columnMap{}, false
+	}
+
+	cm := columnMap{
+		brand:       brand,
+		quantity:    quantity,
+		tradeAmount: tradeAmount,
+		unitPrice:   unitPrice,
+		averageCost: averageCost,
+		profitLoss:  profitLoss,
+	}
+
+	// フォーマット判別: 「信用」列があれば旧、なければ新
+	if shinyo, hasShinyo := idx["信用"]; hasShinyo {
+		cm.tradeKindCol = idx["取引"]
+		cm.marginKind = shinyo
+	} else {
+		cm.tradeKindCol = -1
+		torihiki, hasTorihiki := idx["取引"]
+		if !hasTorihiki {
+			return columnMap{}, false
+		}
+		cm.marginKind = torihiki
+	}
+
+	return cm, true
+}
+
+// naturalKey は occurrence_no 採番に用いる同一性判定キー
+type naturalKey struct {
+	executedOn  string
+	tickerSymbol string
+	tradeKind   string
+	marginKind  string
+	quantity    string
+	tradeAmount string
+	unitPrice   string
+	profitLoss  string
+}
+
 // ParseSBIDaytradeCSV SBI証券の国内株式取引履歴CSVをパースしてドメインモデルに変換する。
 // CSVはShift-JIS(CP932)で出力される。UTF-8 BOMがあればUTF-8として扱う。
-// データ行は14行目以降 (1〜13行目はメタ情報/ヘッダー)。
-// CSVは約定日の降順 (上が新しい/下が古い) だが、挿入順序には依存しない。
+// ヘッダ行 (「約定日」を含む行) を動的に検出し、旧・新フォーマット両対応。
+// 同一自然キーの行が複数ある場合は occurrence_no (0始まり) で区別する。
 func ParseSBIDaytradeCSV(r io.Reader, now time.Time) ([]*models.DaytradeExecution, error) {
 	raw, err := io.ReadAll(io.LimitReader(r, int64(maxCSVBytes)+1))
 	if err != nil {
@@ -49,6 +171,9 @@ func ParseSBIDaytradeCSV(r io.Reader, now time.Time) ([]*models.DaytradeExecutio
 	reader.FieldsPerRecord = -1
 	reader.LazyQuotes = true
 
+	cm := defaultColumnMap
+	cmDetected := false
+
 	var executions []*models.DaytradeExecution
 	recNo := 0
 	for {
@@ -60,20 +185,54 @@ func ParseSBIDaytradeCSV(r io.Reader, now time.Time) ([]*models.DaytradeExecutio
 			return nil, wrapParseError(errors.Wrapf(err, "csv parse record %d", recNo+1))
 		}
 		recNo++
+
+		// ヘッダ行の検出 (1回だけ)
+		if !cmDetected && len(record) > 0 && strings.TrimSpace(record[0]) == "約定日" {
+			if detected, ok := detectColumnMap(record); ok {
+				cm = detected
+				cmDetected = true
+			}
+			continue
+		}
+
 		if len(record) < dataColumns {
 			continue
 		}
-		// データ行は先頭列が "YYYY/M/D" 形式の日付。それ以外はメタ/ヘッダー行としてスキップ。
+		// データ行は先頭列が "YYYY/M/D" 形式の日付
 		if _, dateErr := time.ParseInLocation(executedOnLayout, strings.TrimSpace(record[0]), time.Local); dateErr != nil {
 			continue
 		}
-		ex, err := buildExecution(record, now)
+		ex, err := buildExecutionMapped(record, cm, now)
 		if err != nil {
 			return nil, wrapParseError(errors.Wrapf(err, "csv data record %d", recNo))
 		}
 		executions = append(executions, ex)
 	}
+
+	// occurrence_no 採番: 同一自然キーのグループ内で 0, 1, 2... を割り振る
+	assignOccurrenceNo(executions)
+
 	return executions, nil
+}
+
+// assignOccurrenceNo は slice を走査し、同一自然キーの行に 0始まりの通し番号を付与する。
+// CSV の出現順を保持するため slice を前から舐める。
+func assignOccurrenceNo(rows []*models.DaytradeExecution) {
+	counts := make(map[naturalKey]uint32)
+	for _, ex := range rows {
+		k := naturalKey{
+			executedOn:   ex.ExecutedOn.Format("2006-01-02"),
+			tickerSymbol: ex.TickerSymbol,
+			tradeKind:    ex.TradeKind,
+			marginKind:   ex.MarginKind,
+			quantity:     strconv.FormatUint(uint64(ex.Quantity), 10),
+			tradeAmount:  strconv.FormatInt(ex.TradeAmount, 10),
+			unitPrice:    ex.UnitPrice.String(),
+			profitLoss:   strconv.FormatInt(ex.ProfitLoss, 10),
+		}
+		ex.OccurrenceNo = counts[k]
+		counts[k]++
+	}
 }
 
 func wrapParseError(err error) error {
@@ -103,42 +262,46 @@ func decodeBytes(b []byte) ([]byte, error) {
 
 var brandRe = regexp.MustCompile(`^(.+?)[\s　]+([0-9A-Z]{4,5})$`)
 
-func buildExecution(record []string, now time.Time) (*models.DaytradeExecution, error) {
+// buildExecutionMapped は columnMap を使ってデータ行をドメインモデルに変換する。
+func buildExecutionMapped(record []string, cm columnMap, now time.Time) (*models.DaytradeExecution, error) {
 	executedOn, err := time.ParseInLocation("2006/1/2", strings.TrimSpace(record[0]), time.Local)
 	if err != nil {
 		return nil, errors.Wrap(err, "executedOn")
 	}
 
-	tradeKind := strings.TrimSpace(record[1])
+	var tradeKind string
+	if cm.tradeKindCol >= 0 {
+		tradeKind = strings.TrimSpace(record[cm.tradeKindCol])
+	}
 
-	brandName, tickerSymbol, err := splitBrand(record[2])
+	brandName, tickerSymbol, err := splitBrand(record[cm.brand])
 	if err != nil {
 		return nil, err
 	}
 
-	marginKind := strings.TrimSpace(record[3])
+	marginKind := strings.TrimSpace(record[cm.marginKind])
 
-	quantity, err := parseUintComma(record[4])
+	quantity, err := parseUintComma(record[cm.quantity])
 	if err != nil {
 		return nil, errors.Wrap(err, "quantity")
 	}
 
-	tradeAmount, err := parseIntComma(record[5])
+	tradeAmount, err := parseIntComma(record[cm.tradeAmount])
 	if err != nil {
 		return nil, errors.Wrap(err, "tradeAmount")
 	}
 
-	unitPrice, err := parseDecimalComma(record[6])
+	unitPrice, err := parseDecimalComma(record[cm.unitPrice])
 	if err != nil {
 		return nil, errors.Wrap(err, "unitPrice")
 	}
 
-	averageCost, err := parseDecimalComma(record[7])
+	averageCost, err := parseDecimalComma(record[cm.averageCost])
 	if err != nil {
 		return nil, errors.Wrap(err, "averageCost")
 	}
 
-	profitLoss, err := parseSignedIntComma(record[8])
+	profitLoss, err := parseSignedIntComma(record[cm.profitLoss])
 	if err != nil {
 		return nil, errors.Wrap(err, "profitLoss")
 	}
@@ -154,6 +317,7 @@ func buildExecution(record []string, now time.Time) (*models.DaytradeExecution, 
 		UnitPrice:    unitPrice,
 		AverageCost:  averageCost,
 		ProfitLoss:   profitLoss,
+		OccurrenceNo: 0, // assignOccurrenceNo で上書きされる
 		Source:       "sbi",
 		CreatedAt:    now,
 		UpdatedAt:    now,

@@ -39,6 +39,7 @@ func newDaytradeExecution(db *gorm.DB, opts ...gen.DOOption) daytradeExecution {
 	_daytradeExecution.UnitPrice = field.NewFloat64(tableName, "unit_price")
 	_daytradeExecution.AverageCost = field.NewFloat64(tableName, "average_cost")
 	_daytradeExecution.ProfitLoss = field.NewInt64(tableName, "profit_loss")
+	_daytradeExecution.OccurrenceNo = field.NewUint32(tableName, "occurrence_no")
 	_daytradeExecution.Source = field.NewString(tableName, "source")
 	_daytradeExecution.CreatedAt = field.NewTime(tableName, "created_at")
 	_daytradeExecution.UpdatedAt = field.NewTime(tableName, "updated_at")
@@ -63,6 +64,7 @@ type daytradeExecution struct {
 	UnitPrice    field.Float64 // 単価
 	AverageCost  field.Float64 // 平均取得単価
 	ProfitLoss   field.Int64   // 売買損益 (税引前・円)
+	OccurrenceNo field.Uint32  // 同一自然キー内での出現順序 (0始まり)
 	Source       field.String  // CSV 出力元
 	CreatedAt    field.Time
 	UpdatedAt    field.Time
@@ -93,6 +95,7 @@ func (d *daytradeExecution) updateTableName(table string) *daytradeExecution {
 	d.UnitPrice = field.NewFloat64(table, "unit_price")
 	d.AverageCost = field.NewFloat64(table, "average_cost")
 	d.ProfitLoss = field.NewInt64(table, "profit_loss")
+	d.OccurrenceNo = field.NewUint32(table, "occurrence_no")
 	d.Source = field.NewString(table, "source")
 	d.CreatedAt = field.NewTime(table, "created_at")
 	d.UpdatedAt = field.NewTime(table, "updated_at")
@@ -112,7 +115,7 @@ func (d *daytradeExecution) GetFieldByName(fieldName string) (field.OrderExpr, b
 }
 
 func (d *daytradeExecution) fillFieldMap() {
-	d.fieldMap = make(map[string]field.Expr, 14)
+	d.fieldMap = make(map[string]field.Expr, 15)
 	d.fieldMap["id"] = d.ID
 	d.fieldMap["executed_on"] = d.ExecutedOn
 	d.fieldMap["trade_kind"] = d.TradeKind
@@ -124,6 +127,7 @@ func (d *daytradeExecution) fillFieldMap() {
 	d.fieldMap["unit_price"] = d.UnitPrice
 	d.fieldMap["average_cost"] = d.AverageCost
 	d.fieldMap["profit_loss"] = d.ProfitLoss
+	d.fieldMap["occurrence_no"] = d.OccurrenceNo
 	d.fieldMap["source"] = d.Source
 	d.fieldMap["created_at"] = d.CreatedAt
 	d.fieldMap["updated_at"] = d.UpdatedAt

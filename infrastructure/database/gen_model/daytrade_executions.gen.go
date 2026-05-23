@@ -13,17 +13,18 @@ const TableNameDaytradeExecution = "daytrade_executions"
 // DaytradeExecution mapped from table <daytrade_executions>
 type DaytradeExecution struct {
 	ID           uint64    `gorm:"column:id;type:bigint unsigned;primaryKey;autoIncrement:true" json:"id"`
-	ExecutedOn   time.Time `gorm:"column:executed_on;type:date;not null;comment:約定日" json:"executed_on"`                             // 約定日
-	TradeKind    string    `gorm:"column:trade_kind;type:varchar(16);not null;comment:取引区分 (売建/買建/現物買付/現物売却 等)" json:"trade_kind"`   // 取引区分 (売建/買建/現物買付/現物売却 等)
-	MarginKind   string    `gorm:"column:margin_kind;type:varchar(16);not null;comment:信用区分 (返済売/返済買/新規買/新規売/空)" json:"margin_kind"` // 信用区分 (返済売/返済買/新規買/新規売/空)
-	TickerSymbol string    `gorm:"column:ticker_symbol;type:varchar(10);not null;comment:銘柄コード (4桁)" json:"ticker_symbol"`           // 銘柄コード (4桁)
-	BrandName    string    `gorm:"column:brand_name;type:varchar(255);not null;comment:銘柄名" json:"brand_name"`                       // 銘柄名
-	Quantity     uint32    `gorm:"column:quantity;type:int unsigned;not null;comment:数量" json:"quantity"`                            // 数量
-	TradeAmount  int64     `gorm:"column:trade_amount;type:bigint;not null;comment:約定代金 (円)" json:"trade_amount"`                    // 約定代金 (円)
-	UnitPrice    float64   `gorm:"column:unit_price;type:decimal(15,4);not null;comment:単価" json:"unit_price"`                       // 単価
-	AverageCost  float64   `gorm:"column:average_cost;type:decimal(15,4);not null;comment:平均取得単価" json:"average_cost"`               // 平均取得単価
-	ProfitLoss   int64     `gorm:"column:profit_loss;type:bigint;not null;comment:売買損益 (税引前・円)" json:"profit_loss"`                  // 売買損益 (税引前・円)
-	Source       string    `gorm:"column:source;type:varchar(16);not null;default:sbi;comment:CSV 出力元" json:"source"`                // CSV 出力元
+	ExecutedOn   time.Time `gorm:"column:executed_on;type:date;not null;comment:約定日" json:"executed_on"`                                  // 約定日
+	TradeKind    string    `gorm:"column:trade_kind;type:varchar(16);not null;comment:取引区分 (売建/買建/現物買付/現物売却 等)" json:"trade_kind"`        // 取引区分 (売建/買建/現物買付/現物売却 等)
+	MarginKind   string    `gorm:"column:margin_kind;type:varchar(16);not null;comment:信用区分 (返済売/返済買/新規買/新規売/空)" json:"margin_kind"`      // 信用区分 (返済売/返済買/新規買/新規売/空)
+	TickerSymbol string    `gorm:"column:ticker_symbol;type:varchar(10);not null;comment:銘柄コード (4桁)" json:"ticker_symbol"`                // 銘柄コード (4桁)
+	BrandName    string    `gorm:"column:brand_name;type:varchar(255);not null;comment:銘柄名" json:"brand_name"`                            // 銘柄名
+	Quantity     uint32    `gorm:"column:quantity;type:int unsigned;not null;comment:数量" json:"quantity"`                                 // 数量
+	TradeAmount  int64     `gorm:"column:trade_amount;type:bigint;not null;comment:約定代金 (円)" json:"trade_amount"`                         // 約定代金 (円)
+	UnitPrice    float64   `gorm:"column:unit_price;type:decimal(15,4);not null;comment:単価" json:"unit_price"`                            // 単価
+	AverageCost  float64   `gorm:"column:average_cost;type:decimal(15,4);not null;comment:平均取得単価" json:"average_cost"`                    // 平均取得単価
+	ProfitLoss   int64     `gorm:"column:profit_loss;type:bigint;not null;comment:売買損益 (税引前・円)" json:"profit_loss"`                       // 売買損益 (税引前・円)
+	OccurrenceNo uint32    `gorm:"column:occurrence_no;type:tinyint unsigned;not null;comment:同一自然キー内での出現順序 (0始まり)" json:"occurrence_no"` // 同一自然キー内での出現順序 (0始まり)
+	Source       string    `gorm:"column:source;type:varchar(16);not null;default:sbi;comment:CSV 出力元" json:"source"`                     // CSV 出力元
 	CreatedAt    time.Time `gorm:"column:created_at;type:datetime;not null" json:"created_at"`
 	UpdatedAt    time.Time `gorm:"column:updated_at;type:datetime;not null" json:"updated_at"`
 }

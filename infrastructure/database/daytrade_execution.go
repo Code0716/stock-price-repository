@@ -29,6 +29,21 @@ func NewDaytradeExecutionRepositoryImpl(db *gorm.DB) repositories.DaytradeExecut
 	}
 }
 
+func (r *DaytradeExecutionRepositoryImpl) DeleteBySource(ctx context.Context, source string) (int64, error) {
+	db, ok := GetTxDB(ctx)
+	if !ok {
+		db = r.db
+	}
+
+	result := db.WithContext(ctx).
+		Where("source = ?", source).
+		Delete(&genModel.DaytradeExecution{})
+	if result.Error != nil {
+		return 0, errors.Wrap(result.Error, "DaytradeExecutionRepositoryImpl.DeleteBySource error")
+	}
+	return result.RowsAffected, nil
+}
+
 func (r *DaytradeExecutionRepositoryImpl) BulkInsertIgnore(ctx context.Context, executions []*models.DaytradeExecution) (int, error) {
 	db, ok := GetTxDB(ctx)
 	if !ok {
@@ -110,6 +125,61 @@ func (r *DaytradeExecutionRepositoryImpl) Aggregate(ctx context.Context, from, t
 	return buckets, nil
 }
 
+type symbolSummaryRow struct {
+	TickerSymbol string `gorm:"column:ticker_symbol"`
+	BrandName    string `gorm:"column:brand_name"`
+	ProfitLoss   int64  `gorm:"column:profit_loss"`
+	TradeCount   int    `gorm:"column:trade_count"`
+	WinCount     int    `gorm:"column:win_count"`
+	LossCount    int    `gorm:"column:loss_count"`
+}
+
+func (r *DaytradeExecutionRepositoryImpl) AggregateByTickerSymbol(ctx context.Context, from, to *time.Time) ([]*models.DaytradeSymbolSummary, error) {
+	db, ok := GetTxDB(ctx)
+	if !ok {
+		db = r.db
+	}
+
+	query := db.WithContext(ctx).
+		Table("daytrade_executions AS d").
+		Joins("LEFT JOIN stock_brand AS b ON d.ticker_symbol = b.ticker_symbol AND b.deleted_at IS NULL").
+		Select(
+			"d.ticker_symbol," +
+				" COALESCE(MAX(b.name), MAX(d.brand_name)) AS brand_name," +
+				" SUM(d.profit_loss) AS profit_loss," +
+				" COUNT(*) AS trade_count," +
+				" SUM(CASE WHEN d.profit_loss > 0 THEN 1 ELSE 0 END) AS win_count," +
+				" SUM(CASE WHEN d.profit_loss < 0 THEN 1 ELSE 0 END) AS loss_count",
+		).
+		Group("d.ticker_symbol").
+		Order("profit_loss DESC")
+
+	if from != nil {
+		query = query.Where("d.executed_on >= ?", from.Format("2006-01-02"))
+	}
+	if to != nil {
+		query = query.Where("d.executed_on <= ?", to.Format("2006-01-02"))
+	}
+
+	var rows []symbolSummaryRow
+	if err := query.Scan(&rows).Error; err != nil {
+		return nil, errors.Wrap(err, "DaytradeExecutionRepositoryImpl.AggregateByTickerSymbol error")
+	}
+
+	results := make([]*models.DaytradeSymbolSummary, 0, len(rows))
+	for _, row := range rows {
+		results = append(results, &models.DaytradeSymbolSummary{
+			TickerSymbol: row.TickerSymbol,
+			BrandName:    row.BrandName,
+			ProfitLoss:   row.ProfitLoss,
+			TradeCount:   row.TradeCount,
+			WinCount:     row.WinCount,
+			LossCount:    row.LossCount,
+		})
+	}
+	return results, nil
+}
+
 func (r *DaytradeExecutionRepositoryImpl) FindByDate(ctx context.Context, date time.Time) ([]*models.DaytradeExecution, error) {
 	tx, ok := GetTxQuery(ctx)
 	if !ok {
@@ -176,6 +246,7 @@ func (r *DaytradeExecutionRepositoryImpl) convertToDomainModel(m *genModel.Daytr
 		UnitPrice:    decimal.NewFromFloat(m.UnitPrice),
 		AverageCost:  decimal.NewFromFloat(m.AverageCost),
 		ProfitLoss:   m.ProfitLoss,
+		OccurrenceNo: m.OccurrenceNo,
 		Source:       m.Source,
 		CreatedAt:    m.CreatedAt,
 		UpdatedAt:    m.UpdatedAt,
@@ -196,6 +267,7 @@ func (r *DaytradeExecutionRepositoryImpl) convertToDBModel(m *models.DaytradeExe
 		UnitPrice:    unitPrice,
 		AverageCost:  averageCost,
 		ProfitLoss:   m.ProfitLoss,
+		OccurrenceNo: m.OccurrenceNo,
 		Source:       m.Source,
 		CreatedAt:    m.CreatedAt,
 		UpdatedAt:    m.UpdatedAt,

@@ -72,3 +72,29 @@ type DaytradeSymbolSummary struct {
 	WinCount     int    `json:"winCount"`
 	LossCount    int    `json:"lossCount"`
 }
+
+// DaytradeStatsAggregate スカラー集計の内部受け皿（MAX/MIN 含む）
+type DaytradeStatsAggregate struct {
+	ProfitLoss  int64
+	TradeCount  int
+	GrossProfit int64
+	GrossLoss   int64
+	WinCount    int
+	LossCount   int
+	MaxProfit   int64 // MAX(profit_loss)。データなしなら 0
+	MaxLoss     int64 // MIN(profit_loss)。データなしなら 0
+}
+
+// DaytradePeriodStats 期間統計（/daytrade/stats API レスポンス）
+type DaytradePeriodStats struct {
+	ProfitLoss    int64 `json:"profitLoss"`
+	TradeCount    int   `json:"tradeCount"`
+	GrossProfit   int64 `json:"grossProfit"`
+	GrossLoss     int64 `json:"grossLoss"`
+	WinCount      int   `json:"winCount"`
+	LossCount     int   `json:"lossCount"`
+	MaxProfit     int64 `json:"maxProfit"`
+	MaxLoss       int64 `json:"maxLoss"`
+	MaxDrawdown   int64 `json:"maxDrawdown"`
+	MaxLossStreak int   `json:"maxLossStreak"`
+}

@@ -22,4 +22,6 @@ type DaytradeExecutionRepository interface {
 	FindByDate(ctx context.Context, date time.Time) ([]*models.DaytradeExecution, error)
 	// 取り込み済みデータがカバーする期間。データが無ければ (nil, nil, nil)。
 	GetCoveredRange(ctx context.Context) (minDate, maxDate *time.Time, err error)
+	// AggregateStats スカラー集計（MAX/MIN 含む）。from / to は nil 可。両方 nil なら全期間。
+	AggregateStats(ctx context.Context, from, to *time.Time) (*models.DaytradeStatsAggregate, error)
 }

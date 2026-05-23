@@ -26,6 +26,8 @@ type DaytradeInteractor interface {
 	GetSummaryByTickerSymbol(ctx context.Context, from, to *time.Time) ([]*models.DaytradeSymbolSummary, error)
 	GetExecutionsByDate(ctx context.Context, date time.Time) ([]*models.DaytradeExecution, error)
 	GetCoveredRange(ctx context.Context) (minDate, maxDate *time.Time, err error)
+	// GetPeriodStats は最大ドローダウン・最大連敗を含む期間統計を返す。from / to は nil 可。
+	GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error)
 }
 
 type daytradeInteractorImpl struct {
@@ -90,4 +92,28 @@ func (u *daytradeInteractorImpl) GetExecutionsByDate(ctx context.Context, date t
 
 func (u *daytradeInteractorImpl) GetCoveredRange(ctx context.Context) (*time.Time, *time.Time, error) {
 	return u.repo.GetCoveredRange(ctx)
+}
+
+func (u *daytradeInteractorImpl) GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error) {
+	agg, err := u.repo.AggregateStats(ctx, from, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "AggregateStats error")
+	}
+	daily, err := u.repo.Aggregate(ctx, from, to, models.DaytradeSummaryGranularityDaily)
+	if err != nil {
+		return nil, errors.Wrap(err, "Aggregate daily error")
+	}
+	maxDD, maxStreak := daytrade.ComputeEquityStats(daily)
+	return &models.DaytradePeriodStats{
+		ProfitLoss:    agg.ProfitLoss,
+		TradeCount:    agg.TradeCount,
+		GrossProfit:   agg.GrossProfit,
+		GrossLoss:     agg.GrossLoss,
+		WinCount:      agg.WinCount,
+		LossCount:     agg.LossCount,
+		MaxProfit:     agg.MaxProfit,
+		MaxLoss:       agg.MaxLoss,
+		MaxDrawdown:   maxDD,
+		MaxLossStreak: maxStreak,
+	}, nil
 }

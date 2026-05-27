@@ -258,13 +258,11 @@ func TestE2E_CommandName(t *testing.T) {
 
 `StockAPIClient` (`infrastructure/gateway/stock_api_client.go`) が全メソッドを定義。新規メソッド追加時はインターフェースに先に定義してから実装を書く。
 
-### j-Quants 認証フロー
+### j-Quants 認証フロー（V2）
 
-1. `/token/auth_user` → **リフレッシュトークン**取得
-2. `/token/auth_refresh` → **ID トークン**取得
-3. 全リクエストの `Authorization: Bearer <IDトークン>` ヘッダにセット
+全リクエストの `x-api-key` ヘッダに API キー（`J_QUANTS_BASE_URL_V2_API_KEY`）をセットするだけ。
 
-リフレッシュトークンは Redis に保存（TTL 管理あり）。ID トークンは毎回リフレッシュから取得する。
+> **廃止済み（V1）**: メールアドレス・パスワードによる `/token/auth_user` → `/token/auth_refresh` → `Authorization: Bearer` フロー、および Redis へのリフレッシュトークン保存は V1 の仕組みであり、本プロジェクトでは使用していない。
 
 ### 新規 j-Quants エンドポイント追加手順
 

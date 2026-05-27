@@ -8,25 +8,22 @@
 
 ## j-Quants API の構成
 
-### 認証フロー
+### 認証フロー（V2）
 
-1. `/token/auth_user` にメールアドレス・パスワードを POST → **リフレッシュトークン**を取得
-2. `/token/auth_refresh` にリフレッシュトークンを POST → **ID トークン**を取得
-3. 以降の全リクエストの `Authorization: Bearer <IDトークン>` ヘッダに ID トークンをセット
+全リクエストの `x-api-key` ヘッダに API キー（`J_QUANTS_BASE_URL_V2_API_KEY`）をセットするだけ。
 
-リフレッシュトークンは Redis に保存（TTL 管理あり）。ID トークンは毎回リフレッシュから取得する。
+> **廃止済み（V1）**: メールアドレス・パスワードによる `/token/auth_user` → `/token/auth_refresh` → `Authorization: Bearer` フロー、および Redis へのリフレッシュトークン保存は V1 の仕組みであり、本プロジェクトでは使用していない。
 
-### 主要エンドポイント
+### 主要エンドポイント（V2）
 
-| メソッド | j-Quants エンドポイント | 用途 |
-|----------|------------------------|------|
-| `GetStockBrands` | `/listed/info` | 上場銘柄一覧 |
-| `GetAllBrandDailyPricesByDate` | `/prices/daily_quotes` | 指定日の全銘柄日足 |
-| `GetDailyPricesBySymbolAndRange` | `/prices/daily_quotes` | 期間指定の銘柄日足 |
-| `GetFinancialStatementsBySymbol` | `/fins/statements` | 銘柄の財務諸表 |
-| `GetFinancialStatementsByDate` | `/fins/statements` | 日付の財務諸表 |
-| `GetAnnounceFinSchedule` | `/fins/announcement` | 決算発表スケジュール |
-| `GetTradingCalendarsInfo` | `/markets/trading_calendar` | 取引カレンダー |
+| メソッド | V2 エンドポイント | 用途 |
+|----------|-----------------|------|
+| `GetStockBrands` | `/equities/master` | 上場銘柄一覧 |
+| `GetAllBrandDailyPricesByDate` | `/equities/bars/daily?date=` | 指定日の全銘柄日足 |
+| `GetDailyPricesBySymbolAndRange` | `/equities/bars/daily?code=&from=&to=` | 期間指定の銘柄日足 |
+| `GetFinancialStatementsBySymbol` | `/fins/summary?code=` | 銘柄の財務諸表 |
+| `GetFinancialStatementsByDate` | `/fins/summary?date=` | 日付の財務諸表 |
+| `GetAnnounceFinSchedule` | `/equities/earnings-calendar` | 決算発表スケジュール |
 
 ### レスポンス型の配置
 

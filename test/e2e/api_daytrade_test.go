@@ -163,6 +163,7 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Equal(t, int64(2040), body.MaxProfit)
 		assert.Equal(t, int64(-800), body.MaxLoss)
 		assert.GreaterOrEqual(t, body.MaxDrawdown, int64(0))
+		assert.GreaterOrEqual(t, body.MaxRunup, int64(0))
 		assert.GreaterOrEqual(t, body.MaxLossStreak, 0)
 	})
 

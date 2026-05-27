@@ -103,7 +103,7 @@ func (u *daytradeInteractorImpl) GetPeriodStats(ctx context.Context, from, to *t
 	if err != nil {
 		return nil, errors.Wrap(err, "Aggregate daily error")
 	}
-	maxDD, maxStreak := daytrade.ComputeEquityStats(daily)
+	maxDD, maxRunup, maxStreak := daytrade.ComputeEquityStats(daily)
 	return &models.DaytradePeriodStats{
 		ProfitLoss:    agg.ProfitLoss,
 		TradeCount:    agg.TradeCount,
@@ -114,6 +114,7 @@ func (u *daytradeInteractorImpl) GetPeriodStats(ctx context.Context, from, to *t
 		MaxProfit:     agg.MaxProfit,
 		MaxLoss:       agg.MaxLoss,
 		MaxDrawdown:   maxDD,
+		MaxRunup:      maxRunup,
 		MaxLossStreak: maxStreak,
 	}, nil
 }

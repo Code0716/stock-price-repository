@@ -96,5 +96,6 @@ type DaytradePeriodStats struct {
 	MaxProfit     int64 `json:"maxProfit"`
 	MaxLoss       int64 `json:"maxLoss"`
 	MaxDrawdown   int64 `json:"maxDrawdown"`
+	MaxRunup      int64 `json:"maxRunup"`
 	MaxLossStreak int   `json:"maxLossStreak"`
 }

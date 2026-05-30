@@ -29,17 +29,20 @@ func NewDaytradeExecutionRepositoryImpl(db *gorm.DB) repositories.DaytradeExecut
 	}
 }
 
-func (r *DaytradeExecutionRepositoryImpl) DeleteBySource(ctx context.Context, source string) (int64, error) {
+func (r *DaytradeExecutionRepositoryImpl) DeleteBySourceAndDates(ctx context.Context, source string, dates []time.Time) (int64, error) {
+	if len(dates) == 0 {
+		return 0, nil
+	}
 	db, ok := GetTxDB(ctx)
 	if !ok {
 		db = r.db
 	}
 
 	result := db.WithContext(ctx).
-		Where("source = ?", source).
+		Where("source = ? AND executed_on IN ?", source, dates).
 		Delete(&genModel.DaytradeExecution{})
 	if result.Error != nil {
-		return 0, errors.Wrap(result.Error, "DaytradeExecutionRepositoryImpl.DeleteBySource error")
+		return 0, errors.Wrap(result.Error, "DaytradeExecutionRepositoryImpl.DeleteBySourceAndDates error")
 	}
 	return result.RowsAffected, nil
 }

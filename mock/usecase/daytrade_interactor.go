@@ -16,7 +16,6 @@ import (
 	time "time"
 
 	models "github.com/Code0716/stock-price-repository/models"
-	usecase "github.com/Code0716/stock-price-repository/usecase"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -121,16 +120,16 @@ func (mr *MockDaytradeInteractorMockRecorder) GetSummaryByTickerSymbol(ctx, from
 }
 
 // ImportSBICsv mocks base method.
-func (m *MockDaytradeInteractor) ImportSBICsv(ctx context.Context, r io.Reader, opts usecase.ImportOptions) (*models.DaytradeImportResult, error) {
+func (m *MockDaytradeInteractor) ImportSBICsv(ctx context.Context, r io.Reader) (*models.DaytradeImportResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ImportSBICsv", ctx, r, opts)
+	ret := m.ctrl.Call(m, "ImportSBICsv", ctx, r)
 	ret0, _ := ret[0].(*models.DaytradeImportResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ImportSBICsv indicates an expected call of ImportSBICsv.
-func (mr *MockDaytradeInteractorMockRecorder) ImportSBICsv(ctx, r, opts any) *gomock.Call {
+func (mr *MockDaytradeInteractorMockRecorder) ImportSBICsv(ctx, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportSBICsv", reflect.TypeOf((*MockDaytradeInteractor)(nil).ImportSBICsv), ctx, r, opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportSBICsv", reflect.TypeOf((*MockDaytradeInteractor)(nil).ImportSBICsv), ctx, r)
 }

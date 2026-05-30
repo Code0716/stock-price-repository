@@ -12,8 +12,8 @@ import (
 type DaytradeExecutionRepository interface {
 	// 重複は UNIQUE 制約で弾く。返す inserted は実挿入件数。
 	BulkInsertIgnore(ctx context.Context, executions []*models.DaytradeExecution) (inserted int, err error)
-	// DeleteBySource は指定 source のレコードを全削除し、削除件数を返す。
-	DeleteBySource(ctx context.Context, source string) (int64, error)
+	// DeleteBySourceAndDates は指定 source かつ executed_on が dates のいずれかに合致するレコードを削除し、削除件数を返す。dates が空の場合は削除せず 0 を返す。
+	DeleteBySourceAndDates(ctx context.Context, source string, dates []time.Time) (int64, error)
 	// from / to は nil 可。両方 nil なら全期間。
 	Aggregate(ctx context.Context, from, to *time.Time, g models.DaytradeSummaryGranularity) ([]*models.DaytradeSummaryBucket, error)
 	// AggregateByTickerSymbol 銘柄毎の損益を集計。from / to は nil 可。両方 nil なら全期間。

@@ -36,10 +36,7 @@ func (h *DaytradeHandler) ImportSBICsv(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	opts := usecase.ImportOptions{
-		Replace: r.FormValue("replace") == "true",
-	}
-	result, err := h.usecase.ImportSBICsv(r.Context(), file, opts)
+	result, err := h.usecase.ImportSBICsv(r.Context(), file)
 	if err != nil {
 		if errors.Is(err, daytrade.ErrParse) {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)

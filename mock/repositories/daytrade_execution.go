@@ -102,19 +102,19 @@ func (mr *MockDaytradeExecutionRepositoryMockRecorder) BulkInsertIgnore(ctx, exe
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BulkInsertIgnore", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).BulkInsertIgnore), ctx, executions)
 }
 
-// DeleteBySource mocks base method.
-func (m *MockDaytradeExecutionRepository) DeleteBySource(ctx context.Context, source string) (int64, error) {
+// DeleteBySourceAndDates mocks base method.
+func (m *MockDaytradeExecutionRepository) DeleteBySourceAndDates(ctx context.Context, source string, dates []time.Time) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteBySource", ctx, source)
+	ret := m.ctrl.Call(m, "DeleteBySourceAndDates", ctx, source, dates)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// DeleteBySource indicates an expected call of DeleteBySource.
-func (mr *MockDaytradeExecutionRepositoryMockRecorder) DeleteBySource(ctx, source any) *gomock.Call {
+// DeleteBySourceAndDates indicates an expected call of DeleteBySourceAndDates.
+func (mr *MockDaytradeExecutionRepositoryMockRecorder) DeleteBySourceAndDates(ctx, source, dates any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBySource", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).DeleteBySource), ctx, source)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBySourceAndDates", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).DeleteBySourceAndDates), ctx, source, dates)
 }
 
 // FindByDate mocks base method.

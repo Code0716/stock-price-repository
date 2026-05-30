@@ -14,14 +14,8 @@ import (
 	"github.com/Code0716/stock-price-repository/usecase/daytrade"
 )
 
-// ImportOptions ImportSBICsv の動作オプション
-type ImportOptions struct {
-	// Replace が true のとき、source="sbi" の既存データを全削除してから挿入する。
-	Replace bool
-}
-
 type DaytradeInteractor interface {
-	ImportSBICsv(ctx context.Context, r io.Reader, opts ImportOptions) (*models.DaytradeImportResult, error)
+	ImportSBICsv(ctx context.Context, r io.Reader) (*models.DaytradeImportResult, error)
 	GetSummary(ctx context.Context, from, to *time.Time, g models.DaytradeSummaryGranularity) ([]*models.DaytradeSummaryBucket, error)
 	GetSummaryByTickerSymbol(ctx context.Context, from, to *time.Time) ([]*models.DaytradeSymbolSummary, error)
 	GetExecutionsByDate(ctx context.Context, date time.Time) ([]*models.DaytradeExecution, error)
@@ -40,7 +34,7 @@ func NewDaytradeInteractor(tx repositories.Transaction, repo repositories.Daytra
 	return &daytradeInteractorImpl{tx: tx, repo: repo, now: time.Now}
 }
 
-func (u *daytradeInteractorImpl) ImportSBICsv(ctx context.Context, r io.Reader, opts ImportOptions) (*models.DaytradeImportResult, error) {
+func (u *daytradeInteractorImpl) ImportSBICsv(ctx context.Context, r io.Reader) (*models.DaytradeImportResult, error) {
 	rows, err := daytrade.ParseSBIDaytradeCSV(r, u.now())
 	if err != nil {
 		return nil, err
@@ -52,19 +46,27 @@ func (u *daytradeInteractorImpl) ImportSBICsv(ctx context.Context, r io.Reader, 
 	total := len(rows)
 	var inserted int
 	var deleted int64
+
+	dateSet := make(map[time.Time]struct{})
+	for _, row := range rows {
+		dateSet[row.ExecutedOn] = struct{}{}
+	}
+	dates := make([]time.Time, 0, len(dateSet))
+	for d := range dateSet {
+		dates = append(dates, d)
+	}
+
 	if err := u.tx.DoInTx(ctx, func(ctx context.Context) error {
-		if opts.Replace {
-			n, err := u.repo.DeleteBySource(ctx, "sbi")
-			if err != nil {
-				return errors.Wrap(err, "DeleteBySource error")
-			}
-			deleted = n
+		n, err := u.repo.DeleteBySourceAndDates(ctx, "sbi", dates)
+		if err != nil {
+			return errors.Wrap(err, "DeleteBySourceAndDates error")
 		}
-		n, err := u.repo.BulkInsertIgnore(ctx, rows)
+		deleted = n
+		n2, err := u.repo.BulkInsertIgnore(ctx, rows)
 		if err != nil {
 			return errors.Wrap(err, "BulkInsertIgnore error")
 		}
-		inserted = n
+		inserted = n2
 		return nil
 	}); err != nil {
 		return nil, errors.Wrap(err, "DoInTx error")

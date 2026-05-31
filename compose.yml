@@ -17,7 +17,7 @@ services:
       MYSQL_COLLATION: utf8mb4_general_ci
       TZ: $STOCK_PRICE_REPOSITORY_MYSQL_TIMEZONE
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} -e 'SELECT 1' --silent"]
       interval: 5s
       timeout: 5s
       retries: 20

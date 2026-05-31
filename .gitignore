@@ -22,3 +22,6 @@ proto-definitions/
 /*.pb.go
 shell_scripts/
 grpc
+
+# Claude Code の作業用 git worktree（一時的なもの）
+.claude/worktrees/

@@ -26,6 +26,7 @@ var usecaseSet = wire.NewSet(
 	usecase.NewAdjustHistoricalDataForStockSplit,
 	usecase.NewAdjustHistoricalDataForStockConsolidation,
 	usecase.NewDaytradeInteractor,
+	usecase.NewReturnAnalysisInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -90,6 +91,7 @@ var apiSet = wire.NewSet(
 	handler.NewFinAnnouncementHandler,
 	handler.NewFinStatementHandler,
 	handler.NewDaytradeHandler,
+	handler.NewReturnAnalysisHandler,
 	router.NewRouter,
 )
 

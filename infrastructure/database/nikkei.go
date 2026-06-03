@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -50,6 +51,51 @@ func (ni *NikkeiRepositoryImpl) CreateNikkeiStockAverageDailyPrices(ctx context.
 		return errors.Wrap(err, "")
 	}
 	return nil
+}
+
+func (ni *NikkeiRepositoryImpl) ListNikkeiStockAverageDailyPrices(ctx context.Context, from, to *time.Time) (models.IndexStockAverageDailyPrices, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = ni.query
+	}
+
+	do := tx.NikkeiStockAverageDailyPrice.WithContext(ctx)
+	if from != nil {
+		dateFrom := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, from.Location())
+		do = do.Where(tx.NikkeiStockAverageDailyPrice.Date.Gte(dateFrom))
+	}
+	if to != nil {
+		// 日経は日付に時刻9時を持つため、当日終端まで含める
+		dateTo := time.Date(to.Year(), to.Month(), to.Day(), 23, 59, 59, 0, to.Location())
+		do = do.Where(tx.NikkeiStockAverageDailyPrice.Date.Lte(dateTo))
+	}
+
+	rows, err := do.Order(tx.NikkeiStockAverageDailyPrice.Date).Find()
+	if err != nil {
+		return nil, errors.Wrap(err, "ListNikkeiStockAverageDailyPrices error")
+	}
+
+	result := make(models.IndexStockAverageDailyPrices, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, ni.convertToDomainModel(row))
+	}
+	return result, nil
+}
+
+func (ni *NikkeiRepositoryImpl) convertToDomainModel(m *genModel.NikkeiStockAverageDailyPrice) *models.IndexStockAverageDailyPrice {
+	if m == nil {
+		return nil
+	}
+	return &models.IndexStockAverageDailyPrice{
+		Date:      m.Date,
+		Open:      decimal.NewFromFloat(m.OpenPrice),
+		Close:     decimal.NewFromFloat(m.ClosePrice),
+		High:      decimal.NewFromFloat(m.HighPrice),
+		Low:       decimal.NewFromFloat(m.LowPrice),
+		Adjclose:  decimal.NewFromFloat(m.AdjClosePrice),
+		CreatedAt: m.CreatedAt,
+		UpdatedAt: m.UpdatedAt,
+	}
 }
 
 func (ni *NikkeiRepositoryImpl) nikkeiStockAverageDailyPricesToGenModel(averageDailyPrices models.IndexStockAverageDailyPrices) []*genModel.NikkeiStockAverageDailyPrice {

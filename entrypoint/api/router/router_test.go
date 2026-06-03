@@ -27,7 +27,7 @@ func TestNewRouter(t *testing.T) {
 
 	stockPriceHandler := handler.NewStockPriceHandler(mockDailyPriceUsecase, mockHTTPServer, zap.NewNop())
 	stockBrandHandler := handler.NewStockBrandHandler(mockStockBrandUsecase, mockHTTPServer, zap.NewNop())
-	mux := NewRouter(stockPriceHandler, stockBrandHandler, nil, nil, nil, nil, nil)
+	mux := NewRouter(stockPriceHandler, stockBrandHandler, nil, nil, nil, nil, nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/daily-prices", nil)
 	w := httptest.NewRecorder()
@@ -46,7 +46,7 @@ func TestNewRouter_WithNilStockBrandHandler(t *testing.T) {
 	mockHTTPServer := mock_driver.NewMockHTTPServer(ctrl)
 
 	stockPriceHandler := handler.NewStockPriceHandler(mockDailyPriceUsecase, mockHTTPServer, zap.NewNop())
-	mux := NewRouter(stockPriceHandler, nil, nil, nil, nil, nil, nil)
+	mux := NewRouter(stockPriceHandler, nil, nil, nil, nil, nil, nil, nil)
 
 	// /stock-brands エンドポイントにアクセスしても、404が返るはず（パニックしない）
 	req := httptest.NewRequest(http.MethodGet, "/stock-brands", nil)
@@ -65,7 +65,7 @@ func TestNewRouter_WithNilStockPriceHandler(t *testing.T) {
 	mockHTTPServer := mock_driver.NewMockHTTPServer(ctrl)
 
 	stockBrandHandler := handler.NewStockBrandHandler(mockStockBrandUsecase, mockHTTPServer, zap.NewNop())
-	mux := NewRouter(nil, stockBrandHandler, nil, nil, nil, nil, nil)
+	mux := NewRouter(nil, stockBrandHandler, nil, nil, nil, nil, nil, nil)
 
 	// /daily-prices エンドポイントにアクセスしても、404が返るはず（パニックしない）
 	req := httptest.NewRequest(http.MethodGet, "/daily-prices", nil)
@@ -77,7 +77,7 @@ func TestNewRouter_WithNilStockPriceHandler(t *testing.T) {
 }
 
 func TestNewRouter_WithBothNil(t *testing.T) {
-	mux := NewRouter(nil, nil, nil, nil, nil, nil, nil)
+	mux := NewRouter(nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// どちらのエンドポイントにアクセスしても、404が返るはず（パニックしない）
 	tests := []struct {

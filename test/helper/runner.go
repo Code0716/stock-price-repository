@@ -19,6 +19,7 @@ type TestRunnerOptions struct {
 	ExportMasterDataCommand                          *commands.ExportMasterDataCommand
 	SyncFinAnnouncementsCommand                      *commands.SyncFinAnnouncementsCommand
 	SyncFinStatementsCommand                         *commands.SyncFinStatementsCommand
+	BacktestAllStocksCommand                         *commands.BacktestAllStocksCommand
 	IndexInteractor                                  usecase.IndexInteractor
 	SlackAPIClient                                   gateway.SlackAPIClient
 	MySQLDumpClient                                  gateway.MySQLDumpClient
@@ -59,6 +60,9 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 	if opts.SyncFinStatementsCommand == nil {
 		opts.SyncFinStatementsCommand = commands.NewSyncFinStatementsCommand(nil)
 	}
+	if opts.BacktestAllStocksCommand == nil {
+		opts.BacktestAllStocksCommand = commands.NewBacktestAllStocksCommand(nil)
+	}
 
 	return cli.NewRunner(
 		opts.HealthCheckCommand,
@@ -72,6 +76,7 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.ExportMasterDataCommand,
 		opts.SyncFinAnnouncementsCommand,
 		opts.SyncFinStatementsCommand,
+		opts.BacktestAllStocksCommand,
 		opts.IndexInteractor,
 		opts.SlackAPIClient,
 	)

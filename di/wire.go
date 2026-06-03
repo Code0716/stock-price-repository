@@ -28,6 +28,7 @@ var usecaseSet = wire.NewSet(
 	usecase.NewDaytradeInteractor,
 	usecase.NewReturnAnalysisInteractor,
 	usecase.NewBacktestInteractor,
+	usecase.NewStrategyRankingInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -56,6 +57,7 @@ var cliSet = wire.NewSet(
 	commands.NewExportMasterDataCommand,
 	commands.NewSyncFinAnnouncementsCommand,
 	commands.NewSyncFinStatementsCommand,
+	commands.NewBacktestAllStocksCommand,
 )
 
 var databaseSet = wire.NewSet(
@@ -94,6 +96,7 @@ var apiSet = wire.NewSet(
 	handler.NewDaytradeHandler,
 	handler.NewReturnAnalysisHandler,
 	handler.NewBacktestHandler,
+	handler.NewStrategyRankingHandler,
 	router.NewRouter,
 )
 

@@ -34,6 +34,7 @@ func NewRunner(
 	exportMasterDataCommand *commands.ExportMasterDataCommand,
 	syncFinAnnouncementsCommand *commands.SyncFinAnnouncementsCommand,
 	syncFinStatementsCommand *commands.SyncFinStatementsCommand,
+	backtestAllStocksCommand *commands.BacktestAllStocksCommand,
 	indexInteractor usecase.IndexInteractor,
 	slackAPIClient gateway.SlackAPIClient,
 ) *Runner {
@@ -50,6 +51,7 @@ func NewRunner(
 			exportMasterDataCommand.Command(),
 			syncFinAnnouncementsCommand.Command(),
 			syncFinStatementsCommand.Command(),
+			backtestAllStocksCommand.Command(),
 		},
 		indexInteractor: indexInteractor,
 		slackAPIClient:  slackAPIClient,

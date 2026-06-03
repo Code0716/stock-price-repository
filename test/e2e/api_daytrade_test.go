@@ -32,7 +32,7 @@ func TestE2E_Daytrade(t *testing.T) {
 
 	httpServer := driver.NewHTTPServer()
 	daytradeHandler := handler.NewDaytradeHandler(interactor, httpServer, zap.NewNop())
-	mux := router.NewRouter(nil, nil, nil, nil, nil, nil, daytradeHandler)
+	mux := router.NewRouter(nil, nil, nil, nil, nil, nil, daytradeHandler, nil)
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
 

@@ -12,6 +12,7 @@ package mock_repositories
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	models "github.com/Code0716/stock-price-repository/models"
 	gomock "go.uber.org/mock/gomock"
@@ -53,4 +54,19 @@ func (m *MockNikkeiRepository) CreateNikkeiStockAverageDailyPrices(ctx context.C
 func (mr *MockNikkeiRepositoryMockRecorder) CreateNikkeiStockAverageDailyPrices(ctx, averageDailyPrices any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNikkeiStockAverageDailyPrices", reflect.TypeOf((*MockNikkeiRepository)(nil).CreateNikkeiStockAverageDailyPrices), ctx, averageDailyPrices)
+}
+
+// ListNikkeiStockAverageDailyPrices mocks base method.
+func (m *MockNikkeiRepository) ListNikkeiStockAverageDailyPrices(ctx context.Context, from, to *time.Time) (models.IndexStockAverageDailyPrices, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListNikkeiStockAverageDailyPrices", ctx, from, to)
+	ret0, _ := ret[0].(models.IndexStockAverageDailyPrices)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListNikkeiStockAverageDailyPrices indicates an expected call of ListNikkeiStockAverageDailyPrices.
+func (mr *MockNikkeiRepositoryMockRecorder) ListNikkeiStockAverageDailyPrices(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNikkeiStockAverageDailyPrices", reflect.TypeOf((*MockNikkeiRepository)(nil).ListNikkeiStockAverageDailyPrices), ctx, from, to)
 }

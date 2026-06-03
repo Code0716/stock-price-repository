@@ -14,10 +14,14 @@ func NewRouter(
 	finAnnouncementHandler *handler.FinAnnouncementHandler,
 	finStatementHandler *handler.FinStatementHandler,
 	daytradeHandler *handler.DaytradeHandler,
+	returnAnalysisHandler *handler.ReturnAnalysisHandler,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
 		mux.HandleFunc("/daily-prices", stockPriceHandler.GetDailyPrices)
+	}
+	if returnAnalysisHandler != nil {
+		mux.HandleFunc("/return-analysis", returnAnalysisHandler.GetReturnAnalysis)
 	}
 	if stockBrandHandler != nil {
 		mux.HandleFunc("/stock-brands", stockBrandHandler.GetStockBrands)

@@ -110,7 +110,10 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	daytradeExecutionRepository := database.NewDaytradeExecutionRepositoryImpl(gormDB)
 	daytradeInteractor := usecase.NewDaytradeInteractor(transaction, daytradeExecutionRepository)
 	daytradeHandler := handler.NewDaytradeHandler(daytradeInteractor, httpServer, logger)
-	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler, daytradeHandler)
+	nikkeiRepository := database.NewNikkeiRepositoryImpl(gormDB)
+	returnAnalysisInteractor := usecase.NewReturnAnalysisInteractor(stockBrandsDailyPriceRepository, nikkeiRepository)
+	returnAnalysisHandler := handler.NewReturnAnalysisHandler(returnAnalysisInteractor, httpServer, logger)
+	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler, daytradeHandler, returnAnalysisHandler)
 	return serveMux, func() {
 		cleanup()
 	}, nil
@@ -145,7 +148,7 @@ func InitializeStockServiceServer(ctx context.Context) (*GrpcServerComponents, f
 
 // wire.go:
 
-var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation, usecase.NewDaytradeInteractor)
+var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation, usecase.NewDaytradeInteractor, usecase.NewReturnAnalysisInteractor)
 
 var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewBoxAPIClient, driver.NewLogger)
 
@@ -153,7 +156,7 @@ var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands
 
 var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl)
 
-var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, router.NewRouter)
+var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, handler.NewReturnAnalysisHandler, router.NewRouter)
 
 var grpcSet = wire.NewSet(server.NewStockServiceServer, usecase.NewGetHighVolumeStockBrandsUseCase, wire.Struct(new(GrpcServerComponents), "*"))
 

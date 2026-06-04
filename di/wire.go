@@ -29,6 +29,7 @@ var usecaseSet = wire.NewSet(
 	usecase.NewReturnAnalysisInteractor,
 	usecase.NewBacktestInteractor,
 	usecase.NewStrategyRankingInteractor,
+	usecase.NewValuationInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -97,6 +98,7 @@ var apiSet = wire.NewSet(
 	handler.NewReturnAnalysisHandler,
 	handler.NewBacktestHandler,
 	handler.NewStrategyRankingHandler,
+	handler.NewValuationHandler,
 	router.NewRouter,
 )
 

@@ -21,6 +21,13 @@ const (
 	dbConnMaxPingRetries = 30              // 最大試行回数
 	dbConnPingInterval   = 2 * time.Second // 試行間隔（30回 = 最大約60秒待ち。MySQL のリカバリ/init を吸収できる長さ）
 	dbConnPingTimeout    = 3 * time.Second // 1回の Ping のタイムアウト（ハング防止）
+
+	// コネクションプール設定。全銘柄バッチなどの並列読み（ワーカー数〜18）でも
+	// コネクション枯渇/churn を起こさないよう、MySQL の max_connections(既定151) の
+	// 範囲で十分なプールを確保する。
+	dbMaxOpenConns    = 30
+	dbMaxIdleConns    = 30
+	dbConnMaxLifetime = 5 * time.Minute
 )
 
 // NewDBConn initializes DB connection.
@@ -34,6 +41,10 @@ func NewDBConn() (conn *sql.DB, cleanup func(), err error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
+	sqlDB.SetMaxOpenConns(dbMaxOpenConns)
+	sqlDB.SetMaxIdleConns(dbMaxIdleConns)
+	sqlDB.SetConnMaxLifetime(dbConnMaxLifetime)
 
 	cleanup = func() {
 		if err := sqlDB.Close(); err != nil {

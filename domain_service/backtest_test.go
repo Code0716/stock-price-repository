@@ -96,6 +96,39 @@ func TestRunBacktest(t *testing.T) {
 	})
 }
 
+func TestRunBacktestMetrics(t *testing.T) {
+	params := ExitParams{
+		TakeProfit:  decimal.NewFromFloat(0.10),
+		StopLoss:    decimal.NewFromFloat(0.05),
+		MaxHoldDays: 10,
+	}
+	// 複数の約定が出るシナリオ（利確→再エントリー→損切り）
+	prices := pricesFromCloses(100, 100, 110, 110, 110, 104)
+	signals := boolsAt(6, 1, 3)
+
+	full := RunBacktest(prices, signals, params)
+	metrics := RunBacktestMetrics(prices, signals, params)
+
+	// メトリクスは完全一致
+	assert.Equal(t, full.Trades, metrics.Trades)
+	assert.True(t, full.TotalReturn.Equal(metrics.TotalReturn), "TotalReturn")
+	assert.True(t, full.WinRate.Equal(metrics.WinRate), "WinRate")
+	assert.True(t, full.ProfitFactor.Equal(metrics.ProfitFactor), "ProfitFactor")
+	assert.True(t, full.MaxDrawdown.Equal(metrics.MaxDrawdown), "MaxDrawdown")
+	assert.True(t, full.AvgWin.Equal(metrics.AvgWin), "AvgWin")
+	assert.True(t, full.AvgLoss.Equal(metrics.AvgLoss), "AvgLoss")
+	assert.True(t, full.PayoffRatio.Equal(metrics.PayoffRatio), "PayoffRatio")
+	assert.InDelta(t, full.AvgHoldDays, metrics.AvgHoldDays, 1e-9)
+
+	// Metrics 版は Equity / TradeList を構築しない
+	assert.Empty(t, metrics.Equity)
+	assert.Empty(t, metrics.TradeList)
+	// Full 版は構築する
+	assert.NotEmpty(t, full.Equity)
+	assert.NotEmpty(t, full.TradeList)
+	assert.GreaterOrEqual(t, full.Trades, 2)
+}
+
 func f64FromDec(d decimal.Decimal) float64 {
 	v, _ := d.Float64()
 	return v

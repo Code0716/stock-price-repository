@@ -126,7 +126,7 @@ func TestStrategyRankingInteractor_ComputeAndSaveStrategyRanking_Normal(t *testi
 	}
 
 	interactor := NewStrategyRankingInteractor(brandRepo, priceRepo, client)
-	n, err := interactor.ComputeAndSaveStrategyRanking(context.Background(), params, 5)
+	n, err := interactor.ComputeAndSaveStrategyRanking(context.Background(), params, 5, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, n)
 
@@ -160,7 +160,7 @@ func TestStrategyRankingInteractor_ComputeAndSaveStrategyRanking_SkipShortData(t
 
 	params := models.BacktestParams{TakeProfit: decimal.NewFromFloat(0.1), StopLoss: decimal.NewFromFloat(0.05), MaxHoldDays: 20}
 	interactor := NewStrategyRankingInteractor(brandRepo, priceRepo, client)
-	n, err := interactor.ComputeAndSaveStrategyRanking(context.Background(), params, 5)
+	n, err := interactor.ComputeAndSaveStrategyRanking(context.Background(), params, 5, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, n) // スキップされたので処理0件
 
@@ -186,6 +186,6 @@ func TestStrategyRankingInteractor_ComputeAndSaveStrategyRanking_PriceError(t *t
 
 	params := models.BacktestParams{TakeProfit: decimal.NewFromFloat(0.1), StopLoss: decimal.NewFromFloat(0.05), MaxHoldDays: 20}
 	interactor := NewStrategyRankingInteractor(brandRepo, priceRepo, client)
-	_, err := interactor.ComputeAndSaveStrategyRanking(context.Background(), params, 5)
+	_, err := interactor.ComputeAndSaveStrategyRanking(context.Background(), params, 5, 2)
 	assert.Error(t, err)
 }

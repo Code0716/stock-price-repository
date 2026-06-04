@@ -43,6 +43,11 @@ func (c *BacktestAllStocksCommand) Command() *Command {
 				Value: 5,
 				Usage: "バックテスト対象の直近N年",
 			},
+			&cli.IntFlag{
+				Name:  "concurrency",
+				Value: 0,
+				Usage: "ワーカー数（0 で CPU コア数）",
+			},
 		},
 		Action: c.Action,
 	}
@@ -55,7 +60,8 @@ func (c *BacktestAllStocksCommand) Action(ctx *cli.Context) error {
 		MaxHoldDays: ctx.Int("max-hold-days"),
 	}
 	years := ctx.Int("years")
-	n, err := c.interactor.ComputeAndSaveStrategyRanking(ctx.Context, params, years)
+	concurrency := ctx.Int("concurrency")
+	n, err := c.interactor.ComputeAndSaveStrategyRanking(ctx.Context, params, years, concurrency)
 	if err != nil {
 		return errors.Wrap(err, "ComputeAndSaveStrategyRanking error")
 	}

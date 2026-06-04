@@ -4,14 +4,16 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
+	"runtime"
 	"sort"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	"github.com/shopspring/decimal"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/Code0716/stock-price-repository/domain_service"
 	"github.com/Code0716/stock-price-repository/models"
@@ -37,12 +39,37 @@ type strategyAcc struct {
 	bestCount      int
 }
 
+// newAccs 戦略ごとの集計アキュムレータを初期化して返す。
+func newAccs() map[string]*strategyAcc {
+	accs := make(map[string]*strategyAcc, len(domain_service.StrategyOrder))
+	for _, s := range domain_service.StrategyOrder {
+		accs[s] = &strategyAcc{}
+	}
+	return accs
+}
+
+// mergeAccs src の集計を dst に加算する（ワーカーローカル集計のマージ用）。
+func mergeAccs(dst, src map[string]*strategyAcc) {
+	for _, s := range domain_service.StrategyOrder {
+		d, sa := dst[s], src[s]
+		d.stockCount += sa.stockCount
+		d.tradedStocks += sa.tradedStocks
+		d.positiveCount += sa.positiveCount
+		d.sumTotalReturn = d.sumTotalReturn.Add(sa.sumTotalReturn)
+		d.sumWinRate = d.sumWinRate.Add(sa.sumWinRate)
+		d.sumPF = d.sumPF.Add(sa.sumPF)
+		d.totalTrades += sa.totalTrades
+		d.bestCount += sa.bestCount
+	}
+}
+
 // accumulateResults 日足と exitParams から各戦略の結果を accs に集計する。
+// 集計用途のため Equity/TradeList を構築しない RunBacktestMetrics を使う。
 func accumulateResults(prices []*models.StockBrandDailyPrice, exitParams domain_service.ExitParams, accs map[string]*strategyAcc) {
 	results := make(map[string]models.BacktestResult, len(domain_service.StrategyOrder))
 	for _, s := range domain_service.StrategyOrder {
 		signals := domain_service.EntrySignalsByStrategy(s, prices)
-		results[s] = domain_service.RunBacktest(prices, signals, exitParams)
+		results[s] = domain_service.RunBacktestMetrics(prices, signals, exitParams)
 	}
 	for _, s := range domain_service.StrategyOrder {
 		res := results[s]
@@ -82,8 +109,8 @@ type strategyRankingInteractorImpl struct {
 // StrategyRankingInteractor 全銘柄横断バックテスト集計インターフェース。
 type StrategyRankingInteractor interface {
 	// ComputeAndSaveStrategyRanking 全主要市場銘柄を全戦略でバックテストし、集計を Redis に保存する。
-	// years: 直近N年を対象期間とする。処理した銘柄数を返す。
-	ComputeAndSaveStrategyRanking(ctx context.Context, params models.BacktestParams, years int) (int, error)
+	// years: 直近N年を対象期間とする。concurrency: ワーカー数（<=0 で NumCPU）。処理した銘柄数を返す。
+	ComputeAndSaveStrategyRanking(ctx context.Context, params models.BacktestParams, years, concurrency int) (int, error)
 	// GetStrategyRanking Redis から集計を返す。未計算なら Computed=false の空の StrategyRanking を返す。
 	GetStrategyRanking(ctx context.Context) (*models.StrategyRanking, error)
 }
@@ -115,7 +142,7 @@ func (r *strategyRankingInteractorImpl) GetStrategyRanking(ctx context.Context) 
 	return &ranking, nil
 }
 
-func (r *strategyRankingInteractorImpl) ComputeAndSaveStrategyRanking(ctx context.Context, params models.BacktestParams, years int) (int, error) {
+func (r *strategyRankingInteractorImpl) ComputeAndSaveStrategyRanking(ctx context.Context, params models.BacktestParams, years, concurrency int) (int, error) {
 	brands, err := r.stockBrandRepository.FindAllMainMarkets(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "FindAllMainMarkets error")
@@ -123,38 +150,15 @@ func (r *strategyRankingInteractorImpl) ComputeAndSaveStrategyRanking(ctx contex
 
 	now := time.Now()
 	from := now.AddDate(-years, 0, 0)
-	asc := models.SortOrderAsc
 	exitParams := domain_service.ExitParams{
 		TakeProfit:  params.TakeProfit,
 		StopLoss:    params.StopLoss,
 		MaxHoldDays: params.MaxHoldDays,
 	}
 
-	// 戦略ごとのアキュムレータを初期化
-	accs := make(map[string]*strategyAcc, len(domain_service.StrategyOrder))
-	for _, s := range domain_service.StrategyOrder {
-		accs[s] = &strategyAcc{}
-	}
-
-	processed := 0
-	for i, brand := range brands {
-		prices, err := r.stockBrandsDailyStockPriceRepository.ListDailyPricesBySymbol(ctx, models.ListDailyPricesBySymbolFilter{
-			TickerSymbol: brand.TickerSymbol,
-			DateFrom:     &from,
-			DateTo:       &now,
-			DateOrder:    &asc,
-		})
-		if err != nil {
-			return processed, errors.Wrap(err, fmt.Sprintf("ListDailyPricesBySymbol error for %s", brand.TickerSymbol))
-		}
-		if len(prices) < strategyRankingMinDays {
-			continue
-		}
-		accumulateResults(prices, exitParams, accs)
-		processed++
-		if (i+1)%100 == 0 {
-			log.Printf("strategy ranking: processed %d/%d brands", i+1, len(brands))
-		}
+	accs, processed, err := r.runWorkers(ctx, brands, from, now, exitParams, concurrency)
+	if err != nil {
+		return processed, err
 	}
 
 	// StrategyRankingItem を組み立て
@@ -204,4 +208,80 @@ func (r *strategyRankingInteractorImpl) ComputeAndSaveStrategyRanking(ctx contex
 
 	log.Printf("strategy ranking: completed. processed=%d/%d brands", processed, len(brands))
 	return processed, nil
+}
+
+// runWorkers 固定 concurrency 個のワーカーで全銘柄を並列にバックテストし、
+// ワーカーローカルに集計してからマージした accs と処理銘柄数を返す。
+// 各ワーカーは自分専用の accs にのみ書き込むためロック不要。decimal の総和は
+// 順序非依存で厳密なので、結果は逐次版と完全一致する。
+func (r *strategyRankingInteractorImpl) runWorkers(
+	ctx context.Context,
+	brands []*models.StockBrand,
+	from, to time.Time,
+	exitParams domain_service.ExitParams,
+	concurrency int,
+) (map[string]*strategyAcc, int, error) {
+	if concurrency <= 0 {
+		concurrency = runtime.NumCPU()
+	}
+	asc := models.SortOrderAsc
+
+	workerAccs := make([]map[string]*strategyAcc, concurrency)
+	for w := range workerAccs {
+		workerAccs[w] = newAccs()
+	}
+
+	jobs := make(chan *models.StockBrand)
+	var processed atomic.Int64
+	g, gctx := errgroup.WithContext(ctx)
+
+	for w := 0; w < concurrency; w++ {
+		w := w
+		g.Go(func() error {
+			local := workerAccs[w]
+			for brand := range jobs {
+				prices, err := r.stockBrandsDailyStockPriceRepository.ListDailyPricesBySymbol(gctx, models.ListDailyPricesBySymbolFilter{
+					TickerSymbol: brand.TickerSymbol,
+					DateFrom:     &from,
+					DateTo:       &to,
+					DateOrder:    &asc,
+				})
+				if err != nil {
+					return errors.Wrap(err, "ListDailyPricesBySymbol error for "+brand.TickerSymbol)
+				}
+				if len(prices) < strategyRankingMinDays {
+					continue
+				}
+				accumulateResults(prices, exitParams, local)
+				if n := processed.Add(1); n%200 == 0 {
+					log.Printf("strategy ranking: processed %d/%d brands", n, len(brands))
+				}
+			}
+			return nil
+		})
+	}
+
+	// フィーダ：ctx キャンセルを尊重して銘柄を投入する
+	g.Go(func() error {
+		defer close(jobs)
+		for _, b := range brands {
+			select {
+			case jobs <- b:
+			case <-gctx.Done():
+				return gctx.Err()
+			}
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, int(processed.Load()), err
+	}
+
+	// ワーカーローカルの集計をマージ
+	accs := newAccs()
+	for _, wa := range workerAccs {
+		mergeAccs(accs, wa)
+	}
+	return accs, int(processed.Load()), nil
 }

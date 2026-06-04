@@ -13,10 +13,62 @@ type ExitParams struct {
 	MaxHoldDays int             // 最大保有営業日数
 }
 
+// tradeStats 約定確定時にインクリメンタルに加算する集計アキュムレータ。
+// TradeList を後から走査せずに WinRate/PF/平均損益を算出するために使う。
+type tradeStats struct {
+	trades      int
+	wins        int
+	losses      int
+	grossProfit decimal.Decimal
+	grossLoss   decimal.Decimal
+	sumWin      decimal.Decimal
+	sumLoss     decimal.Decimal
+	holdDaysSum int
+}
+
+// record 1約定の損益率と保有日数を集計に加える。
+func (ts *tradeStats) record(ret decimal.Decimal, holdDays int) {
+	ts.trades++
+	ts.holdDaysSum += holdDays
+	if ret.GreaterThan(decimal.Zero) {
+		ts.wins++
+		ts.grossProfit = ts.grossProfit.Add(ret)
+		ts.sumWin = ts.sumWin.Add(ret)
+	} else if ret.LessThan(decimal.Zero) {
+		ts.losses++
+		ts.grossLoss = ts.grossLoss.Add(ret.Abs())
+		ts.sumLoss = ts.sumLoss.Add(ret)
+	}
+}
+
 // RunBacktest entrySignals が true の日の終値で1単位買い、共通ルール
 // （利確/損切り/最大保有/データ末尾）で終値手仕舞いするバックテストを実行する。
 // 同時に保有できるポジションは1つ。エクイティは初期資金 1.0 起点の倍率。
+// Equity / TradeList も構築する（フロント表示・ドリルダウン用）。
 func RunBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, params ExitParams) models.BacktestResult {
+	return runBacktest(prices, entrySignals, params, true)
+}
+
+// RunBacktestMetrics RunBacktest と同じ成績指標を返すが、Equity / TradeList は構築しない
+// （日次の Date.Format とスライス確保を省く）。全銘柄横断バッチなど、集計のみ必要な用途向け。
+func RunBacktestMetrics(prices []*models.StockBrandDailyPrice, entrySignals []bool, params ExitParams) models.BacktestResult {
+	return runBacktest(prices, entrySignals, params, false)
+}
+
+// exitReason 当日のリターンと保有日数から手仕舞い理由を返す。手仕舞い不要なら ""。
+func exitReason(ret decimal.Decimal, holdDays int, params ExitParams) string {
+	switch {
+	case ret.GreaterThanOrEqual(params.TakeProfit):
+		return "take_profit"
+	case ret.LessThanOrEqual(params.StopLoss.Neg()):
+		return "stop_loss"
+	case holdDays >= params.MaxHoldDays:
+		return "max_hold"
+	}
+	return ""
+}
+
+func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, params ExitParams, collectSeries bool) models.BacktestResult {
 	n := len(prices)
 	result := models.BacktestResult{
 		TotalReturn:  decimal.Zero,
@@ -40,20 +92,27 @@ func RunBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 	var entryPrice, entryEquity decimal.Decimal
 
 	equitySeries := make([]decimal.Decimal, 0, n)
+	var stats tradeStats
 
 	closeTrade := func(i int, reason string) {
 		exitPrice := prices[i].Close
 		ret := exitPrice.Div(entryPrice).Sub(one)
 		realizedEquity = entryEquity.Mul(exitPrice.Div(entryPrice))
-		result.TradeList = append(result.TradeList, models.BacktestTrade{
-			EntryDate:  prices[entryIdx].Date.Format(util.DateLayout),
-			ExitDate:   prices[i].Date.Format(util.DateLayout),
-			EntryPrice: entryPrice,
-			ExitPrice:  exitPrice,
-			Return:     ret,
-			HoldDays:   i - entryIdx,
-			Reason:     reason,
-		})
+
+		// 約定をインクリメンタルに集計（TradeList 非依存）
+		stats.record(ret, i-entryIdx)
+
+		if collectSeries {
+			result.TradeList = append(result.TradeList, models.BacktestTrade{
+				EntryDate:  prices[entryIdx].Date.Format(util.DateLayout),
+				ExitDate:   prices[i].Date.Format(util.DateLayout),
+				EntryPrice: entryPrice,
+				ExitPrice:  exitPrice,
+				Return:     ret,
+				HoldDays:   i - entryIdx,
+				Reason:     reason,
+			})
+		}
 		inPosition = false
 	}
 
@@ -61,13 +120,8 @@ func RunBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 		// Step A: イグジット判定（エントリー当日は判定しない）
 		if inPosition && i > entryIdx {
 			ret := prices[i].Close.Div(entryPrice).Sub(one)
-			switch {
-			case ret.GreaterThanOrEqual(params.TakeProfit):
-				closeTrade(i, "take_profit")
-			case ret.LessThanOrEqual(params.StopLoss.Neg()):
-				closeTrade(i, "stop_loss")
-			case i-entryIdx >= params.MaxHoldDays:
-				closeTrade(i, "max_hold")
+			if reason := exitReason(ret, i-entryIdx, params); reason != "" {
+				closeTrade(i, reason)
 			}
 		}
 
@@ -87,10 +141,12 @@ func RunBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 			eq = realizedEquity
 		}
 		equitySeries = append(equitySeries, eq)
-		result.Equity = append(result.Equity, models.BacktestEquityPoint{
-			Date:   prices[i].Date.Format(util.DateLayout),
-			Equity: eq,
-		})
+		if collectSeries {
+			result.Equity = append(result.Equity, models.BacktestEquityPoint{
+				Date:   prices[i].Date.Format(util.DateLayout),
+				Equity: eq,
+			})
+		}
 	}
 
 	// データ末尾で保有が残っていれば強制クローズ（最終日の終値）。
@@ -99,58 +155,33 @@ func RunBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 		closeTrade(n-1, "end_of_data")
 	}
 
-	result.Trades = len(result.TradeList)
+	result.Trades = stats.trades
 	result.TotalReturn = realizedEquity.Sub(one)
 	result.MaxDrawdown = MaxDrawdown(equitySeries)
-	result.AvgHoldDays = avgHoldDays(result.TradeList)
-	fillTradeStats(&result)
+	if stats.trades > 0 {
+		result.AvgHoldDays = float64(stats.holdDaysSum) / float64(stats.trades)
+	}
+	fillTradeStats(&result, &stats)
 	return result
 }
 
-// fillTradeStats 勝率・PF・平均損益・ペイオフを集計する。
-func fillTradeStats(result *models.BacktestResult) {
-	if len(result.TradeList) == 0 {
+// fillTradeStats 集計済み tradeStats から勝率・PF・平均損益・ペイオフを算出する。
+func fillTradeStats(result *models.BacktestResult, stats *tradeStats) {
+	if stats.trades == 0 {
 		return
 	}
-	wins, losses := 0, 0
-	grossProfit, grossLoss := decimal.Zero, decimal.Zero
-	sumWin, sumLoss := decimal.Zero, decimal.Zero
-	for _, t := range result.TradeList {
-		if t.Return.GreaterThan(decimal.Zero) {
-			wins++
-			grossProfit = grossProfit.Add(t.Return)
-			sumWin = sumWin.Add(t.Return)
-		} else if t.Return.LessThan(decimal.Zero) {
-			losses++
-			grossLoss = grossLoss.Add(t.Return.Abs())
-			sumLoss = sumLoss.Add(t.Return)
-		}
-	}
+	result.WinRate = decimal.NewFromInt(int64(stats.wins)).Div(decimal.NewFromInt(int64(stats.trades)))
 
-	total := decimal.NewFromInt(int64(len(result.TradeList)))
-	result.WinRate = decimal.NewFromInt(int64(wins)).Div(total)
-
-	if !grossLoss.IsZero() {
-		result.ProfitFactor = grossProfit.Div(grossLoss)
+	if !stats.grossLoss.IsZero() {
+		result.ProfitFactor = stats.grossProfit.Div(stats.grossLoss)
 	}
-	if wins > 0 {
-		result.AvgWin = sumWin.Div(decimal.NewFromInt(int64(wins)))
+	if stats.wins > 0 {
+		result.AvgWin = stats.sumWin.Div(decimal.NewFromInt(int64(stats.wins)))
 	}
-	if losses > 0 {
-		result.AvgLoss = sumLoss.Div(decimal.NewFromInt(int64(losses)))
+	if stats.losses > 0 {
+		result.AvgLoss = stats.sumLoss.Div(decimal.NewFromInt(int64(stats.losses)))
 	}
-	if losses > 0 && !result.AvgLoss.IsZero() {
+	if stats.losses > 0 && !result.AvgLoss.IsZero() {
 		result.PayoffRatio = result.AvgWin.Div(result.AvgLoss.Abs())
 	}
-}
-
-func avgHoldDays(trades []models.BacktestTrade) float64 {
-	if len(trades) == 0 {
-		return 0
-	}
-	sum := 0
-	for _, t := range trades {
-		sum += t.HoldDays
-	}
-	return float64(sum) / float64(len(trades))
 }

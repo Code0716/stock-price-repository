@@ -42,18 +42,18 @@ func (m *MockStrategyRankingInteractor) EXPECT() *MockStrategyRankingInteractorM
 }
 
 // ComputeAndSaveStrategyRanking mocks base method.
-func (m *MockStrategyRankingInteractor) ComputeAndSaveStrategyRanking(ctx context.Context, params models.BacktestParams, years int) (int, error) {
+func (m *MockStrategyRankingInteractor) ComputeAndSaveStrategyRanking(ctx context.Context, params models.BacktestParams, years, concurrency int) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ComputeAndSaveStrategyRanking", ctx, params, years)
+	ret := m.ctrl.Call(m, "ComputeAndSaveStrategyRanking", ctx, params, years, concurrency)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ComputeAndSaveStrategyRanking indicates an expected call of ComputeAndSaveStrategyRanking.
-func (mr *MockStrategyRankingInteractorMockRecorder) ComputeAndSaveStrategyRanking(ctx, params, years any) *gomock.Call {
+func (mr *MockStrategyRankingInteractorMockRecorder) ComputeAndSaveStrategyRanking(ctx, params, years, concurrency any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComputeAndSaveStrategyRanking", reflect.TypeOf((*MockStrategyRankingInteractor)(nil).ComputeAndSaveStrategyRanking), ctx, params, years)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComputeAndSaveStrategyRanking", reflect.TypeOf((*MockStrategyRankingInteractor)(nil).ComputeAndSaveStrategyRanking), ctx, params, years, concurrency)
 }
 
 // GetStrategyRanking mocks base method.

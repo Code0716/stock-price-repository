@@ -18,6 +18,7 @@ func NewRouter(
 	backtestHandler *handler.BacktestHandler,
 	strategyRankingHandler *handler.StrategyRankingHandler,
 	valuationHandler *handler.ValuationHandler,
+	technicalIndicatorsHandler *handler.TechnicalIndicatorsHandler,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
@@ -34,6 +35,9 @@ func NewRouter(
 	}
 	if valuationHandler != nil {
 		mux.HandleFunc("/valuation", valuationHandler.GetValuation)
+	}
+	if technicalIndicatorsHandler != nil {
+		mux.HandleFunc("/technical-indicators", technicalIndicatorsHandler.GetTechnicalIndicators)
 	}
 	if stockBrandHandler != nil {
 		mux.HandleFunc("/stock-brands", stockBrandHandler.GetStockBrands)

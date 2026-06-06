@@ -109,9 +109,11 @@ func (si *StockBrandRepositoryImpl) FindWithFilter(ctx context.Context, filter *
 		q = q.Where(tx.StockBrand.MarketCode.In(filter.MarketCodes...))
 	}
 
-	// 前方一致フィルタ
-	if filter.SymbolPrefix != "" {
-		q = q.Where(tx.StockBrand.TickerSymbol.Like(filter.SymbolPrefix + "%"))
+	// キーワード: 銘柄コード前方一致 OR 銘柄名部分一致
+	if filter.Keyword != "" {
+		esc := escapeLike(filter.Keyword)
+		q = q.Where(tx.StockBrand.TickerSymbol.Like(esc + "%")).
+			Or(tx.StockBrand.Name.Like("%" + esc + "%"))
 	}
 
 	// ページネーション: シンボル開始位置 (inclusive)
@@ -215,6 +217,20 @@ func (si *StockBrandRepositoryImpl) convertToDBModel(stockBrand *models.StockBra
 		CreatedAt:        stockBrand.CreatedAt,
 		UpdatedAt:        stockBrand.UpdatedAt,
 	}
+}
+
+// escapeLike LIKE クエリのワイルドカード文字（%、_、\）をエスケープする。
+// GORM のプレースホルダで SQL インジェクションは防止されるが、
+// キーワード自体が意図しないワイルドカードになることを防ぐために必要。
+func escapeLike(s string) string {
+	result := make([]rune, 0, len(s))
+	for _, r := range s {
+		if r == '%' || r == '_' || r == '\\' {
+			result = append(result, '\\')
+		}
+		result = append(result, r)
+	}
+	return string(result)
 }
 
 func (si *StockBrandRepositoryImpl) convertToDomainModel(stockBrand *genModel.StockBrand) *models.StockBrand {

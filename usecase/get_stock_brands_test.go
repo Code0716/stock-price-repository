@@ -19,7 +19,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 	}
 	type args struct {
 		ctx             context.Context
-		symbolPrefix    string
+		keyword    string
 		symbolFrom      string
 		limit           int
 		onlyMainMarkets bool
@@ -40,7 +40,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 					m.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
 						OnlyMainMarkets: false,
 						MarketCodes:     nil,
-						SymbolPrefix:    "",
+						Keyword:    "",
 						SymbolFrom:      "",
 						Limit:           0,
 					})).Return([]*models.StockBrand{
@@ -62,7 +62,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				ctx:             context.Background(),
-				symbolPrefix:    "",
+				keyword:    "",
 				symbolFrom:      "",
 				limit:           0,
 				onlyMainMarkets: false,
@@ -96,7 +96,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 					m.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
 						OnlyMainMarkets: false,
 						MarketCodes:     nil,
-						SymbolPrefix:    "",
+						Keyword:    "",
 						SymbolFrom:      "1000",
 						Limit:           11,
 					})).Return([]*models.StockBrand{
@@ -172,7 +172,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				ctx:             context.Background(),
-				symbolPrefix:    "",
+				keyword:    "",
 				symbolFrom:      "1000",
 				limit:           10,
 				onlyMainMarkets: false,
@@ -256,7 +256,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 					m.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
 						OnlyMainMarkets: true,
 						MarketCodes:     nil,
-						SymbolPrefix:    "",
+						Keyword:    "",
 						SymbolFrom:      "",
 						Limit:           0,
 					})).Return([]*models.StockBrand{
@@ -278,7 +278,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				ctx:             context.Background(),
-				symbolPrefix:    "",
+				keyword:    "",
 				symbolFrom:      "",
 				limit:           0,
 				onlyMainMarkets: true,
@@ -312,7 +312,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 					m.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
 						OnlyMainMarkets: true,
 						MarketCodes:     nil,
-						SymbolPrefix:    "",
+						Keyword:    "",
 						SymbolFrom:      "1000",
 						Limit:           11,
 					})).Return([]*models.StockBrand{
@@ -388,7 +388,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				ctx:             context.Background(),
-				symbolPrefix:    "",
+				keyword:    "",
 				symbolFrom:      "1000",
 				limit:           10,
 				onlyMainMarkets: true,
@@ -472,7 +472,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 					m.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
 						OnlyMainMarkets: false,
 						MarketCodes:     nil,
-						SymbolPrefix:    "",
+						Keyword:    "",
 						SymbolFrom:      "",
 						Limit:           0,
 					})).Return(nil, errors.New("db error"))
@@ -481,7 +481,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				ctx:             context.Background(),
-				symbolPrefix:    "",
+				keyword:    "",
 				symbolFrom:      "",
 				limit:           0,
 				onlyMainMarkets: false,
@@ -498,7 +498,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 					m.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
 						OnlyMainMarkets: false,
 						MarketCodes:     nil,
-						SymbolPrefix:    "",
+						Keyword:    "",
 						SymbolFrom:      "1000",
 						Limit:           11,
 					})).Return(nil, errors.New("db error"))
@@ -507,7 +507,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				ctx:             context.Background(),
-				symbolPrefix:    "",
+				keyword:    "",
 				symbolFrom:      "1000",
 				limit:           10,
 				onlyMainMarkets: false,
@@ -523,7 +523,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 					m.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
 						OnlyMainMarkets: true,
 						MarketCodes:     nil,
-						SymbolPrefix:    "",
+						Keyword:    "",
 						SymbolFrom:      "",
 						Limit:           0,
 					})).Return(nil, errors.New("db error"))
@@ -532,7 +532,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				ctx:             context.Background(),
-				symbolPrefix:    "",
+				keyword:    "",
 				symbolFrom:      "",
 				limit:           0,
 				onlyMainMarkets: true,
@@ -549,7 +549,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 					m.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
 						OnlyMainMarkets: true,
 						MarketCodes:     nil,
-						SymbolPrefix:    "",
+						Keyword:    "",
 						SymbolFrom:      "1000",
 						Limit:           11,
 					})).Return(nil, errors.New("db error"))
@@ -558,7 +558,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				ctx:             context.Background(),
-				symbolPrefix:    "",
+				keyword:    "",
 				symbolFrom:      "1000",
 				limit:           10,
 				onlyMainMarkets: true,
@@ -567,14 +567,14 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "正常系: symbol_prefix前方一致検索",
+			name: "正常系: keyword前方一致検索",
 			fields: fields{
 				stockBrandRepository: func(ctrl *gomock.Controller) repositories.StockBrandRepository {
 					m := mock_repositories.NewMockStockBrandRepository(ctrl)
 					m.EXPECT().FindWithFilter(gomock.Any(), gomock.Eq(&models.StockBrandFilter{
 						OnlyMainMarkets: false,
 						MarketCodes:     nil,
-						SymbolPrefix:    "7203",
+						Keyword:    "7203",
 						SymbolFrom:      "",
 						Limit:           0,
 					})).Return([]*models.StockBrand{
@@ -590,7 +590,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			},
 			args: args{
 				ctx:             context.Background(),
-				symbolPrefix:    "7203",
+				keyword:    "7203",
 				symbolFrom:      "",
 				limit:           0,
 				onlyMainMarkets: false,
@@ -619,7 +619,7 @@ func TestStockBrandInteractorImpl_GetStockBrands(t *testing.T) {
 			r := tt.fields.stockBrandRepository(ctrl)
 			si := NewStockBrandInteractor(nil, r, nil, nil, nil, nil, nil, nil, nil)
 
-			got, err := si.GetStockBrands(tt.args.ctx, tt.args.symbolPrefix, tt.args.symbolFrom, tt.args.limit, tt.args.onlyMainMarkets)
+			got, err := si.GetStockBrands(tt.args.ctx, tt.args.keyword, tt.args.symbolFrom, tt.args.limit, tt.args.onlyMainMarkets)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("StockBrandInteractorImpl.GetStockBrands() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -189,7 +189,7 @@ func TestStockBrandRepositoryImpl_FindWithFilter(t *testing.T) {
 		},
 		{
 			name:    "前方一致_symbolPrefix指定",
-			filter:  models.NewStockBrandFilter().WithSymbolPrefix("100"),
+			filter:  models.NewStockBrandFilter().WithKeyword("100"),
 			wantLen: 5,
 			wantErr: false,
 			checkFirst: func(t *testing.T, brands []*models.StockBrand) {
@@ -200,7 +200,7 @@ func TestStockBrandRepositoryImpl_FindWithFilter(t *testing.T) {
 		},
 		{
 			name:    "前方一致_symbolPrefixで絞り込み",
-			filter:  models.NewStockBrandFilter().WithSymbolPrefix("1003"),
+			filter:  models.NewStockBrandFilter().WithKeyword("1003"),
 			wantLen: 1,
 			wantErr: false,
 			checkFirst: func(t *testing.T, brands []*models.StockBrand) {
@@ -209,7 +209,7 @@ func TestStockBrandRepositoryImpl_FindWithFilter(t *testing.T) {
 		},
 		{
 			name:    "前方一致_symbolPrefixに一致なし",
-			filter:  models.NewStockBrandFilter().WithSymbolPrefix("9999"),
+			filter:  models.NewStockBrandFilter().WithKeyword("9999"),
 			wantLen: 0,
 			wantErr: false,
 		},

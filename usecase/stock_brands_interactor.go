@@ -26,7 +26,7 @@ type stockBrandInteractorImpl struct {
 
 type StockBrandInteractor interface {
 	UpdateStockBrands(ctx context.Context, t time.Time) error
-	GetStockBrands(ctx context.Context, symbolPrefix string, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error)
+	GetStockBrands(ctx context.Context, keyword string, symbolFrom string, limit int, onlyMainMarkets bool) (*models.PaginatedStockBrands, error)
 	GetAnalyzeStockBrandPriceHistories(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter) (*models.PaginatedAnalyzeStockBrandPriceHistories, error)
 	GetMultipleSignalStocks(ctx context.Context, filter *models.MultipleSignalStockFilter) (*models.PaginatedMultipleSignalStocks, error)
 	SyncFinAnnouncements(ctx context.Context) error

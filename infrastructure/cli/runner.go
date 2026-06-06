@@ -35,6 +35,7 @@ func NewRunner(
 	syncFinAnnouncementsCommand *commands.SyncFinAnnouncementsCommand,
 	syncFinStatementsCommand *commands.SyncFinStatementsCommand,
 	backtestAllStocksCommand *commands.BacktestAllStocksCommand,
+	syncFinStatementsAllStocksCommand *commands.SyncFinStatementsAllStocksCommand,
 	indexInteractor usecase.IndexInteractor,
 	slackAPIClient gateway.SlackAPIClient,
 ) *Runner {
@@ -52,6 +53,7 @@ func NewRunner(
 			syncFinAnnouncementsCommand.Command(),
 			syncFinStatementsCommand.Command(),
 			backtestAllStocksCommand.Command(),
+			syncFinStatementsAllStocksCommand.Command(),
 		},
 		indexInteractor: indexInteractor,
 		slackAPIClient:  slackAPIClient,

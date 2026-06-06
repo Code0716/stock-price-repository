@@ -59,6 +59,7 @@ var cliSet = wire.NewSet(
 	commands.NewSyncFinAnnouncementsCommand,
 	commands.NewSyncFinStatementsCommand,
 	commands.NewBacktestAllStocksCommand,
+	commands.NewSyncFinStatementsAllStocksCommand,
 )
 
 var databaseSet = wire.NewSet(

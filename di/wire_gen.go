@@ -68,7 +68,8 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	syncFinStatementsCommand := commands.NewSyncFinStatementsCommand(stockBrandInteractor)
 	strategyRankingInteractor := usecase.NewStrategyRankingInteractor(stockBrandRepository, stockBrandsDailyPriceRepository, client)
 	backtestAllStocksCommand := commands.NewBacktestAllStocksCommand(strategyRankingInteractor)
-	runner := cli.NewRunner(healthCheckCommand, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, adjustHistoricalDataForStockConsolidationCommand, exportYearlyDataCommand, exportMasterDataCommand, syncFinAnnouncementsCommand, syncFinStatementsCommand, backtestAllStocksCommand, indexInteractor, slackAPIClient)
+	syncFinStatementsAllStocksCommand := commands.NewSyncFinStatementsAllStocksCommand(stockBrandInteractor)
+	runner := cli.NewRunner(healthCheckCommand, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, adjustHistoricalDataForStockConsolidationCommand, exportYearlyDataCommand, exportMasterDataCommand, syncFinAnnouncementsCommand, syncFinStatementsCommand, backtestAllStocksCommand, syncFinStatementsAllStocksCommand, indexInteractor, slackAPIClient)
 	return runner, func() {
 		cleanup()
 	}, nil
@@ -160,7 +161,7 @@ var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexIn
 
 var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewBoxAPIClient, driver.NewLogger)
 
-var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewAdjustHistoricalDataForStockConsolidationCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand, commands.NewSyncFinAnnouncementsCommand, commands.NewSyncFinStatementsCommand, commands.NewBacktestAllStocksCommand)
+var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewAdjustHistoricalDataForStockConsolidationCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand, commands.NewSyncFinAnnouncementsCommand, commands.NewSyncFinStatementsCommand, commands.NewBacktestAllStocksCommand, commands.NewSyncFinStatementsAllStocksCommand)
 
 var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl)
 

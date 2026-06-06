@@ -34,6 +34,9 @@ type StockBrandInteractor interface {
 	GetNextFinAnnouncement(ctx context.Context, tickerSymbol string) (*models.FinAnnouncement, error)
 	SyncFinStatements(ctx context.Context, tickerSymbol string) error
 	GetFinStatements(ctx context.Context, filter *models.FinStatementFilter) ([]*models.FinStatement, error)
+	// SyncFinStatementsAllStocks 全主要市場銘柄の財務情報を逐次取得・保存する。
+	// intervalMs: 各APIリクエスト前のウェイト(ミリ秒, 0=ウェイトなし)。max: 処理上限(0=全件)。
+	SyncFinStatementsAllStocks(ctx context.Context, intervalMs, max int) error
 }
 
 func NewStockBrandInteractor(

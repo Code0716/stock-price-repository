@@ -160,6 +160,20 @@ func (mr *MockStockBrandInteractorMockRecorder) SyncFinStatements(ctx, tickerSym
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncFinStatements", reflect.TypeOf((*MockStockBrandInteractor)(nil).SyncFinStatements), ctx, tickerSymbol)
 }
 
+// SyncFinStatementsAllStocks mocks base method.
+func (m *MockStockBrandInteractor) SyncFinStatementsAllStocks(ctx context.Context, intervalMs, max int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncFinStatementsAllStocks", ctx, intervalMs, max)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SyncFinStatementsAllStocks indicates an expected call of SyncFinStatementsAllStocks.
+func (mr *MockStockBrandInteractorMockRecorder) SyncFinStatementsAllStocks(ctx, intervalMs, max any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncFinStatementsAllStocks", reflect.TypeOf((*MockStockBrandInteractor)(nil).SyncFinStatementsAllStocks), ctx, intervalMs, max)
+}
+
 // UpdateStockBrands mocks base method.
 func (m *MockStockBrandInteractor) UpdateStockBrands(ctx context.Context, t time.Time) error {
 	m.ctrl.T.Helper()

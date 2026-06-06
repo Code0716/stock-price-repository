@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"gorm.io/gen/field"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -112,8 +113,10 @@ func (si *StockBrandRepositoryImpl) FindWithFilter(ctx context.Context, filter *
 	// キーワード: 銘柄コード前方一致 OR 銘柄名部分一致
 	if filter.Keyword != "" {
 		esc := escapeLike(filter.Keyword)
-		q = q.Where(tx.StockBrand.TickerSymbol.Like(esc + "%")).
-			Or(tx.StockBrand.Name.Like("%" + esc + "%"))
+		q = q.Where(field.Or(
+			tx.StockBrand.TickerSymbol.Like(esc+"%"),
+			tx.StockBrand.Name.Like("%"+esc+"%"),
+		))
 	}
 
 	// ページネーション: シンボル開始位置 (inclusive)

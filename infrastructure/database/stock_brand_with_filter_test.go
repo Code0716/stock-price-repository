@@ -214,6 +214,14 @@ func TestStockBrandRepositoryImpl_FindWithFilter(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "主要市場と銘柄名検索の組み合わせ",
+			filter: models.NewStockBrandFilter().
+				WithOnlyMainMarkets().
+				WithKeyword("Other"),
+			wantLen: 0,
+			wantErr: false,
+		},
+		{
 			name: "主要市場フラグとMarketCodes両方指定_主要市場フラグが優先される",
 			filter: models.NewStockBrandFilter().
 				WithOnlyMainMarkets().

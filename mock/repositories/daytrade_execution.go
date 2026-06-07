@@ -132,6 +132,21 @@ func (mr *MockDaytradeExecutionRepositoryMockRecorder) FindByDate(ctx, date any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByDate", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).FindByDate), ctx, date)
 }
 
+// FindByDateRange mocks base method.
+func (m *MockDaytradeExecutionRepository) FindByDateRange(ctx context.Context, from, to *time.Time) ([]*models.DaytradeExecution, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByDateRange", ctx, from, to)
+	ret0, _ := ret[0].([]*models.DaytradeExecution)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByDateRange indicates an expected call of FindByDateRange.
+func (mr *MockDaytradeExecutionRepositoryMockRecorder) FindByDateRange(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByDateRange", reflect.TypeOf((*MockDaytradeExecutionRepository)(nil).FindByDateRange), ctx, from, to)
+}
+
 // GetCoveredRange mocks base method.
 func (m *MockDaytradeExecutionRepository) GetCoveredRange(ctx context.Context) (*time.Time, *time.Time, error) {
 	m.ctrl.T.Helper()

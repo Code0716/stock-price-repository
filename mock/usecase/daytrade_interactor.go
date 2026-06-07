@@ -74,6 +74,21 @@ func (mr *MockDaytradeInteractorMockRecorder) GetExecutionsByDate(ctx, date any)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExecutionsByDate", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetExecutionsByDate), ctx, date)
 }
 
+// GetInsights mocks base method.
+func (m *MockDaytradeInteractor) GetInsights(ctx context.Context, from, to *time.Time) (*models.DaytradeInsights, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInsights", ctx, from, to)
+	ret0, _ := ret[0].(*models.DaytradeInsights)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetInsights indicates an expected call of GetInsights.
+func (mr *MockDaytradeInteractorMockRecorder) GetInsights(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInsights", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetInsights), ctx, from, to)
+}
+
 // GetPeriodStats mocks base method.
 func (m *MockDaytradeInteractor) GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error) {
 	m.ctrl.T.Helper()

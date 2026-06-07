@@ -22,6 +22,8 @@ type DaytradeInteractor interface {
 	GetCoveredRange(ctx context.Context) (minDate, maxDate *time.Time, err error)
 	// GetPeriodStats は最大ドローダウン・最大連敗を含む期間統計を返す。from / to は nil 可。
 	GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error)
+	// GetInsights は大損寄与率・惚れ込み検出を含む反省指標を返す。from / to は nil 可。
+	GetInsights(ctx context.Context, from, to *time.Time) (*models.DaytradeInsights, error)
 }
 
 type daytradeInteractorImpl struct {
@@ -94,6 +96,15 @@ func (u *daytradeInteractorImpl) GetExecutionsByDate(ctx context.Context, date t
 
 func (u *daytradeInteractorImpl) GetCoveredRange(ctx context.Context) (*time.Time, *time.Time, error) {
 	return u.repo.GetCoveredRange(ctx)
+}
+
+func (u *daytradeInteractorImpl) GetInsights(ctx context.Context, from, to *time.Time) (*models.DaytradeInsights, error) {
+	executions, err := u.repo.FindByDateRange(ctx, from, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "FindByDateRange error")
+	}
+	trades := daytrade.BuildTradeApprox(executions)
+	return daytrade.ComputeInsights(trades), nil
 }
 
 func (u *daytradeInteractorImpl) GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error) {

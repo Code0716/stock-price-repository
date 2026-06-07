@@ -20,6 +20,8 @@ type DaytradeExecutionRepository interface {
 	AggregateByTickerSymbol(ctx context.Context, from, to *time.Time) ([]*models.DaytradeSymbolSummary, error)
 	// 指定日の明細を取得 (executed_on, id ASC)
 	FindByDate(ctx context.Context, date time.Time) ([]*models.DaytradeExecution, error)
+	// FindByDateRange は期間内の全明細を取得する。from / to は nil 可。両方 nil なら全期間。
+	FindByDateRange(ctx context.Context, from, to *time.Time) ([]*models.DaytradeExecution, error)
 	// 取り込み済みデータがカバーする期間。データが無ければ (nil, nil, nil)。
 	GetCoveredRange(ctx context.Context) (minDate, maxDate *time.Time, err error)
 	// AggregateStats スカラー集計（MAX/MIN 含む）。from / to は nil 可。両方 nil なら全期間。

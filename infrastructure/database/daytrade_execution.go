@@ -289,6 +289,32 @@ func (r *DaytradeExecutionRepositoryImpl) FindByDate(ctx context.Context, date t
 	return results, nil
 }
 
+func (r *DaytradeExecutionRepositoryImpl) FindByDateRange(ctx context.Context, from, to *time.Time) ([]*models.DaytradeExecution, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = r.query
+	}
+
+	q := tx.DaytradeExecution
+	stmt := q.WithContext(ctx)
+	if from != nil {
+		stmt = stmt.Where(q.ExecutedOn.Gte(*from))
+	}
+	if to != nil {
+		stmt = stmt.Where(q.ExecutedOn.Lte(*to))
+	}
+	rows, err := stmt.Order(q.ExecutedOn.Asc(), q.ID.Asc()).Find()
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.Wrap(err, "DaytradeExecutionRepositoryImpl.FindByDateRange error")
+	}
+
+	results := make([]*models.DaytradeExecution, 0, len(rows))
+	for _, row := range rows {
+		results = append(results, r.convertToDomainModel(row))
+	}
+	return results, nil
+}
+
 type coveredRangeRow struct {
 	MinDate sql.NullTime `gorm:"column:min_date"`
 	MaxDate sql.NullTime `gorm:"column:max_date"`

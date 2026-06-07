@@ -406,6 +406,152 @@ func CalculateOBV(prices []*models.StockBrandDailyPrice) []decimal.Decimal {
 	return obv
 }
 
+// highLowMid 直近 period 日（end を含む）の (高値max + 安値min) / 2 を返す。
+func highLowMid(prices []*models.StockBrandDailyPrice, end, period int) decimal.Decimal {
+	hh := prices[end].High
+	ll := prices[end].Low
+	for j := end - period + 1; j <= end; j++ {
+		if prices[j].High.GreaterThan(hh) {
+			hh = prices[j].High
+		}
+		if prices[j].Low.LessThan(ll) {
+			ll = prices[j].Low
+		}
+	}
+	return hh.Add(ll).Div(decimal.NewFromInt(2))
+}
+
+// IchimokuResult 一目均衡表の計算結果（生値・未シフト）。
+type IchimokuResult struct {
+	Tenkan  decimal.Decimal // 転換線: (conv日高値 + conv日安値) / 2
+	Kijun   decimal.Decimal // 基準線: (base日高値 + base日安値) / 2
+	SenkouA decimal.Decimal // 先行スパンA生値: (Tenkan + Kijun) / 2
+	SenkouB decimal.Decimal // 先行スパンB生値: (spanB日高値 + spanB日安値) / 2
+}
+
+// CalculateIchimoku 一目均衡表を計算する（既定 conv=9, base=26, spanB=52）。
+// 配列長は len(prices)。データ不足（len < spanB）は nil。
+// ウォームアップ未確定インデックスは Zero。Chikou（遅行スパン）は終値そのものなので usecase 側で扱う。
+func CalculateIchimoku(prices []*models.StockBrandDailyPrice, conv, base, spanB int) []IchimokuResult {
+	n := len(prices)
+	if conv <= 0 || base <= 0 || spanB <= 0 || n < spanB {
+		return nil
+	}
+
+	two := decimal.NewFromInt(2)
+	results := make([]IchimokuResult, n)
+	for i := 0; i < n; i++ {
+		if i >= conv-1 {
+			results[i].Tenkan = highLowMid(prices, i, conv)
+		}
+		if i >= base-1 {
+			results[i].Kijun = highLowMid(prices, i, base)
+		}
+		if i >= spanB-1 {
+			results[i].SenkouB = highLowMid(prices, i, spanB)
+		}
+		if i >= base-1 && i >= conv-1 {
+			results[i].SenkouA = results[i].Tenkan.Add(results[i].Kijun).Div(two)
+		}
+	}
+	return results
+}
+
+// SwingLevel スイング高値/安値を集約したサポート/レジスタンスレベル。
+type SwingLevel struct {
+	Price   decimal.Decimal
+	Touches int // クラスタに統合されたスイング点数
+	LastIdx int // 最後にタッチしたインデックス（usecase 側で日付化）
+}
+
+// swingRawPoint スイング検出の中間値。
+type swingRawPoint struct {
+	price decimal.Decimal
+	idx   int
+}
+
+// detectSwingPoints lookback 幅でスイング高値/安値を検出して返す（価格昇順ソート済み）。
+func detectSwingPoints(prices []*models.StockBrandDailyPrice, lookback int) []swingRawPoint {
+	n := len(prices)
+	var points []swingRawPoint
+	for i := lookback; i < n-lookback; i++ {
+		high := prices[i].High
+		low := prices[i].Low
+		isHigh, isLow := true, true
+		for j := i - lookback; j <= i+lookback; j++ {
+			if j == i {
+				continue
+			}
+			if prices[j].High.GreaterThanOrEqual(high) {
+				isHigh = false
+			}
+			if prices[j].Low.LessThanOrEqual(low) {
+				isLow = false
+			}
+		}
+		if isHigh {
+			points = append(points, swingRawPoint{high, i})
+		}
+		if isLow {
+			points = append(points, swingRawPoint{low, i})
+		}
+	}
+	// 価格昇順 insertion sort
+	for i := 1; i < len(points); i++ {
+		for j := i; j > 0 && points[j].price.LessThan(points[j-1].price); j-- {
+			points[j], points[j-1] = points[j-1], points[j]
+		}
+	}
+	return points
+}
+
+// clusterSwingPoints 昇順済み points を tolerance 内でクラスタ統合して SwingLevel 配列を返す。
+func clusterSwingPoints(points []swingRawPoint, tolerance decimal.Decimal) []SwingLevel {
+	var levels []SwingLevel
+	i := 0
+	for i < len(points) {
+		cluster := []swingRawPoint{points[i]}
+		j := i + 1
+		ref := points[i].price
+		for j < len(points) && !ref.IsZero() {
+			diff := points[j].price.Sub(ref).Abs().Div(ref)
+			if diff.LessThanOrEqual(tolerance) {
+				cluster = append(cluster, points[j])
+				j++
+			} else {
+				break
+			}
+		}
+		var sum decimal.Decimal
+		maxIdx := cluster[0].idx
+		for _, c := range cluster {
+			sum = sum.Add(c.price)
+			if c.idx > maxIdx {
+				maxIdx = c.idx
+			}
+		}
+		avg := sum.Div(decimal.NewFromInt(int64(len(cluster))))
+		levels = append(levels, SwingLevel{Price: avg, Touches: len(cluster), LastIdx: maxIdx})
+		i = j
+	}
+	return levels
+}
+
+// CalculateSupportResistance スイング高安を検出しクラスタ集約してレベル配列を返す（昇順）。
+// lookback: スイング判定の左右本数（既定3）。tolerance: 同一レベルとみなす相対許容（既定0.015=1.5%）。
+// データ不足は nil。support/resistance の区別は usecase 側で最新終値と比較して付与する。
+func CalculateSupportResistance(prices []*models.StockBrandDailyPrice, lookback int, tolerance decimal.Decimal) []SwingLevel {
+	n := len(prices)
+	if lookback <= 0 || n < 2*lookback+1 {
+		return nil
+	}
+	points := detectSwingPoints(prices, lookback)
+	if len(points) == 0 {
+		return []SwingLevel{}
+	}
+	return clusterSwingPoints(points, tolerance)
+}
+
 // CalculateRollingVWAP 期間 period の移動 VWAP を計算する（既定 period=14）。
 // 典型価格 (H+L+C)/3 を出来高加重平均する。index < period-1 は未確定で Zero。
 // 期間内の出来高合計がゼロの場合はゼロ除算回避のため Zero のままとする。

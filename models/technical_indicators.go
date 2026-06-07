@@ -15,13 +15,28 @@ type TechnicalIndicatorPoint struct {
 	MinusDI *decimal.Decimal `json:"minusDI"`
 	OBV     *decimal.Decimal `json:"obv"`
 	VWAP    *decimal.Decimal `json:"vwap"`
+	Tenkan  *decimal.Decimal `json:"tenkan"`
+	Kijun   *decimal.Decimal `json:"kijun"`
+	SenkouA *decimal.Decimal `json:"senkouA"`
+	SenkouB *decimal.Decimal `json:"senkouB"`
+	Chikou  *decimal.Decimal `json:"chikou"`
+}
+
+// SupportResistanceLevel サポート/レジスタンスレベル。
+type SupportResistanceLevel struct {
+	Price    *decimal.Decimal `json:"price"`
+	Kind     string           `json:"kind"`     // "support" | "resistance"
+	Touches  int              `json:"touches"`
+	LastDate string           `json:"lastDate"` // YYYY-MM-DD
 }
 
 // TechnicalIndicators 銘柄の指定期間テクニカル指標時系列。
 type TechnicalIndicators struct {
-	Symbol      string                    `json:"symbol"`
-	From        string                    `json:"from"`
-	To          string                    `json:"to"`
-	TradingDays int                       `json:"tradingDays"`
-	Points      []TechnicalIndicatorPoint `json:"points"`
+	Symbol                  string                    `json:"symbol"`
+	From                    string                    `json:"from"`
+	To                      string                    `json:"to"`
+	TradingDays             int                       `json:"tradingDays"`
+	Points                  []TechnicalIndicatorPoint `json:"points"`
+	FuturePoints            []TechnicalIndicatorPoint `json:"futurePoints"`
+	SupportResistanceLevels []SupportResistanceLevel  `json:"supportResistanceLevels"`
 }

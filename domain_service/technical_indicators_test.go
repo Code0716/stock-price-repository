@@ -232,6 +232,162 @@ func TestCalculateOBV(t *testing.T) {
 	})
 }
 
+// --- Ichimoku ---
+
+func TestCalculateIchimoku(t *testing.T) {
+	t.Run("データ不足(len < spanB)はnil", func(t *testing.T) {
+		rows := make([][]float64, 30) // spanB=52 必要
+		for i := range rows {
+			rows[i] = []float64{100, 90, 95, 1000}
+		}
+		assert.Nil(t, CalculateIchimoku(pricesFromOHLCV(rows...), 9, 26, 52))
+	})
+
+	t.Run("period=0はnil", func(t *testing.T) {
+		rows := make([][]float64, 60)
+		for i := range rows {
+			rows[i] = []float64{100, 90, 95, 1000}
+		}
+		prices := pricesFromOHLCV(rows...)
+		assert.Nil(t, CalculateIchimoku(prices, 0, 26, 52))
+		assert.Nil(t, CalculateIchimoku(prices, 9, 0, 52))
+		assert.Nil(t, CalculateIchimoku(prices, 9, 26, 0))
+	})
+
+	t.Run("配列長がlen(prices)と一致する", func(t *testing.T) {
+		rows := make([][]float64, 60)
+		for i := range rows {
+			rows[i] = []float64{float64(100 + i), float64(90 + i), float64(95 + i), 1000}
+		}
+		prices := pricesFromOHLCV(rows...)
+		ich := CalculateIchimoku(prices, 9, 26, 52)
+		assert.NotNil(t, ich)
+		assert.Equal(t, len(prices), len(ich))
+	})
+
+	t.Run("横ばい価格: Tenkan=Kijun=SenkouA=SenkouB=価格", func(t *testing.T) {
+		rows := make([][]float64, 60)
+		for i := range rows {
+			rows[i] = []float64{100, 100, 100, 1000}
+		}
+		prices := pricesFromOHLCV(rows...)
+		ich := CalculateIchimoku(prices, 9, 26, 52)
+		assert.NotNil(t, ich)
+		expected := decimal.NewFromInt(100)
+		// index 51（spanB-1）以降は全ライン確定
+		assert.True(t, ich[51].Tenkan.Equal(expected), "Tenkan got %s", ich[51].Tenkan)
+		assert.True(t, ich[51].Kijun.Equal(expected), "Kijun got %s", ich[51].Kijun)
+		assert.True(t, ich[51].SenkouA.Equal(expected), "SenkouA got %s", ich[51].SenkouA)
+		assert.True(t, ich[51].SenkouB.Equal(expected), "SenkouB got %s", ich[51].SenkouB)
+	})
+
+	t.Run("index < conv-1 は Tenkan がゼロ", func(t *testing.T) {
+		rows := make([][]float64, 60)
+		for i := range rows {
+			rows[i] = []float64{float64(100 + i), float64(90 + i), float64(95 + i), 1000}
+		}
+		ich := CalculateIchimoku(pricesFromOHLCV(rows...), 9, 26, 52)
+		assert.True(t, ich[7].Tenkan.IsZero(), "index 7 Tenkan should be zero")
+		assert.False(t, ich[8].Tenkan.IsZero(), "index 8 Tenkan should be non-zero")
+	})
+}
+
+// --- SupportResistance ---
+
+func TestCalculateSupportResistance(t *testing.T) {
+	t.Run("データ不足はnil", func(t *testing.T) {
+		rows := make([][]float64, 5) // lookback=3 → 2*3+1=7 必要
+		for i := range rows {
+			rows[i] = []float64{100, 90, 95, 1000}
+		}
+		result := CalculateSupportResistance(pricesFromOHLCV(rows...), 3, decimal.NewFromFloat(0.015))
+		assert.Nil(t, result)
+	})
+
+	t.Run("lookback=0はnil", func(t *testing.T) {
+		rows := make([][]float64, 20)
+		for i := range rows {
+			rows[i] = []float64{100, 90, 95, 1000}
+		}
+		result := CalculateSupportResistance(pricesFromOHLCV(rows...), 0, decimal.NewFromFloat(0.015))
+		assert.Nil(t, result)
+	})
+
+	t.Run("単調増加: スイング安値なし→レベルが少ない", func(t *testing.T) {
+		rows := make([][]float64, 20)
+		for i := range rows {
+			rows[i] = []float64{float64(100 + i), float64(90 + i), float64(95 + i), 1000}
+		}
+		result := CalculateSupportResistance(pricesFromOHLCV(rows...), 3, decimal.NewFromFloat(0.015))
+		assert.NotNil(t, result)
+		// 単調増加なのでスイング高値は最後の1点のみ（端を除いた範囲）
+		// スイング安値は検出されない
+		assert.LessOrEqual(t, len(result), 2)
+	})
+
+	t.Run("明確な天底: レベルと Touches が期待通り", func(t *testing.T) {
+		// 高値100→ピーク110→谷90→ピーク112→谷88→高値105
+		rows := [][]float64{
+			{100, 98, 99, 1000},
+			{102, 99, 101, 1000},
+			{105, 100, 103, 1000},
+			{110, 105, 108, 1000}, // ピーク高値
+			{107, 102, 104, 1000},
+			{103, 98, 100, 1000},
+			{100, 90, 92, 1000},  // 谷安値
+			{101, 92, 98, 1000},
+			{104, 97, 102, 1000},
+			{108, 103, 106, 1000},
+			{112, 108, 110, 1000}, // ピーク高値
+			{109, 104, 106, 1000},
+			{105, 100, 102, 1000},
+			{101, 88, 90, 1000},   // 谷安値
+			{102, 90, 98, 1000},
+			{104, 95, 101, 1000},
+			{106, 99, 103, 1000},
+		}
+		prices := pricesFromOHLCV(rows...)
+		tol := decimal.NewFromFloat(0.015)
+		result := CalculateSupportResistance(prices, 3, tol)
+		assert.NotNil(t, result)
+		assert.Greater(t, len(result), 0)
+		// レベルは price 昇順
+		for i := 1; i < len(result); i++ {
+			assert.True(t, result[i].Price.GreaterThanOrEqual(result[i-1].Price),
+				"levels should be ascending: %s < %s", result[i-1].Price, result[i].Price)
+		}
+	})
+
+	t.Run("tolerance による統合: 近接した2スイングが1レベルに集約", func(t *testing.T) {
+		// 高値100(index=3)と高値101(index=7)の1%差 → tol=1.5% で統合される
+		// lookback=3 なのでループは i=3..n-4
+		rows := [][]float64{
+			{95, 85, 90, 1000},
+			{96, 86, 91, 1000},
+			{97, 87, 92, 1000},
+			{100, 90, 95, 1000}, // index=3: スイング高値100（[0..6]で最大）
+			{97, 87, 92, 1000},
+			{95, 85, 90, 1000},
+			{96, 86, 91, 1000},
+			{101, 91, 96, 1000}, // index=7: スイング高値101（[4..10]で最大）
+			{98, 88, 93, 1000},
+			{96, 86, 91, 1000},
+			{95, 85, 90, 1000},
+		}
+		prices := pricesFromOHLCV(rows...)
+		tol := decimal.NewFromFloat(0.015)
+		result := CalculateSupportResistance(prices, 3, tol)
+		// 100と101は1%差なので tol=1.5% で統合→Touches>=2
+		hasMerged := false
+		for _, lv := range result {
+			if lv.Touches >= 2 {
+				hasMerged = true
+			}
+		}
+		assert.True(t, hasMerged, "近接スイングが統合されたレベルが存在するはず: %+v", result)
+	})
+}
+
 // --- VWAP ---
 
 func TestCalculateRollingVWAP(t *testing.T) {

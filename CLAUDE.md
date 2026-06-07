@@ -290,3 +290,26 @@ func TestE2E_CommandName(t *testing.T) {
 - `gorm.DB` を直接クエリに使用（gen_query 層を経由すること）
 - `local`/`dev` 以外の環境で gRPC リフレクションを有効化
 - Raspberry Pi 向けクロスコンパイル済みバイナリ `entrypoint/cli/spr-cli` をコミット
+
+---
+
+## PR・CI・main 最新化フロー
+
+```bash
+# 1. PR 作成
+gh pr create --title "<タイトル>" --body "<説明>"
+
+# 2. CI 通過を確認（全チェックがグリーンになるまで待機）
+gh pr checks <PR番号> --watch
+
+# 3. マージ（CI 通過・レビュー承認後）
+gh pr merge <PR番号> --squash --delete-branch
+
+# 4. ローカル main を最新化
+git checkout main
+git pull origin main
+```
+
+- CI がすべてグリーンになるまでマージしない
+- マージ後は必ず `git pull origin main` でローカル main を最新化する
+- feature ブランチはマージ後に削除する（`--delete-branch` オプション）

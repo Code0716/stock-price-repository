@@ -85,6 +85,52 @@ type DaytradeStatsAggregate struct {
 	MaxLoss     int64 // MIN(profit_loss)。データなしなら 0
 }
 
+// DaytradeTradeApprox は「銘柄×日×売買方向」で集約した1トレード近似
+type DaytradeTradeApprox struct {
+	TickerSymbol string
+	BrandName    string
+	ExecutedOn   time.Time
+	Direction    string // tradeKind が空なら marginKind、それ以外は tradeKind
+	ProfitLoss   int64
+	TradeAmount  int64
+	WinCount     int // 集約行のうち profit_loss > 0 の件数
+	LossCount    int // 集約行のうち profit_loss < 0 の件数
+}
+
+// DaytradeInsights デイトレ反省ダッシュボード（/daytrade/insights API レスポンス）
+type DaytradeInsights struct {
+	LossConcentration DaytradeLossConcentration `json:"lossConcentration"`
+	FavoriteTraps     []DaytradeFavoriteTrap    `json:"favoriteTraps"`
+}
+
+// DaytradeLossConcentration 大損寄与率（パレート分析）
+type DaytradeLossConcentration struct {
+	TotalLoss   int64                `json:"totalLoss"`   // 負けトレード損失合計（絶対値）
+	Top1Ratio   float64              `json:"top1Ratio"`   // 上位1件が総損失に占める割合
+	Top3Ratio   float64              `json:"top3Ratio"`
+	Top5Ratio   float64              `json:"top5Ratio"`
+	WorstTrades []DaytradeWorstTrade `json:"worstTrades"` // 損失上位5件（損失大きい順）
+}
+
+// DaytradeWorstTrade 損失上位トレード
+type DaytradeWorstTrade struct {
+	TickerSymbol string `json:"tickerSymbol"`
+	BrandName    string `json:"brandName"`
+	ExecutedOn   string `json:"executedOn"` // YYYY-MM-DD
+	Direction    string `json:"direction"`
+	ProfitLoss   int64  `json:"profitLoss"`
+}
+
+// DaytradeFavoriteTrap 惚れ込み検出（頻繁に取引するが期待値マイナスの銘柄）
+type DaytradeFavoriteTrap struct {
+	TickerSymbol string  `json:"tickerSymbol"`
+	BrandName    string  `json:"brandName"`
+	TradeCount   int     `json:"tradeCount"` // 集約後トレード数
+	TotalPnl     int64   `json:"totalPnl"`
+	Expectancy   float64 `json:"expectancy"` // TotalPnl / TradeCount
+	WinRate      float64 `json:"winRate"`
+}
+
 // DaytradePeriodStats 期間統計（/daytrade/stats API レスポンス）
 type DaytradePeriodStats struct {
 	ProfitLoss    int64 `json:"profitLoss"`

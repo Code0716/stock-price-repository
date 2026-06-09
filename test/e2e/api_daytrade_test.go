@@ -28,7 +28,8 @@ func TestE2E_Daytrade(t *testing.T) {
 
 	tx := database.NewTransaction(db)
 	repo := database.NewDaytradeExecutionRepositoryImpl(db)
-	interactor := usecase.NewDaytradeInteractor(tx, repo)
+	noteRepo := database.NewDaytradeTradeNoteRepositoryImpl(db)
+	interactor := usecase.NewDaytradeInteractor(tx, repo, noteRepo)
 
 	httpServer := driver.NewHTTPServer()
 	daytradeHandler := handler.NewDaytradeHandler(interactor, httpServer, zap.NewNop())

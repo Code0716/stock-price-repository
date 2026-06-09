@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 
 	"github.com/Code0716/stock-price-repository/driver"
@@ -248,4 +250,104 @@ func (h *DaytradeHandler) GetCoveredRange(w http.ResponseWriter, r *http.Request
 		resp.Max = &s
 	}
 	respondJSON(w, h.logger, resp)
+}
+
+func (h *DaytradeHandler) GetTrades(w http.ResponseWriter, r *http.Request) {
+	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	if err != nil {
+		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
+	if err != nil {
+		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+	if from != nil && to != nil && from.After(*to) {
+		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		return
+	}
+
+	trades, err := h.usecase.GetTrades(r.Context(), from, to)
+	if err != nil {
+		h.logger.Error("daytrade trades failed", zap.Error(err))
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		return
+	}
+	respondJSON(w, h.logger, trades)
+}
+
+type upsertTradeNoteRequest struct {
+	TickerSymbol      string   `json:"tickerSymbol"`
+	ExecutedOn        string   `json:"executedOn"` // YYYY-MM-DD
+	Direction         string   `json:"direction"`
+	Memo              string   `json:"memo"`
+	Tags              []string `json:"tags"`
+	DeclaredStopPrice *string  `json:"declaredStopPrice"` // decimal string or null
+}
+
+func (h *DaytradeHandler) UpsertTradeNote(w http.ResponseWriter, r *http.Request) {
+	var req upsertTradeNoteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "リクエストボディが不正です", http.StatusBadRequest)
+		return
+	}
+	if req.TickerSymbol == "" || req.ExecutedOn == "" || req.Direction == "" {
+		http.Error(w, "tickerSymbol, executedOn, direction は必須です", http.StatusBadRequest)
+		return
+	}
+
+	executedOn, err := time.Parse(util.DateLayout, req.ExecutedOn)
+	if err != nil {
+		http.Error(w, "executedOnの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+
+	rec := &models.DaytradeTradeNoteRecord{
+		TickerSymbol: req.TickerSymbol,
+		ExecutedOn:   executedOn,
+		Direction:    req.Direction,
+		Memo:         req.Memo,
+		Tags:         req.Tags,
+	}
+	if req.DeclaredStopPrice != nil {
+		d, err := decimal.NewFromString(*req.DeclaredStopPrice)
+		if err != nil {
+			http.Error(w, "declaredStopPriceの形式が不正です", http.StatusBadRequest)
+			return
+		}
+		rec.DeclaredStopPrice = &d
+	}
+
+	if err := h.usecase.UpsertTradeNote(r.Context(), rec); err != nil {
+		h.logger.Error("daytrade upsert trade note failed", zap.Error(err))
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *DaytradeHandler) GetTagStats(w http.ResponseWriter, r *http.Request) {
+	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	if err != nil {
+		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
+	if err != nil {
+		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+	if from != nil && to != nil && from.After(*to) {
+		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		return
+	}
+
+	stats, err := h.usecase.GetTagStats(r.Context(), from, to)
+	if err != nil {
+		h.logger.Error("daytrade tag stats failed", zap.Error(err))
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		return
+	}
+	respondJSON(w, h.logger, stats)
 }

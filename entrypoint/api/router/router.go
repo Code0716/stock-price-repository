@@ -63,6 +63,9 @@ func NewRouter(
 		mux.HandleFunc("/daytrade/range", daytradeHandler.GetCoveredRange)
 		mux.HandleFunc("/daytrade/stats", daytradeHandler.GetStats)
 		mux.HandleFunc("/daytrade/insights", daytradeHandler.GetInsights)
+		mux.HandleFunc("/daytrade/trades", daytradeHandler.GetTrades)
+		mux.HandleFunc("/daytrade/trades/note", daytradeHandler.UpsertTradeNote)
+		mux.HandleFunc("/daytrade/tag-stats", daytradeHandler.GetTagStats)
 	}
 	return mux
 }

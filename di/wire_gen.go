@@ -111,7 +111,8 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	finAnnouncementHandler := handler.NewFinAnnouncementHandler(stockBrandInteractor, httpServer, logger)
 	finStatementHandler := handler.NewFinStatementHandler(stockBrandInteractor, httpServer, logger)
 	daytradeExecutionRepository := database.NewDaytradeExecutionRepositoryImpl(gormDB)
-	daytradeInteractor := usecase.NewDaytradeInteractor(transaction, daytradeExecutionRepository)
+	daytradeTradeNoteRepository := database.NewDaytradeTradeNoteRepositoryImpl(gormDB)
+	daytradeInteractor := usecase.NewDaytradeInteractor(transaction, daytradeExecutionRepository, daytradeTradeNoteRepository)
 	daytradeHandler := handler.NewDaytradeHandler(daytradeInteractor, httpServer, logger)
 	nikkeiRepository := database.NewNikkeiRepositoryImpl(gormDB)
 	returnAnalysisInteractor := usecase.NewReturnAnalysisInteractor(stockBrandsDailyPriceRepository, nikkeiRepository)
@@ -165,7 +166,7 @@ var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequ
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewAdjustHistoricalDataForStockConsolidationCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand, commands.NewSyncFinAnnouncementsCommand, commands.NewSyncFinStatementsCommand, commands.NewBacktestAllStocksCommand, commands.NewSyncFinStatementsAllStocksCommand)
 
-var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl)
+var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl, database.NewDaytradeTradeNoteRepositoryImpl)
 
 var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, handler.NewReturnAnalysisHandler, handler.NewBacktestHandler, handler.NewStrategyRankingHandler, handler.NewValuationHandler, handler.NewTechnicalIndicatorsHandler, router.NewRouter)
 

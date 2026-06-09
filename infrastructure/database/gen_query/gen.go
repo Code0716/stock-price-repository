@@ -21,6 +21,7 @@ var (
 	AppliedStockConsolidationsHistory *appliedStockConsolidationsHistory
 	AppliedStockSplitsHistory         *appliedStockSplitsHistory
 	DaytradeExecution                 *daytradeExecution
+	DaytradeTradeNote                 *daytradeTradeNote
 	DjiStockAverageDailyStockPrice    *djiStockAverageDailyStockPrice
 	FinAnnouncement                   *finAnnouncement
 	FinStatement                      *finStatement
@@ -40,6 +41,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	AppliedStockConsolidationsHistory = &Q.AppliedStockConsolidationsHistory
 	AppliedStockSplitsHistory = &Q.AppliedStockSplitsHistory
 	DaytradeExecution = &Q.DaytradeExecution
+	DaytradeTradeNote = &Q.DaytradeTradeNote
 	DjiStockAverageDailyStockPrice = &Q.DjiStockAverageDailyStockPrice
 	FinAnnouncement = &Q.FinAnnouncement
 	FinStatement = &Q.FinStatement
@@ -60,6 +62,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		AppliedStockConsolidationsHistory: newAppliedStockConsolidationsHistory(db, opts...),
 		AppliedStockSplitsHistory:         newAppliedStockSplitsHistory(db, opts...),
 		DaytradeExecution:                 newDaytradeExecution(db, opts...),
+		DaytradeTradeNote:                 newDaytradeTradeNote(db, opts...),
 		DjiStockAverageDailyStockPrice:    newDjiStockAverageDailyStockPrice(db, opts...),
 		FinAnnouncement:                   newFinAnnouncement(db, opts...),
 		FinStatement:                      newFinStatement(db, opts...),
@@ -81,6 +84,7 @@ type Query struct {
 	AppliedStockConsolidationsHistory appliedStockConsolidationsHistory
 	AppliedStockSplitsHistory         appliedStockSplitsHistory
 	DaytradeExecution                 daytradeExecution
+	DaytradeTradeNote                 daytradeTradeNote
 	DjiStockAverageDailyStockPrice    djiStockAverageDailyStockPrice
 	FinAnnouncement                   finAnnouncement
 	FinStatement                      finStatement
@@ -96,6 +100,8 @@ type Query struct {
 
 func (q *Query) Available() bool { return q.db != nil }
 
+func (q *Query) UnderlyingDB() *gorm.DB { return q.db }
+
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
 		db:                                db,
@@ -103,6 +109,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.clone(db),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.clone(db),
 		DaytradeExecution:                 q.DaytradeExecution.clone(db),
+		DaytradeTradeNote:                 q.DaytradeTradeNote.clone(db),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.clone(db),
 		FinAnnouncement:                   q.FinAnnouncement.clone(db),
 		FinStatement:                      q.FinStatement.clone(db),
@@ -118,11 +125,11 @@ func (q *Query) clone(db *gorm.DB) *Query {
 }
 
 func (q *Query) ReadDB() *Query {
-	return q.ReplaceDB(q.db.Clauses(dbresolver.Read))
+	return q.clone(q.db.Clauses(dbresolver.Read))
 }
 
 func (q *Query) WriteDB() *Query {
-	return q.ReplaceDB(q.db.Clauses(dbresolver.Write))
+	return q.clone(q.db.Clauses(dbresolver.Write))
 }
 
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
@@ -132,6 +139,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.replaceDB(db),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.replaceDB(db),
 		DaytradeExecution:                 q.DaytradeExecution.replaceDB(db),
+		DaytradeTradeNote:                 q.DaytradeTradeNote.replaceDB(db),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.replaceDB(db),
 		FinAnnouncement:                   q.FinAnnouncement.replaceDB(db),
 		FinStatement:                      q.FinStatement.replaceDB(db),
@@ -151,6 +159,7 @@ type queryCtx struct {
 	AppliedStockConsolidationsHistory IAppliedStockConsolidationsHistoryDo
 	AppliedStockSplitsHistory         IAppliedStockSplitsHistoryDo
 	DaytradeExecution                 IDaytradeExecutionDo
+	DaytradeTradeNote                 IDaytradeTradeNoteDo
 	DjiStockAverageDailyStockPrice    IDjiStockAverageDailyStockPriceDo
 	FinAnnouncement                   IFinAnnouncementDo
 	FinStatement                      IFinStatementDo
@@ -170,6 +179,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.WithContext(ctx),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.WithContext(ctx),
 		DaytradeExecution:                 q.DaytradeExecution.WithContext(ctx),
+		DaytradeTradeNote:                 q.DaytradeTradeNote.WithContext(ctx),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.WithContext(ctx),
 		FinAnnouncement:                   q.FinAnnouncement.WithContext(ctx),
 		FinStatement:                      q.FinStatement.WithContext(ctx),

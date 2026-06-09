@@ -131,6 +131,43 @@ type DaytradeFavoriteTrap struct {
 	WinRate      float64 `json:"winRate"`
 }
 
+// DaytradeTradeNoteRecord はリポジトリ層が扱うトレード注釈の内部モデル
+type DaytradeTradeNoteRecord struct {
+	TickerSymbol      string           // 近似キー
+	ExecutedOn        time.Time        // 近似キー
+	Direction         string           // 近似キー（正規化済み）
+	Memo              string
+	Tags              []string
+	DeclaredStopPrice *decimal.Decimal
+}
+
+// DaytradeTradeNote はAPIレスポンス中の注釈部分
+type DaytradeTradeNote struct {
+	Memo              string           `json:"memo"`
+	Tags              []string         `json:"tags"`
+	DeclaredStopPrice *decimal.Decimal `json:"declaredStopPrice"`
+}
+
+// DaytradeTradeWithNote は近似トレード＋注釈（GET /daytrade/trades の1行）
+type DaytradeTradeWithNote struct {
+	TickerSymbol string             `json:"tickerSymbol"`
+	BrandName    string             `json:"brandName"`
+	ExecutedOn   string             `json:"executedOn"` // YYYY-MM-DD
+	Direction    string             `json:"direction"`
+	ProfitLoss   int64              `json:"profitLoss"`
+	TradeAmount  int64              `json:"tradeAmount"`
+	Note         *DaytradeTradeNote `json:"note"` // 未注釈なら null
+}
+
+// DaytradeTagStat はタグ別損益集計（GET /daytrade/tag-stats の1行）
+type DaytradeTagStat struct {
+	Tag        string  `json:"tag"`
+	TradeCount int     `json:"tradeCount"`
+	TotalPnl   int64   `json:"totalPnl"`
+	Expectancy float64 `json:"expectancy"` // TotalPnl / TradeCount
+	WinRate    float64 `json:"winRate"`
+}
+
 // DaytradePeriodStats 期間統計（/daytrade/stats API レスポンス）
 type DaytradePeriodStats struct {
 	ProfitLoss    int64 `json:"profitLoss"`

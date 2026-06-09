@@ -134,6 +134,36 @@ func (mr *MockDaytradeInteractorMockRecorder) GetSummaryByTickerSymbol(ctx, from
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSummaryByTickerSymbol", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetSummaryByTickerSymbol), ctx, from, to)
 }
 
+// GetTagStats mocks base method.
+func (m *MockDaytradeInteractor) GetTagStats(ctx context.Context, from, to *time.Time) ([]models.DaytradeTagStat, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTagStats", ctx, from, to)
+	ret0, _ := ret[0].([]models.DaytradeTagStat)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTagStats indicates an expected call of GetTagStats.
+func (mr *MockDaytradeInteractorMockRecorder) GetTagStats(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTagStats", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetTagStats), ctx, from, to)
+}
+
+// GetTrades mocks base method.
+func (m *MockDaytradeInteractor) GetTrades(ctx context.Context, from, to *time.Time) ([]*models.DaytradeTradeWithNote, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTrades", ctx, from, to)
+	ret0, _ := ret[0].([]*models.DaytradeTradeWithNote)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTrades indicates an expected call of GetTrades.
+func (mr *MockDaytradeInteractorMockRecorder) GetTrades(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTrades", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetTrades), ctx, from, to)
+}
+
 // ImportSBICsv mocks base method.
 func (m *MockDaytradeInteractor) ImportSBICsv(ctx context.Context, r io.Reader) (*models.DaytradeImportResult, error) {
 	m.ctrl.T.Helper()
@@ -147,4 +177,18 @@ func (m *MockDaytradeInteractor) ImportSBICsv(ctx context.Context, r io.Reader) 
 func (mr *MockDaytradeInteractorMockRecorder) ImportSBICsv(ctx, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportSBICsv", reflect.TypeOf((*MockDaytradeInteractor)(nil).ImportSBICsv), ctx, r)
+}
+
+// UpsertTradeNote mocks base method.
+func (m *MockDaytradeInteractor) UpsertTradeNote(ctx context.Context, rec *models.DaytradeTradeNoteRecord) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertTradeNote", ctx, rec)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpsertTradeNote indicates an expected call of UpsertTradeNote.
+func (mr *MockDaytradeInteractorMockRecorder) UpsertTradeNote(ctx, rec any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertTradeNote", reflect.TypeOf((*MockDaytradeInteractor)(nil).UpsertTradeNote), ctx, rec)
 }

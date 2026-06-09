@@ -24,16 +24,23 @@ type DaytradeInteractor interface {
 	GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error)
 	// GetInsights は大損寄与率・惚れ込み検出を含む反省指標を返す。from / to は nil 可。
 	GetInsights(ctx context.Context, from, to *time.Time) (*models.DaytradeInsights, error)
+	// GetTrades は近似トレードと注釈を結合した一覧を返す。from / to は nil 可。
+	GetTrades(ctx context.Context, from, to *time.Time) ([]*models.DaytradeTradeWithNote, error)
+	// UpsertTradeNote はトレード注釈を upsert する。全フィールド空なら削除。
+	UpsertTradeNote(ctx context.Context, rec *models.DaytradeTradeNoteRecord) error
+	// GetTagStats はタグ別損益集計を返す。from / to は nil 可。
+	GetTagStats(ctx context.Context, from, to *time.Time) ([]models.DaytradeTagStat, error)
 }
 
 type daytradeInteractorImpl struct {
-	tx   repositories.Transaction
-	repo repositories.DaytradeExecutionRepository
-	now  func() time.Time
+	tx       repositories.Transaction
+	repo     repositories.DaytradeExecutionRepository
+	noteRepo repositories.DaytradeTradeNoteRepository
+	now      func() time.Time
 }
 
-func NewDaytradeInteractor(tx repositories.Transaction, repo repositories.DaytradeExecutionRepository) DaytradeInteractor {
-	return &daytradeInteractorImpl{tx: tx, repo: repo, now: time.Now}
+func NewDaytradeInteractor(tx repositories.Transaction, repo repositories.DaytradeExecutionRepository, noteRepo repositories.DaytradeTradeNoteRepository) DaytradeInteractor {
+	return &daytradeInteractorImpl{tx: tx, repo: repo, noteRepo: noteRepo, now: time.Now}
 }
 
 func (u *daytradeInteractorImpl) ImportSBICsv(ctx context.Context, r io.Reader) (*models.DaytradeImportResult, error) {
@@ -105,6 +112,34 @@ func (u *daytradeInteractorImpl) GetInsights(ctx context.Context, from, to *time
 	}
 	trades := daytrade.BuildTradeApprox(executions)
 	return daytrade.ComputeInsights(trades), nil
+}
+
+func (u *daytradeInteractorImpl) GetTrades(ctx context.Context, from, to *time.Time) ([]*models.DaytradeTradeWithNote, error) {
+	executions, err := u.repo.FindByDateRange(ctx, from, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "FindByDateRange error")
+	}
+	approxTrades := daytrade.BuildTradeApprox(executions)
+	notes, err := u.noteRepo.FindByDateRange(ctx, from, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "noteRepo.FindByDateRange error")
+	}
+	return daytrade.MergeTradesWithNotes(approxTrades, notes), nil
+}
+
+func (u *daytradeInteractorImpl) UpsertTradeNote(ctx context.Context, rec *models.DaytradeTradeNoteRecord) error {
+	if err := u.noteRepo.Upsert(ctx, rec); err != nil {
+		return errors.Wrap(err, "noteRepo.Upsert error")
+	}
+	return nil
+}
+
+func (u *daytradeInteractorImpl) GetTagStats(ctx context.Context, from, to *time.Time) ([]models.DaytradeTagStat, error) {
+	trades, err := u.GetTrades(ctx, from, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "GetTrades error")
+	}
+	return daytrade.ComputeTagStats(trades), nil
 }
 
 func (u *daytradeInteractorImpl) GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error) {

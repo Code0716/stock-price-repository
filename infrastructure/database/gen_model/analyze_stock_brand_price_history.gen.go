@@ -12,13 +12,15 @@ const TableNameAnalyzeStockBrandPriceHistory = "analyze_stock_brand_price_histor
 
 // AnalyzeStockBrandPriceHistory mapped from table <analyze_stock_brand_price_history>
 type AnalyzeStockBrandPriceHistory struct {
-	ID           string     `gorm:"column:id;type:char(36);primaryKey;comment:uuid" json:"id"`                         // uuid
-	StockBrandID string     `gorm:"column:stock_brand_id;type:char(36);not null;comment:uuid" json:"stock_brand_id"`   // uuid
-	TickerSymbol string     `gorm:"column:ticker_symbol;type:varchar(36);not null;comment:証券コード" json:"ticker_symbol"` // 証券コード
-	TradePrice   float64    `gorm:"column:trade_price;type:decimal(10,4);not null;comment:トレード金額" json:"trade_price"`  // トレード金額
-	Action       string     `gorm:"column:action;type:varchar(10);not null;comment:売り/買いの別" json:"action"`             // 売り/買いの別
-	Method       string     `gorm:"column:method;type:varchar(255);not null;comment:分析方法" json:"method"`               // 分析方法
-	Memo         *string    `gorm:"column:memo;type:text;comment:メモ" json:"memo"`                                      // メモ
+	ID           string     `gorm:"column:id;type:char(36);primaryKey;comment:uuid" json:"id"`                            // uuid
+	StockBrandID string     `gorm:"column:stock_brand_id;type:char(36);not null;comment:uuid" json:"stock_brand_id"`      // uuid
+	TickerSymbol string     `gorm:"column:ticker_symbol;type:varchar(36);not null;comment:証券コード" json:"ticker_symbol"`    // 証券コード
+	TradePrice   float64    `gorm:"column:trade_price;type:decimal(10,4);not null;comment:トレード金額" json:"trade_price"`     // トレード金額
+	Action       string     `gorm:"column:action;type:varchar(10);not null;comment:売り/買いの別" json:"action"`                // 売り/買いの別
+	Method       string     `gorm:"column:method;type:varchar(255);not null;comment:分析方法" json:"method"`                  // 分析方法
+	Memo         *string    `gorm:"column:memo;type:text;comment:メモ" json:"memo"`                                         // メモ
+	Score        *float64   `gorm:"column:score;type:decimal(10,4);comment:複合スコア（出す手法のみ。analyze_diamonds等）" json:"score"` // 複合スコア（出す手法のみ。analyze_diamonds等）
+	SignalRank   *int32     `gorm:"column:signal_rank;type:int;comment:手法内ランク（1始まり）" json:"signal_rank"`                  // 手法内ランク（1始まり）
 	CreatedAt    *time.Time `gorm:"column:created_at;type:date" json:"created_at"`
 }
 

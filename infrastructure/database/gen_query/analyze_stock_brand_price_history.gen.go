@@ -35,6 +35,8 @@ func newAnalyzeStockBrandPriceHistory(db *gorm.DB, opts ...gen.DOOption) analyze
 	_analyzeStockBrandPriceHistory.Action = field.NewString(tableName, "action")
 	_analyzeStockBrandPriceHistory.Method = field.NewString(tableName, "method")
 	_analyzeStockBrandPriceHistory.Memo = field.NewString(tableName, "memo")
+	_analyzeStockBrandPriceHistory.Score = field.NewFloat64(tableName, "score")
+	_analyzeStockBrandPriceHistory.SignalRank = field.NewInt32(tableName, "signal_rank")
 	_analyzeStockBrandPriceHistory.CreatedAt = field.NewTime(tableName, "created_at")
 
 	_analyzeStockBrandPriceHistory.fillFieldMap()
@@ -53,6 +55,8 @@ type analyzeStockBrandPriceHistory struct {
 	Action       field.String  // 売り/買いの別
 	Method       field.String  // 分析方法
 	Memo         field.String  // メモ
+	Score        field.Float64 // 複合スコア（出す手法のみ。analyze_diamonds等）
+	SignalRank   field.Int32   // 手法内ランク（1始まり）
 	CreatedAt    field.Time
 
 	fieldMap map[string]field.Expr
@@ -77,6 +81,8 @@ func (a *analyzeStockBrandPriceHistory) updateTableName(table string) *analyzeSt
 	a.Action = field.NewString(table, "action")
 	a.Method = field.NewString(table, "method")
 	a.Memo = field.NewString(table, "memo")
+	a.Score = field.NewFloat64(table, "score")
+	a.SignalRank = field.NewInt32(table, "signal_rank")
 	a.CreatedAt = field.NewTime(table, "created_at")
 
 	a.fillFieldMap()
@@ -94,7 +100,7 @@ func (a *analyzeStockBrandPriceHistory) GetFieldByName(fieldName string) (field.
 }
 
 func (a *analyzeStockBrandPriceHistory) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 8)
+	a.fieldMap = make(map[string]field.Expr, 10)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["stock_brand_id"] = a.StockBrandID
 	a.fieldMap["ticker_symbol"] = a.TickerSymbol
@@ -102,6 +108,8 @@ func (a *analyzeStockBrandPriceHistory) fillFieldMap() {
 	a.fieldMap["action"] = a.Action
 	a.fieldMap["method"] = a.Method
 	a.fieldMap["memo"] = a.Memo
+	a.fieldMap["score"] = a.Score
+	a.fieldMap["signal_rank"] = a.SignalRank
 	a.fieldMap["created_at"] = a.CreatedAt
 }
 

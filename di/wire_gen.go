@@ -125,7 +125,9 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	valuationHandler := handler.NewValuationHandler(valuationInteractor, httpServer, logger)
 	technicalIndicatorsInteractor := usecase.NewTechnicalIndicatorsInteractor(stockBrandsDailyPriceRepository)
 	technicalIndicatorsHandler := handler.NewTechnicalIndicatorsHandler(technicalIndicatorsInteractor, httpServer, logger)
-	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler, daytradeHandler, returnAnalysisHandler, backtestHandler, strategyRankingHandler, valuationHandler, technicalIndicatorsHandler)
+	signalPerformanceInteractor := usecase.NewSignalPerformanceInteractor(analyzeStockBrandPriceHistoryRepository, stockBrandsDailyPriceRepository)
+	signalPerformanceHandler := handler.NewSignalPerformanceHandler(signalPerformanceInteractor, httpServer, logger)
+	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler, daytradeHandler, returnAnalysisHandler, backtestHandler, strategyRankingHandler, valuationHandler, technicalIndicatorsHandler, signalPerformanceHandler)
 	return serveMux, func() {
 		cleanup()
 	}, nil
@@ -160,7 +162,7 @@ func InitializeStockServiceServer(ctx context.Context) (*GrpcServerComponents, f
 
 // wire.go:
 
-var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation, usecase.NewDaytradeInteractor, usecase.NewReturnAnalysisInteractor, usecase.NewBacktestInteractor, usecase.NewStrategyRankingInteractor, usecase.NewValuationInteractor, usecase.NewTechnicalIndicatorsInteractor)
+var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation, usecase.NewDaytradeInteractor, usecase.NewReturnAnalysisInteractor, usecase.NewBacktestInteractor, usecase.NewStrategyRankingInteractor, usecase.NewValuationInteractor, usecase.NewTechnicalIndicatorsInteractor, usecase.NewSignalPerformanceInteractor)
 
 var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewBoxAPIClient, driver.NewLogger)
 
@@ -168,7 +170,7 @@ var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands
 
 var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl, database.NewDaytradeTradeNoteRepositoryImpl)
 
-var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, handler.NewReturnAnalysisHandler, handler.NewBacktestHandler, handler.NewStrategyRankingHandler, handler.NewValuationHandler, handler.NewTechnicalIndicatorsHandler, router.NewRouter)
+var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, handler.NewReturnAnalysisHandler, handler.NewBacktestHandler, handler.NewStrategyRankingHandler, handler.NewValuationHandler, handler.NewTechnicalIndicatorsHandler, handler.NewSignalPerformanceHandler, router.NewRouter)
 
 var grpcSet = wire.NewSet(server.NewStockServiceServer, usecase.NewGetHighVolumeStockBrandsUseCase, wire.Struct(new(GrpcServerComponents), "*"))
 

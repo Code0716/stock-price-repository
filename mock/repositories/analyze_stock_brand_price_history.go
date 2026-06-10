@@ -85,6 +85,21 @@ func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) DeleteByStock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByStockBrandIDs", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).DeleteByStockBrandIDs), ctx, ids)
 }
 
+// FindByCreatedAtRange mocks base method.
+func (m *MockAnalyzeStockBrandPriceHistoryRepository) FindByCreatedAtRange(ctx context.Context, filter *models.SignalPerformanceFilter) ([]*models.AnalyzeStockBrandPriceHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByCreatedAtRange", ctx, filter)
+	ret0, _ := ret[0].([]*models.AnalyzeStockBrandPriceHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByCreatedAtRange indicates an expected call of FindByCreatedAtRange.
+func (mr *MockAnalyzeStockBrandPriceHistoryRepositoryMockRecorder) FindByCreatedAtRange(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByCreatedAtRange", reflect.TypeOf((*MockAnalyzeStockBrandPriceHistoryRepository)(nil).FindByCreatedAtRange), ctx, filter)
+}
+
 // FindByDates mocks base method.
 func (m *MockAnalyzeStockBrandPriceHistoryRepository) FindByDates(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter, dates []string) ([]*models.AnalyzeStockBrandPriceHistory, error) {
 	m.ctrl.T.Helper()

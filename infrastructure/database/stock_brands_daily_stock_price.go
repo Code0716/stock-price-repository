@@ -144,6 +144,44 @@ func (si *StockBrandsDailyPriceRepositoryImpl) ListDailyPricesBySymbol(ctx conte
 	return domainDailyPrices, nil
 }
 
+// ListRangePricesBySymbols 複数銘柄の期間中日足を一括取得する（シグナル精度評価用）
+func (si *StockBrandsDailyPriceRepositoryImpl) ListRangePricesBySymbols(ctx context.Context, filter models.ListRangePricesBySymbolsFilter) ([]*models.StockBrandDailyPrice, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	if len(filter.Symbols) == 0 {
+		return []*models.StockBrandDailyPrice{}, nil
+	}
+
+	q := tx.WithContext(ctx).
+		StockBrandsDailyPrice.
+		Where(tx.StockBrandsDailyPrice.TickerSymbol.In(filter.Symbols...))
+
+	if filter.DateFrom != nil {
+		dateOnly := time.Date(filter.DateFrom.Year(), filter.DateFrom.Month(), filter.DateFrom.Day(), 0, 0, 0, 0, filter.DateFrom.Location())
+		q = q.Where(tx.StockBrandsDailyPrice.Date.Gte(dateOnly))
+	}
+	if filter.DateTo != nil {
+		dateOnly := time.Date(filter.DateTo.Year(), filter.DateTo.Month(), filter.DateTo.Day(), 0, 0, 0, 0, filter.DateTo.Location())
+		q = q.Where(tx.StockBrandsDailyPrice.Date.Lte(dateOnly))
+	}
+
+	q = q.Order(tx.StockBrandsDailyPrice.TickerSymbol).Order(tx.StockBrandsDailyPrice.Date)
+
+	rows, err := q.Find()
+	if err != nil {
+		return nil, errors.Wrap(err, "StockBrandsDailyPriceRepositoryImpl.ListRangePricesBySymbols error")
+	}
+
+	prices := make([]*models.StockBrandDailyPrice, 0, len(rows))
+	for _, r := range rows {
+		prices = append(prices, si.convertToDomainModel(r))
+	}
+	return prices, nil
+}
+
 func (si *StockBrandsDailyPriceRepositoryImpl) convertToDomainModel(dailyPriceDB *genModel.StockBrandsDailyPrice) *models.StockBrandDailyPrice {
 	if dailyPriceDB == nil {
 		return nil

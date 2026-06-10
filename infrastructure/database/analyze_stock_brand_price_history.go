@@ -38,6 +38,22 @@ type analyzeStockBrandPriceHistoryRow struct {
 	Action       string
 	Method       string
 	Memo         *string
+	Score        *float64
+	SignalRank   *int32
+	CreatedAt    time.Time
+}
+
+type signalHistoryRow struct {
+	ID           string
+	StockBrandID string
+	Name         string
+	TickerSymbol string
+	TradePrice   float64
+	Action       string
+	Method       string
+	Memo         *string
+	Score        *float64
+	SignalRank   *int32
 	CreatedAt    time.Time
 }
 
@@ -342,4 +358,64 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) DeleteByStockBrandIDs(ctx
 	}
 
 	return nil
+}
+
+// FindByCreatedAtRange 期間内のシグナル履歴を銘柄名付きで取得する（シグナル精度評価用）
+func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindByCreatedAtRange(ctx context.Context, filter *models.SignalPerformanceFilter) ([]*models.AnalyzeStockBrandPriceHistory, error) {
+	db := ai.db.WithContext(ctx).
+		Table("analyze_stock_brand_price_history AS h").
+		Select(`
+			h.id,
+			h.stock_brand_id,
+			COALESCE(s.name, '') AS name,
+			h.ticker_symbol,
+			h.trade_price,
+			h.action,
+			h.method,
+			h.memo,
+			h.score,
+			h.signal_rank,
+			h.created_at
+		`).
+		Joins("LEFT JOIN stock_brand AS s ON s.id = h.stock_brand_id AND s.deleted_at IS NULL").
+		Where("h.created_at BETWEEN ? AND ?", filter.From.Format("2006-01-02"), filter.To.Format("2006-01-02")).
+		Order("h.created_at ASC, h.ticker_symbol ASC")
+
+	if filter.Method != "" {
+		db = db.Where("h.method = ?", filter.Method)
+	}
+	if filter.Action != "" {
+		db = db.Where("h.action = ?", filter.Action)
+	}
+
+	var rows []*signalHistoryRow
+	if err := db.Find(&rows).Error; err != nil {
+		return nil, errors.Wrap(err, "AnalyzeStockBrandPriceHistoryRepositoryImpl.FindByCreatedAtRange error")
+	}
+
+	histories := make([]*models.AnalyzeStockBrandPriceHistory, 0, len(rows))
+	for _, row := range rows {
+		h := &models.AnalyzeStockBrandPriceHistory{
+			ID:           row.ID,
+			StockBrandID: row.StockBrandID,
+			Name:         row.Name,
+			TickerSymbol: row.TickerSymbol,
+			TradePrice:   decimal.NewFromFloat(row.TradePrice),
+			Action:       row.Action,
+			Method:       row.Method,
+			Memo:         row.Memo,
+			CreatedAt:    row.CreatedAt,
+		}
+		if row.Score != nil {
+			s := decimal.NewFromFloat(*row.Score)
+			h.Score = &s
+		}
+		if row.SignalRank != nil {
+			rank := int(*row.SignalRank)
+			h.SignalRank = &rank
+		}
+		histories = append(histories, h)
+	}
+
+	return histories, nil
 }

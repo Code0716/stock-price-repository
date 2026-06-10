@@ -13,6 +13,8 @@ type StockBrandsDailyPriceRepository interface {
 	CreateStockBrandDailyPrice(ctx context.Context, dailyPrice []*models.StockBrandDailyPrice) error
 	// ListDailyPricesBySymbol symbolから日足を取得する
 	ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPrice, error)
+	// ListRangePricesBySymbols 複数銘柄の期間中日足を一括取得する（シグナル精度評価用）
+	ListRangePricesBySymbols(ctx context.Context, filter models.ListRangePricesBySymbolsFilter) ([]*models.StockBrandDailyPrice, error)
 	// 上場廃止銘柄を削除する。
 	DeleteByIDs(ctx context.Context, ids []string) error
 }

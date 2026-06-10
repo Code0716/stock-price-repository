@@ -20,6 +20,8 @@ type AnalyzeStockBrandPriceHistoryRepository interface {
 	FindByDates(ctx context.Context, filter *models.AnalyzeStockBrandPriceHistoryFilter, dates []string) ([]*models.AnalyzeStockBrandPriceHistory, error)
 	// FindMultipleSignals 同一日に2つ以上のシグナルが出た銘柄を集計して取得する
 	FindMultipleSignals(ctx context.Context, filter *models.MultipleSignalStockFilter) ([]*models.MultipleSignalStock, error)
+	// FindByCreatedAtRange 期間内のシグナル履歴を取得する（シグナル精度評価用）
+	FindByCreatedAtRange(ctx context.Context, filter *models.SignalPerformanceFilter) ([]*models.AnalyzeStockBrandPriceHistory, error)
 	// DeleteByStockBrandIDs 銘柄IDで一致したものを削除する
 	DeleteByStockBrandIDs(ctx context.Context, ids []string) error
 }

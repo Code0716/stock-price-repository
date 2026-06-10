@@ -26,17 +26,19 @@ const (
 )
 
 type AnalyzeStockBrandPriceHistory struct {
-	ID              string          `json:"id"`
-	StockBrandID    string          `json:"stockBrandId"`
-	Name            string          `json:"name"`
-	TickerSymbol    string          `json:"tickerSymbol"`
-	TradePrice      decimal.Decimal `json:"tradePrice"`
-	CurrentPrice    decimal.Decimal `json:"currentPrice"`
-	PriceDifference decimal.Decimal `json:"priceDifference"`
-	Action          string          `json:"action"`
-	Method          string          `json:"method"`
-	Memo            *string         `json:"memo"`
-	CreatedAt       time.Time       `json:"createdAt"`
+	ID              string           `json:"id"`
+	StockBrandID    string           `json:"stockBrandId"`
+	Name            string           `json:"name"`
+	TickerSymbol    string           `json:"tickerSymbol"`
+	TradePrice      decimal.Decimal  `json:"tradePrice"`
+	CurrentPrice    decimal.Decimal  `json:"currentPrice"`
+	PriceDifference decimal.Decimal  `json:"priceDifference"`
+	Action          string           `json:"action"`
+	Method          string           `json:"method"`
+	Memo            *string          `json:"memo"`
+	Score           *decimal.Decimal `json:"score"`
+	SignalRank      *int             `json:"signalRank"`
+	CreatedAt       time.Time        `json:"createdAt"`
 }
 
 type AnalyzeStockBrandPriceHistoryFilter struct {

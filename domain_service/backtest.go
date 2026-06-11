@@ -156,9 +156,9 @@ func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 			result.TradeList = append(result.TradeList, models.BacktestTrade{
 				EntryDate:  prices[entryIdx].Date.Format(util.DateLayout),
 				ExitDate:   prices[i].Date.Format(util.DateLayout),
-				EntryPrice: entryPrice,
-				ExitPrice:  exitClose,
-				Return:     ret,
+				EntryPrice: entryPrice.Round(6),
+				ExitPrice:  exitClose.Round(6),
+				Return:     ret.Round(6),
 				HoldDays:   i - entryIdx,
 				Reason:     reason,
 			})
@@ -199,7 +199,7 @@ func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 		if collectSeries {
 			result.Equity = append(result.Equity, models.BacktestEquityPoint{
 				Date:   prices[i].Date.Format(util.DateLayout),
-				Equity: eq,
+				Equity: eq.Round(6),
 			})
 		}
 	}
@@ -211,8 +211,8 @@ func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 	}
 
 	result.Trades = stats.trades
-	result.TotalReturn = realizedEquity.Sub(one)
-	result.MaxDrawdown = MaxDrawdown(equitySeries)
+	result.TotalReturn = realizedEquity.Sub(one).Round(6)
+	result.MaxDrawdown = MaxDrawdown(equitySeries).Round(6)
 	if stats.trades > 0 {
 		result.AvgHoldDays = float64(stats.holdDaysSum) / float64(stats.trades)
 	}
@@ -225,18 +225,18 @@ func fillTradeStats(result *models.BacktestResult, stats *tradeStats) {
 	if stats.trades == 0 {
 		return
 	}
-	result.WinRate = decimal.NewFromInt(int64(stats.wins)).Div(decimal.NewFromInt(int64(stats.trades)))
+	result.WinRate = decimal.NewFromInt(int64(stats.wins)).Div(decimal.NewFromInt(int64(stats.trades))).Round(4)
 
 	if !stats.grossLoss.IsZero() {
-		result.ProfitFactor = stats.grossProfit.Div(stats.grossLoss)
+		result.ProfitFactor = stats.grossProfit.Div(stats.grossLoss).Round(6)
 	}
 	if stats.wins > 0 {
-		result.AvgWin = stats.sumWin.Div(decimal.NewFromInt(int64(stats.wins)))
+		result.AvgWin = stats.sumWin.Div(decimal.NewFromInt(int64(stats.wins))).Round(6)
 	}
 	if stats.losses > 0 {
-		result.AvgLoss = stats.sumLoss.Div(decimal.NewFromInt(int64(stats.losses)))
+		result.AvgLoss = stats.sumLoss.Div(decimal.NewFromInt(int64(stats.losses))).Round(6)
 	}
 	if stats.losses > 0 && !result.AvgLoss.IsZero() {
-		result.PayoffRatio = result.AvgWin.Div(result.AvgLoss.Abs())
+		result.PayoffRatio = result.AvgWin.Div(result.AvgLoss.Abs()).Round(6)
 	}
 }

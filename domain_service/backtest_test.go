@@ -189,7 +189,7 @@ func TestRunBacktest_WithCosts(t *testing.T) {
 		assert.Equal(t, 1, res.Trades)
 		retGot, _ := res.TradeList[0].Return.Float64()
 		retExp, _ := expectedRet.Float64()
-		assert.InDelta(t, retExp, retGot, 1e-9, "コストあり1トレードリターン")
+		assert.InDelta(t, retExp, retGot, 1e-6, "コストあり1トレードリターン（Round(6)分の誤差を許容）")
 
 		// コストなしより低いリターンになること
 		paramsNoCost := ExitParams{TakeProfit: decimal.NewFromFloat(0.10), StopLoss: decimal.NewFromFloat(0.05), MaxHoldDays: 10}

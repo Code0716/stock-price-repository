@@ -13,9 +13,7 @@ import (
 )
 
 const (
-	signalPerformanceMaxDays      = 366
-	signalPerformanceDefaultDays  = 90
-	signalPerformancePriceLookAhead = 25 // +20 horizon の先読み余裕
+	signalPerformancePriceLookAhead = 40 // +20営業日 ≈ 29.4暦日 + 祝日・連休バッファ
 )
 
 var signalPerformanceHorizons = []int{5, 10, 20}

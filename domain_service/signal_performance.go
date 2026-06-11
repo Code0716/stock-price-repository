@@ -8,9 +8,9 @@ import (
 )
 
 // ForwardReturns シグナル日以降の価格系列（昇順）から各 horizon のリターンを計算する。
-// prices は当該銘柄のシグナル日 *以降*（シグナル日当日を含む）の日足を date 昇順で渡すこと。
-// 返値 baseFound=false はシグナル日の価格行が存在しないことを示す。その場合 returns は nil。
-// action="Sell" のとき符号を反転する。
+// prices は呼び出し側（filterPricesFrom）がシグナル日以降（当日含む）に切り取った日足を date 昇順で渡すこと。
+// prices[0] が P0（基準価格）となる。baseFound=false は prices が空、または prices[0].Adjclose がゼロのとき。
+// その場合 returns は nil。action="Sell" のとき符号を反転する。
 func ForwardReturns(prices []*models.StockBrandDailyPrice, action string, horizons []int) (map[int]*decimal.Decimal, bool) {
 	if len(prices) == 0 {
 		return nil, false

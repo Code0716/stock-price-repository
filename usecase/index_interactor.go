@@ -51,6 +51,11 @@ type IndexInteractor interface {
 func (ii *indexInteractorImpl) apiResponseToModel(info *gateway.StockChartWithRangeAPIResponseInfo, t time.Time) models.IndexStockAverageDailyPrices {
 	var result models.IndexStockAverageDailyPrices
 	for _, v := range info.Indicator {
+		// Yahoo は祝日・取得時点未確定の日に null を返し decimal ゼロ値になる。
+		// ゼロ円行を保存するとベンチマークリターンが -100% に壊れるためスキップする。
+		if v.Close.IsZero() {
+			continue
+		}
 		result = append(result, &models.IndexStockAverageDailyPrice{
 			Date:      v.Date,
 			High:      v.High,

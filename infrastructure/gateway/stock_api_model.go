@@ -54,8 +54,9 @@ type StockAPISymbol string
 const (
 	StockAPISymbolNikkei   StockAPISymbol = "^N225"
 	StockAPISymbolDji      StockAPISymbol = "^DJI"
-	// StockAPISymbolTopixETF NEXT FUNDS TOPIX連動ETF (1306.T) を TOPIX 代理として使用（Yahoo に TOPIX 指数本体が無いため）
-	StockAPISymbolTopixETF StockAPISymbol = "1306.T"
+	// StockAPISymbolTopixETF iFreeETF TOPIX (1305.T) を TOPIX 代理として使用。
+	// Yahoo に TOPIX 指数本体が無く、1306.T は 1:10 分割が Yahoo の adjclose に未反映でリターン系列が壊れるため 1305.T を採用。
+	StockAPISymbolTopixETF StockAPISymbol = "1305.T"
 )
 
 func (s StockAPISymbol) String() string {

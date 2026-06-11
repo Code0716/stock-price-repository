@@ -45,6 +45,7 @@ func newFinStatement(db *gorm.DB, opts ...gen.DOOption) finStatement {
 	_finStatement.ForecastOperatingProfit = field.NewFloat64(tableName, "forecast_operating_profit")
 	_finStatement.ForecastProfit = field.NewFloat64(tableName, "forecast_profit")
 	_finStatement.ForecastEps = field.NewFloat64(tableName, "forecast_eps")
+	_finStatement.ForecastDividendPerShareAnnual = field.NewFloat64(tableName, "forecast_dividend_per_share_annual")
 	_finStatement.CreatedAt = field.NewTime(tableName, "created_at")
 	_finStatement.UpdatedAt = field.NewTime(tableName, "updated_at")
 
@@ -56,26 +57,27 @@ func newFinStatement(db *gorm.DB, opts ...gen.DOOption) finStatement {
 type finStatement struct {
 	finStatementDo
 
-	ALL                     field.Asterisk
-	ID                      field.String
-	TickerSymbol            field.String  // 証券コード
-	StockBrandID            field.String  // 銘柄ID
-	DisclosedDate           field.Time    // 開示日
-	FiscalYearEnd           field.Time    // 当期末日
-	TypeOfDocument          field.String  // 開示書類種別
-	TypeOfCurrentPeriod     field.String  // 当会計期間の種類
-	NetSales                field.Float64 // 売上高
-	OperatingProfit         field.Float64 // 営業利益
-	OrdinaryProfit          field.Float64 // 経常利益
-	Profit                  field.Float64 // 当期純利益
-	EarningsPerShare        field.Float64 // EPS
-	BookValuePerShare       field.Float64 // BPS
-	ForecastNetSales        field.Float64 // 通期予想売上高
-	ForecastOperatingProfit field.Float64 // 通期予想営業利益
-	ForecastProfit          field.Float64 // 通期予想純利益
-	ForecastEps             field.Float64 // 通期予想EPS
-	CreatedAt               field.Time
-	UpdatedAt               field.Time
+	ALL                            field.Asterisk
+	ID                             field.String
+	TickerSymbol                   field.String  // 証券コード
+	StockBrandID                   field.String  // 銘柄ID
+	DisclosedDate                  field.Time    // 開示日
+	FiscalYearEnd                  field.Time    // 当期末日
+	TypeOfDocument                 field.String  // 開示書類種別
+	TypeOfCurrentPeriod            field.String  // 当会計期間の種類
+	NetSales                       field.Float64 // 売上高
+	OperatingProfit                field.Float64 // 営業利益
+	OrdinaryProfit                 field.Float64 // 経常利益
+	Profit                         field.Float64 // 当期純利益
+	EarningsPerShare               field.Float64 // EPS
+	BookValuePerShare              field.Float64 // BPS
+	ForecastNetSales               field.Float64 // 通期予想売上高
+	ForecastOperatingProfit        field.Float64 // 通期予想営業利益
+	ForecastProfit                 field.Float64 // 通期予想純利益
+	ForecastEps                    field.Float64 // 通期予想EPS
+	ForecastDividendPerShareAnnual field.Float64 // 1株あたり当期予想配当（年間合計）
+	CreatedAt                      field.Time
+	UpdatedAt                      field.Time
 
 	fieldMap map[string]field.Expr
 }
@@ -109,6 +111,7 @@ func (f *finStatement) updateTableName(table string) *finStatement {
 	f.ForecastOperatingProfit = field.NewFloat64(table, "forecast_operating_profit")
 	f.ForecastProfit = field.NewFloat64(table, "forecast_profit")
 	f.ForecastEps = field.NewFloat64(table, "forecast_eps")
+	f.ForecastDividendPerShareAnnual = field.NewFloat64(table, "forecast_dividend_per_share_annual")
 	f.CreatedAt = field.NewTime(table, "created_at")
 	f.UpdatedAt = field.NewTime(table, "updated_at")
 
@@ -127,7 +130,7 @@ func (f *finStatement) GetFieldByName(fieldName string) (field.OrderExpr, bool) 
 }
 
 func (f *finStatement) fillFieldMap() {
-	f.fieldMap = make(map[string]field.Expr, 19)
+	f.fieldMap = make(map[string]field.Expr, 20)
 	f.fieldMap["id"] = f.ID
 	f.fieldMap["ticker_symbol"] = f.TickerSymbol
 	f.fieldMap["stock_brand_id"] = f.StockBrandID
@@ -145,6 +148,7 @@ func (f *finStatement) fillFieldMap() {
 	f.fieldMap["forecast_operating_profit"] = f.ForecastOperatingProfit
 	f.fieldMap["forecast_profit"] = f.ForecastProfit
 	f.fieldMap["forecast_eps"] = f.ForecastEps
+	f.fieldMap["forecast_dividend_per_share_annual"] = f.ForecastDividendPerShareAnnual
 	f.fieldMap["created_at"] = f.CreatedAt
 	f.fieldMap["updated_at"] = f.UpdatedAt
 }

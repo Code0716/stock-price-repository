@@ -24,7 +24,7 @@ type valuationInteractorImpl struct {
 	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
 }
 
-// ValuationInteractor 評価指標（PER/PBR/ROE/予想PER）算出インターフェース。
+// ValuationInteractor 評価指標（PER/PBR/ROE/予想PER/予想配当利回り）算出インターフェース。
 type ValuationInteractor interface {
 	GetValuation(ctx context.Context, symbol string) (*models.Valuation, error)
 }
@@ -65,60 +65,81 @@ func (v *valuationInteractorImpl) GetValuation(ctx context.Context, symbol strin
 	}
 
 	// 財務12件（disclosed_date 降順）から各値を抽出
-	trailingEPS, forecastEPS, bps, fiscalPeriod := extractFinancialValues(statements)
-	result.TrailingEPS = trailingEPS
-	result.ForecastEPS = forecastEPS
-	result.BPS = bps
-	result.FiscalPeriod = fiscalPeriod
+	fv := extractFinancialValues(statements)
+	result.TrailingEPS = fv.trailingEPS
+	result.ForecastEPS = fv.forecastEPS
+	result.BPS = fv.bps
+	result.ForecastDividendPerShareAnnual = fv.forecastDPS
+	result.FiscalPeriod = fv.fiscalPeriod
 
 	// 指標を算出（終値が取れている場合のみ）
 	if result.Close != nil {
 		close := *result.Close
-		computed := computeValuation(close, trailingEPS, forecastEPS, bps)
+		computed := computeValuation(close, fv.trailingEPS, fv.forecastEPS, fv.bps, fv.forecastDPS)
 		result.PER = computed.PER
 		result.ForwardPER = computed.ForwardPER
 		result.PBR = computed.PBR
 		result.ROE = computed.ROE
+		result.ForecastDividendYield = computed.ForecastDividendYield
 	}
 
 	return result, nil
 }
 
-// extractFinancialValues 財務スライス（disclosed_date 降順）から実績EPS/予想EPS/BPSを抽出する。
+// financialValues extractFinancialValues の戻り値をまとめた構造体。
+type financialValues struct {
+	trailingEPS  *decimal.Decimal
+	forecastEPS  *decimal.Decimal
+	bps          *decimal.Decimal
+	forecastDPS  *decimal.Decimal
+	fiscalPeriod string
+}
+
+// extractFinancialValues 財務スライス（disclosed_date 降順）から実績EPS/予想EPS/BPS/予想DPSを抽出する。
 // 実績EPS は通期(FY)決算のみ使用する（四半期EPSは期中累計で年換算でないため除外）。
-func extractFinancialValues(statements []*models.FinStatement) (trailingEPS *decimal.Decimal, forecastEPS *decimal.Decimal, bps *decimal.Decimal, fiscalPeriod string) {
+func extractFinancialValues(statements []*models.FinStatement) financialValues {
+	var v financialValues
 	for _, s := range statements {
-		if trailingEPS == nil && s.TypeOfCurrentPeriod == typeOfCurrentPeriodFY && s.EarningsPerShare != nil {
-			trailingEPS = s.EarningsPerShare
-			if s.FiscalYearEnd != nil {
-				fiscalPeriod = s.FiscalYearEnd.Format("2006-01")
-			}
+		extractTrailingEPS(s, &v)
+		if v.forecastEPS == nil && s.ForecastEPS != nil {
+			v.forecastEPS = s.ForecastEPS
 		}
-		if forecastEPS == nil && s.ForecastEPS != nil {
-			forecastEPS = s.ForecastEPS
+		if v.bps == nil && s.BookValuePerShare != nil {
+			v.bps = s.BookValuePerShare
 		}
-		if bps == nil && s.BookValuePerShare != nil {
-			bps = s.BookValuePerShare
+		if v.forecastDPS == nil && s.ForecastDividendPerShareAnnual != nil {
+			v.forecastDPS = s.ForecastDividendPerShareAnnual
 		}
-		if trailingEPS != nil && forecastEPS != nil && bps != nil {
+		if v.trailingEPS != nil && v.forecastEPS != nil && v.bps != nil && v.forecastDPS != nil {
 			break
 		}
 	}
-	return
+	return v
+}
+
+func extractTrailingEPS(s *models.FinStatement, v *financialValues) {
+	if v.trailingEPS != nil || s.TypeOfCurrentPeriod != typeOfCurrentPeriodFY || s.EarningsPerShare == nil {
+		return
+	}
+	v.trailingEPS = s.EarningsPerShare
+	if s.FiscalYearEnd != nil {
+		v.fiscalPeriod = s.FiscalYearEnd.Format("2006-01")
+	}
 }
 
 // valuationMetrics computeValuation の戻り値。
 type valuationMetrics struct {
-	PER        *decimal.Decimal
-	ForwardPER *decimal.Decimal
-	PBR        *decimal.Decimal
-	ROE        *decimal.Decimal
+	PER                   *decimal.Decimal
+	ForwardPER            *decimal.Decimal
+	PBR                   *decimal.Decimal
+	ROE                   *decimal.Decimal
+	ForecastDividendYield *decimal.Decimal
 }
 
 // computeValuation 終値と財務値から評価指標を算出する純粋関数。
 // 割る数が nil/0/負 のときは該当指標を nil とする。
 // ただし ROE は負EPS（赤字）でも算出する（負ROEは意味があるため）。
-func computeValuation(close decimal.Decimal, trailingEPS, forecastEPS, bps *decimal.Decimal) valuationMetrics {
+func computeValuation(close decimal.Decimal, trailingEPS, forecastEPS, bps, forecastDPS *decimal.Decimal) valuationMetrics {
 	m := valuationMetrics{}
 
 	// PER = close / trailingEPS（EPS > 0 のときのみ）
@@ -143,6 +164,12 @@ func computeValuation(close decimal.Decimal, trailingEPS, forecastEPS, bps *deci
 	if trailingEPS != nil && bps != nil && bps.IsPositive() {
 		v := trailingEPS.Div(*bps)
 		m.ROE = &v
+	}
+
+	// ForecastDividendYield = forecastDPS / close（close > 0 のときのみ）
+	if forecastDPS != nil && close.IsPositive() {
+		v := forecastDPS.Div(close)
+		m.ForecastDividendYield = &v
 	}
 
 	return m

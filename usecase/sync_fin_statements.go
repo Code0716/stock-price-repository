@@ -56,6 +56,7 @@ func (si *stockBrandInteractorImpl) SyncFinStatements(ctx context.Context, ticke
 		stmt.ForecastOperatingProfit = parseDecimalPtr(info.ForecastOperatingProfit)
 		stmt.ForecastProfit = parseDecimalPtr(info.ForecastProfit)
 		stmt.ForecastEPS = parseDecimalPtr(info.ForecastEarningsPerShare)
+		stmt.ForecastDividendPerShareAnnual = parseDecimalPtr(info.ForecastDividendPerShareAnnual)
 
 		statements = append(statements, stmt)
 	}

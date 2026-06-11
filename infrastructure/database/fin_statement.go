@@ -23,25 +23,26 @@ func NewFinStatementRepositoryImpl(db *gorm.DB) repositories.FinStatementReposit
 }
 
 type finStatementRow struct {
-	ID                      string           `gorm:"column:id"`
-	TickerSymbol            string           `gorm:"column:ticker_symbol"`
-	StockBrandID            *string          `gorm:"column:stock_brand_id"`
-	DisclosedDate           time.Time        `gorm:"column:disclosed_date"`
-	FiscalYearEnd           *time.Time       `gorm:"column:fiscal_year_end"`
-	TypeOfDocument          string           `gorm:"column:type_of_document"`
-	TypeOfCurrentPeriod     string           `gorm:"column:type_of_current_period"`
-	NetSales                *decimal.Decimal `gorm:"column:net_sales"`
-	OperatingProfit         *decimal.Decimal `gorm:"column:operating_profit"`
-	OrdinaryProfit          *decimal.Decimal `gorm:"column:ordinary_profit"`
-	Profit                  *decimal.Decimal `gorm:"column:profit"`
-	EarningsPerShare        *decimal.Decimal `gorm:"column:earnings_per_share"`
-	BookValuePerShare       *decimal.Decimal `gorm:"column:book_value_per_share"`
-	ForecastNetSales        *decimal.Decimal `gorm:"column:forecast_net_sales"`
-	ForecastOperatingProfit *decimal.Decimal `gorm:"column:forecast_operating_profit"`
-	ForecastProfit          *decimal.Decimal `gorm:"column:forecast_profit"`
-	ForecastEPS             *decimal.Decimal `gorm:"column:forecast_eps"`
-	CreatedAt               time.Time        `gorm:"column:created_at"`
-	UpdatedAt               time.Time        `gorm:"column:updated_at"`
+	ID                             string           `gorm:"column:id"`
+	TickerSymbol                   string           `gorm:"column:ticker_symbol"`
+	StockBrandID                   *string          `gorm:"column:stock_brand_id"`
+	DisclosedDate                  time.Time        `gorm:"column:disclosed_date"`
+	FiscalYearEnd                  *time.Time       `gorm:"column:fiscal_year_end"`
+	TypeOfDocument                 string           `gorm:"column:type_of_document"`
+	TypeOfCurrentPeriod            string           `gorm:"column:type_of_current_period"`
+	NetSales                       *decimal.Decimal `gorm:"column:net_sales"`
+	OperatingProfit                *decimal.Decimal `gorm:"column:operating_profit"`
+	OrdinaryProfit                 *decimal.Decimal `gorm:"column:ordinary_profit"`
+	Profit                         *decimal.Decimal `gorm:"column:profit"`
+	EarningsPerShare               *decimal.Decimal `gorm:"column:earnings_per_share"`
+	BookValuePerShare              *decimal.Decimal `gorm:"column:book_value_per_share"`
+	ForecastNetSales               *decimal.Decimal `gorm:"column:forecast_net_sales"`
+	ForecastOperatingProfit        *decimal.Decimal `gorm:"column:forecast_operating_profit"`
+	ForecastProfit                 *decimal.Decimal `gorm:"column:forecast_profit"`
+	ForecastEPS                    *decimal.Decimal `gorm:"column:forecast_eps"`
+	ForecastDividendPerShareAnnual *decimal.Decimal `gorm:"column:forecast_dividend_per_share_annual"`
+	CreatedAt                      time.Time        `gorm:"column:created_at"`
+	UpdatedAt                      time.Time        `gorm:"column:updated_at"`
 }
 
 func (finStatementRow) TableName() string { return "fin_statement" }
@@ -54,25 +55,26 @@ func (r *FinStatementRepositoryImpl) Upsert(ctx context.Context, statements []*m
 	rows := make([]*finStatementRow, 0, len(statements))
 	for _, s := range statements {
 		rows = append(rows, &finStatementRow{
-			ID:                      s.ID,
-			TickerSymbol:            s.TickerSymbol,
-			StockBrandID:            s.StockBrandID,
-			DisclosedDate:           s.DisclosedDate,
-			FiscalYearEnd:           s.FiscalYearEnd,
-			TypeOfDocument:          s.TypeOfDocument,
-			TypeOfCurrentPeriod:     s.TypeOfCurrentPeriod,
-			NetSales:                s.NetSales,
-			OperatingProfit:         s.OperatingProfit,
-			OrdinaryProfit:          s.OrdinaryProfit,
-			Profit:                  s.Profit,
-			EarningsPerShare:        s.EarningsPerShare,
-			BookValuePerShare:       s.BookValuePerShare,
-			ForecastNetSales:        s.ForecastNetSales,
-			ForecastOperatingProfit: s.ForecastOperatingProfit,
-			ForecastProfit:          s.ForecastProfit,
-			ForecastEPS:             s.ForecastEPS,
-			CreatedAt:               s.CreatedAt,
-			UpdatedAt:               s.UpdatedAt,
+			ID:                             s.ID,
+			TickerSymbol:                   s.TickerSymbol,
+			StockBrandID:                   s.StockBrandID,
+			DisclosedDate:                  s.DisclosedDate,
+			FiscalYearEnd:                  s.FiscalYearEnd,
+			TypeOfDocument:                 s.TypeOfDocument,
+			TypeOfCurrentPeriod:            s.TypeOfCurrentPeriod,
+			NetSales:                       s.NetSales,
+			OperatingProfit:                s.OperatingProfit,
+			OrdinaryProfit:                 s.OrdinaryProfit,
+			Profit:                         s.Profit,
+			EarningsPerShare:               s.EarningsPerShare,
+			BookValuePerShare:              s.BookValuePerShare,
+			ForecastNetSales:               s.ForecastNetSales,
+			ForecastOperatingProfit:        s.ForecastOperatingProfit,
+			ForecastProfit:                 s.ForecastProfit,
+			ForecastEPS:                    s.ForecastEPS,
+			ForecastDividendPerShareAnnual: s.ForecastDividendPerShareAnnual,
+			CreatedAt:                      s.CreatedAt,
+			UpdatedAt:                      s.UpdatedAt,
 		})
 	}
 
@@ -85,6 +87,7 @@ func (r *FinStatementRepositoryImpl) Upsert(ctx context.Context, statements []*m
 				"net_sales", "operating_profit", "ordinary_profit", "profit",
 				"earnings_per_share", "book_value_per_share",
 				"forecast_net_sales", "forecast_operating_profit", "forecast_profit", "forecast_eps",
+				"forecast_dividend_per_share_annual",
 				"fiscal_year_end", "type_of_current_period", "updated_at",
 			}),
 		}).
@@ -119,24 +122,25 @@ func (r *FinStatementRepositoryImpl) FindBySymbol(ctx context.Context, filter *m
 
 func (r *FinStatementRepositoryImpl) convertToDomainModel(row *finStatementRow) *models.FinStatement {
 	return &models.FinStatement{
-		ID:                      row.ID,
-		TickerSymbol:            row.TickerSymbol,
-		StockBrandID:            row.StockBrandID,
-		DisclosedDate:           row.DisclosedDate,
-		FiscalYearEnd:           row.FiscalYearEnd,
-		TypeOfDocument:          row.TypeOfDocument,
-		TypeOfCurrentPeriod:     row.TypeOfCurrentPeriod,
-		NetSales:                row.NetSales,
-		OperatingProfit:         row.OperatingProfit,
-		OrdinaryProfit:          row.OrdinaryProfit,
-		Profit:                  row.Profit,
-		EarningsPerShare:        row.EarningsPerShare,
-		BookValuePerShare:       row.BookValuePerShare,
-		ForecastNetSales:        row.ForecastNetSales,
-		ForecastOperatingProfit: row.ForecastOperatingProfit,
-		ForecastProfit:          row.ForecastProfit,
-		ForecastEPS:             row.ForecastEPS,
-		CreatedAt:               row.CreatedAt,
-		UpdatedAt:               row.UpdatedAt,
+		ID:                             row.ID,
+		TickerSymbol:                   row.TickerSymbol,
+		StockBrandID:                   row.StockBrandID,
+		DisclosedDate:                  row.DisclosedDate,
+		FiscalYearEnd:                  row.FiscalYearEnd,
+		TypeOfDocument:                 row.TypeOfDocument,
+		TypeOfCurrentPeriod:            row.TypeOfCurrentPeriod,
+		NetSales:                       row.NetSales,
+		OperatingProfit:                row.OperatingProfit,
+		OrdinaryProfit:                 row.OrdinaryProfit,
+		Profit:                         row.Profit,
+		EarningsPerShare:               row.EarningsPerShare,
+		BookValuePerShare:              row.BookValuePerShare,
+		ForecastNetSales:               row.ForecastNetSales,
+		ForecastOperatingProfit:        row.ForecastOperatingProfit,
+		ForecastProfit:                 row.ForecastProfit,
+		ForecastEPS:                    row.ForecastEPS,
+		ForecastDividendPerShareAnnual: row.ForecastDividendPerShareAnnual,
+		CreatedAt:                      row.CreatedAt,
+		UpdatedAt:                      row.UpdatedAt,
 	}
 }

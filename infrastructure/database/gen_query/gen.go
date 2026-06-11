@@ -33,6 +33,7 @@ var (
 	StockBrand                        *stockBrand
 	StockBrandsDailyPrice             *stockBrandsDailyPrice
 	StockBrandsDailyPriceForAnalyze   *stockBrandsDailyPriceForAnalyze
+	TopixDailyPrice                   *topixDailyPrice
 )
 
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
@@ -53,6 +54,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	StockBrand = &Q.StockBrand
 	StockBrandsDailyPrice = &Q.StockBrandsDailyPrice
 	StockBrandsDailyPriceForAnalyze = &Q.StockBrandsDailyPriceForAnalyze
+	TopixDailyPrice = &Q.TopixDailyPrice
 }
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
@@ -74,6 +76,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		StockBrand:                        newStockBrand(db, opts...),
 		StockBrandsDailyPrice:             newStockBrandsDailyPrice(db, opts...),
 		StockBrandsDailyPriceForAnalyze:   newStockBrandsDailyPriceForAnalyze(db, opts...),
+		TopixDailyPrice:                   newTopixDailyPrice(db, opts...),
 	}
 }
 
@@ -96,6 +99,7 @@ type Query struct {
 	StockBrand                        stockBrand
 	StockBrandsDailyPrice             stockBrandsDailyPrice
 	StockBrandsDailyPriceForAnalyze   stockBrandsDailyPriceForAnalyze
+	TopixDailyPrice                   topixDailyPrice
 }
 
 func (q *Query) Available() bool { return q.db != nil }
@@ -121,6 +125,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		StockBrand:                        q.StockBrand.clone(db),
 		StockBrandsDailyPrice:             q.StockBrandsDailyPrice.clone(db),
 		StockBrandsDailyPriceForAnalyze:   q.StockBrandsDailyPriceForAnalyze.clone(db),
+		TopixDailyPrice:                   q.TopixDailyPrice.clone(db),
 	}
 }
 
@@ -151,6 +156,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		StockBrand:                        q.StockBrand.replaceDB(db),
 		StockBrandsDailyPrice:             q.StockBrandsDailyPrice.replaceDB(db),
 		StockBrandsDailyPriceForAnalyze:   q.StockBrandsDailyPriceForAnalyze.replaceDB(db),
+		TopixDailyPrice:                   q.TopixDailyPrice.replaceDB(db),
 	}
 }
 
@@ -171,6 +177,7 @@ type queryCtx struct {
 	StockBrand                        IStockBrandDo
 	StockBrandsDailyPrice             IStockBrandsDailyPriceDo
 	StockBrandsDailyPriceForAnalyze   IStockBrandsDailyPriceForAnalyzeDo
+	TopixDailyPrice                   ITopixDailyPriceDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
@@ -191,6 +198,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		StockBrand:                        q.StockBrand.WithContext(ctx),
 		StockBrandsDailyPrice:             q.StockBrandsDailyPrice.WithContext(ctx),
 		StockBrandsDailyPriceForAnalyze:   q.StockBrandsDailyPriceForAnalyze.WithContext(ctx),
+		TopixDailyPrice:                   q.TopixDailyPrice.WithContext(ctx),
 	}
 }
 

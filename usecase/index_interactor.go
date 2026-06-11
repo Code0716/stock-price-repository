@@ -17,6 +17,7 @@ type indexInteractorImpl struct {
 	tx               repositories.Transaction
 	nikkeiRepository repositories.NikkeiRepository
 	djiRepository    repositories.DjiRepository
+	topixRepository  repositories.TopixRepository
 	stockAPIClient   gateway.StockAPIClient
 	slackAPIClient   gateway.SlackAPIClient
 	redisClient      *redis.Client
@@ -27,16 +28,18 @@ func NewIndexInteractor(
 	redisClient *redis.Client,
 	nikkeiRepository repositories.NikkeiRepository,
 	djiRepository repositories.DjiRepository,
+	topixRepository repositories.TopixRepository,
 	stockAPIClient gateway.StockAPIClient,
 	slackAPIClient gateway.SlackAPIClient,
 ) IndexInteractor {
 	return &indexInteractorImpl{
-		tx,
-		nikkeiRepository,
-		djiRepository,
-		stockAPIClient,
-		slackAPIClient,
-		redisClient,
+		tx:               tx,
+		nikkeiRepository: nikkeiRepository,
+		djiRepository:    djiRepository,
+		topixRepository:  topixRepository,
+		stockAPIClient:   stockAPIClient,
+		slackAPIClient:   slackAPIClient,
+		redisClient:      redisClient,
 	}
 }
 

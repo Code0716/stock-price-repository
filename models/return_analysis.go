@@ -5,6 +5,9 @@ import "github.com/shopspring/decimal"
 // BenchmarkNikkei リターン分析のベンチマーク識別子（日経平均）。
 const BenchmarkNikkei = "nikkei"
 
+// BenchmarkTopix リターン分析のベンチマーク識別子（TOPIX）。
+const BenchmarkTopix = "topix"
+
 // ReturnAnalysis 指定銘柄の期間リターン・リスク指標・対ベンチマーク指標をまとめた分析結果。
 // 価格はいずれも調整後終値（adjClose）ベースで算出される。
 type ReturnAnalysis struct {

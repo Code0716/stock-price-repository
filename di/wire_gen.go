@@ -52,7 +52,8 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	createDailyStockPriceV1Command := commands.NewCreateDailyStockPriceV1Command(stockBrandsDailyPriceInteractor)
 	nikkeiRepository := database.NewNikkeiRepositoryImpl(gormDB)
 	djiRepository := database.NewDjiRepositoryImpl(gormDB)
-	indexInteractor := usecase.NewIndexInteractor(transaction, client, nikkeiRepository, djiRepository, stockAPIClient, slackAPIClient)
+	topixRepository := database.NewTopixRepositoryImpl(gormDB)
+	indexInteractor := usecase.NewIndexInteractor(transaction, client, nikkeiRepository, djiRepository, topixRepository, stockAPIClient, slackAPIClient)
 	createNikkeiAndDjiHistoricalDataV1Command := commands.NewCreateNikkeiAndDjiHistoricalDataV1Command(indexInteractor)
 	appliedStockSplitsHistoryRepository := database.NewAppliedStockSplitsHistoryRepositoryImpl(gormDB)
 	adjustHistoricalDataForStockSplit := usecase.NewAdjustHistoricalDataForStockSplit(stockBrandsDailyPriceForAnalyzeRepository, appliedStockSplitsHistoryRepository)
@@ -115,7 +116,8 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	daytradeInteractor := usecase.NewDaytradeInteractor(transaction, daytradeExecutionRepository, daytradeTradeNoteRepository)
 	daytradeHandler := handler.NewDaytradeHandler(daytradeInteractor, httpServer, logger)
 	nikkeiRepository := database.NewNikkeiRepositoryImpl(gormDB)
-	returnAnalysisInteractor := usecase.NewReturnAnalysisInteractor(stockBrandsDailyPriceRepository, nikkeiRepository)
+	topixRepository := database.NewTopixRepositoryImpl(gormDB)
+	returnAnalysisInteractor := usecase.NewReturnAnalysisInteractor(stockBrandsDailyPriceRepository, nikkeiRepository, topixRepository)
 	returnAnalysisHandler := handler.NewReturnAnalysisHandler(returnAnalysisInteractor, httpServer, logger)
 	backtestInteractor := usecase.NewBacktestInteractor(stockBrandsDailyPriceRepository)
 	backtestHandler := handler.NewBacktestHandler(backtestInteractor, httpServer, logger)
@@ -168,7 +170,7 @@ var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequ
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewAdjustHistoricalDataForStockConsolidationCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand, commands.NewSyncFinAnnouncementsCommand, commands.NewSyncFinStatementsCommand, commands.NewBacktestAllStocksCommand, commands.NewSyncFinStatementsAllStocksCommand)
 
-var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl, database.NewDaytradeTradeNoteRepositoryImpl)
+var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewTopixRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl, database.NewDaytradeTradeNoteRepositoryImpl)
 
 var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, handler.NewReturnAnalysisHandler, handler.NewBacktestHandler, handler.NewStrategyRankingHandler, handler.NewValuationHandler, handler.NewTechnicalIndicatorsHandler, handler.NewSignalPerformanceHandler, router.NewRouter)
 

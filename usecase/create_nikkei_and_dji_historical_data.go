@@ -20,10 +20,21 @@ func (ii *indexInteractorImpl) CreateNikkeiAndDjiHistoricalData(ctx context.Cont
 	if err != nil {
 		return errors.Wrap(err, "CreateNikkeiAndDjiHistoricalData")
 	}
-	// NYダウ兵器の取得
+	// NYダウの取得
 	djiDailyPrices, err := ii.stockAPIClient.GetIndexPriceChart(
 		ctx,
 		gateway.StockAPISymbolDji,
+		gateway.StockAPIInterval1D,
+		gateway.StockAPIValidRange10Y,
+	)
+	if err != nil {
+		return errors.Wrap(err, "CreateNikkeiAndDjiHistoricalData")
+	}
+	// TOPIX連動ETF (1306.T) の取得
+	// NEXT FUNDS TOPIX連動ETF (1306.T) を TOPIX 代理として使用（Yahoo に TOPIX 指数本体が無いため）
+	topixDailyPrices, err := ii.stockAPIClient.GetIndexPriceChart(
+		ctx,
+		gateway.StockAPISymbolTopixETF,
 		gateway.StockAPIInterval1D,
 		gateway.StockAPIValidRange10Y,
 	)
@@ -36,6 +47,9 @@ func (ii *indexInteractorImpl) CreateNikkeiAndDjiHistoricalData(ctx context.Cont
 			return errors.Wrap(err, "")
 		}
 		if err := ii.djiRepository.CreateDjiStockAverageDailyPrices(ctx, ii.apiResponseToModel(djiDailyPrices, t)); err != nil {
+			return errors.Wrap(err, "")
+		}
+		if err := ii.topixRepository.CreateTopixDailyPrices(ctx, ii.apiResponseToModel(topixDailyPrices, t)); err != nil {
 			return errors.Wrap(err, "")
 		}
 		return nil

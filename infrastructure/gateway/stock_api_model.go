@@ -52,8 +52,10 @@ func (r StockAPIValidRange) String() string {
 type StockAPISymbol string
 
 const (
-	StockAPISymbolNikkei StockAPISymbol = "^N225"
-	StockAPISymbolDji    StockAPISymbol = "^DJI"
+	StockAPISymbolNikkei   StockAPISymbol = "^N225"
+	StockAPISymbolDji      StockAPISymbol = "^DJI"
+	// StockAPISymbolTopixETF NEXT FUNDS TOPIX連動ETF (1306.T) を TOPIX 代理として使用（Yahoo に TOPIX 指数本体が無いため）
+	StockAPISymbolTopixETF StockAPISymbol = "1306.T"
 )
 
 func (s StockAPISymbol) String() string {

@@ -8,9 +8,11 @@ import (
 
 // ExitParams バックテストの共通イグジット・約定設定。
 type ExitParams struct {
-	TakeProfit  decimal.Decimal // 利確率（例: 0.10）
-	StopLoss    decimal.Decimal // 損切り率（例: 0.05、正の値で指定）
-	MaxHoldDays int             // 最大保有営業日数
+	TakeProfit     decimal.Decimal // 利確率（例: 0.10）
+	StopLoss       decimal.Decimal // 損切り率（例: 0.05、正の値で指定）
+	MaxHoldDays    int             // 最大保有営業日数
+	CommissionRate decimal.Decimal // 片道手数料率（例: 0.0005）。ゼロ値 = コストなし（後方互換）
+	SlippageRate   decimal.Decimal // 片道スリッページ率（例: 0.001）。ゼロ値 = コストなし
 }
 
 // tradeStats 約定確定時にインクリメンタルに加算する集計アキュムレータ。
@@ -56,6 +58,8 @@ func RunBacktestMetrics(prices []*models.StockBrandDailyPrice, entrySignals []bo
 }
 
 // exitReason 当日のリターンと保有日数から手仕舞い理由を返す。手仕舞い不要なら ""。
+// 判定は生の Close ベース（コスト考慮前）で行う。
+// コストを判定に含めると TakeProfit / StopLoss の閾値の意味が変わり挙動が複雑化するため。
 func exitReason(ret decimal.Decimal, holdDays int, params ExitParams) string {
 	switch {
 	case ret.GreaterThanOrEqual(params.TakeProfit):
@@ -66,6 +70,46 @@ func exitReason(ret decimal.Decimal, holdDays int, params ExitParams) string {
 		return "max_hold"
 	}
 	return ""
+}
+
+// effectiveEntryPrice 手数料・スリッページを加味した実効エントリー取得単価を返す。
+// ゼロ値の場合は生の Close をそのまま返す（後方互換）。
+//
+//	実効エントリー価格 = close × (1 + slippage) × (1 + commission)
+func effectiveEntryPrice(close, commissionRate, slippageRate decimal.Decimal) decimal.Decimal {
+	one := decimal.NewFromInt(1)
+	price := close
+	if !slippageRate.IsZero() {
+		price = price.Mul(one.Add(slippageRate))
+	}
+	if !commissionRate.IsZero() {
+		price = price.Mul(one.Add(commissionRate))
+	}
+	return price
+}
+
+// effectiveExitPrice コスト込みの手取りイグジット価格を返す。
+//
+//	手取りイグジット = close × (1 − slippage) × (1 − commission)
+func effectiveExitPrice(close, commissionRate, slippageRate decimal.Decimal) decimal.Decimal {
+	one := decimal.NewFromInt(1)
+	price := close
+	if !slippageRate.IsZero() {
+		price = price.Mul(one.Sub(slippageRate))
+	}
+	if !commissionRate.IsZero() {
+		price = price.Mul(one.Sub(commissionRate))
+	}
+	return price
+}
+
+// effectiveExitReturn コスト込みのトレードリターンを返す。
+// ゼロ値の場合は生のリターンをそのまま返す（後方互換）。
+//
+//	リターン = 手取りイグジット ÷ 実効エントリー価格 − 1
+func effectiveExitReturn(exitClose, effectiveEntry, commissionRate, slippageRate decimal.Decimal) decimal.Decimal {
+	exitEff := effectiveExitPrice(exitClose, commissionRate, slippageRate)
+	return exitEff.Div(effectiveEntry).Sub(decimal.NewFromInt(1))
 }
 
 func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, params ExitParams, collectSeries bool) models.BacktestResult {
@@ -89,15 +133,21 @@ func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 	realizedEquity := one // 直近に確定した資産（フラット時の資産）
 	inPosition := false
 	entryIdx := 0
-	var entryPrice, entryEquity decimal.Decimal
+	// entryPrice: コスト込みの実効取得単価（エクイティ計算・リターン算出に使用）
+	// entryClose: エントリー当日の生 Close（イグジット判定用）
+	var entryPrice, entryClose, entryEquity decimal.Decimal
 
 	equitySeries := make([]decimal.Decimal, 0, n)
 	var stats tradeStats
 
 	closeTrade := func(i int, reason string) {
-		exitPrice := prices[i].Close
-		ret := exitPrice.Div(entryPrice).Sub(one)
-		realizedEquity = entryEquity.Mul(exitPrice.Div(entryPrice))
+		exitClose := prices[i].Close
+		// 利確/損切りの判定は生 Close ベース済み（exitReason で実施）。
+		// 約定リターンとエクイティの計算にのみコストを適用する。
+		ret := effectiveExitReturn(exitClose, entryPrice, params.CommissionRate, params.SlippageRate)
+		// エクイティ更新: 手取りイグジット ÷ 実効エントリー
+		exitEffective := effectiveExitPrice(exitClose, params.CommissionRate, params.SlippageRate)
+		realizedEquity = entryEquity.Mul(exitEffective.Div(entryPrice))
 
 		// 約定をインクリメンタルに集計（TradeList 非依存）
 		stats.record(ret, i-entryIdx)
@@ -107,7 +157,7 @@ func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 				EntryDate:  prices[entryIdx].Date.Format(util.DateLayout),
 				ExitDate:   prices[i].Date.Format(util.DateLayout),
 				EntryPrice: entryPrice,
-				ExitPrice:  exitPrice,
+				ExitPrice:  exitClose,
 				Return:     ret,
 				HoldDays:   i - entryIdx,
 				Reason:     reason,
@@ -118,9 +168,10 @@ func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 
 	for i := 0; i < n; i++ {
 		// Step A: イグジット判定（エントリー当日は判定しない）
+		// 判定は生 Close ベース（コスト考慮前）
 		if inPosition && i > entryIdx {
-			ret := prices[i].Close.Div(entryPrice).Sub(one)
-			if reason := exitReason(ret, i-entryIdx, params); reason != "" {
+			rawRet := prices[i].Close.Div(entryClose).Sub(one)
+			if reason := exitReason(rawRet, i-entryIdx, params); reason != "" {
 				closeTrade(i, reason)
 			}
 		}
@@ -129,11 +180,15 @@ func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 		if !inPosition && entrySignals[i] {
 			inPosition = true
 			entryIdx = i
-			entryPrice = prices[i].Close
+			entryClose = prices[i].Close
+			// 実効エントリー価格（コスト込み取得単価）
+			entryPrice = effectiveEntryPrice(entryClose, params.CommissionRate, params.SlippageRate)
 			entryEquity = realizedEquity
 		}
 
 		// Step C: 当日のエクイティをマーク（保有中は時価評価）
+		// 時価評価は「生 Close ÷ 実効エントリー価格」ベースで算出する。
+		// これによりコスト込みのエクイティカーブが得られる。
 		var eq decimal.Decimal
 		if inPosition {
 			eq = entryEquity.Mul(prices[i].Close.Div(entryPrice))

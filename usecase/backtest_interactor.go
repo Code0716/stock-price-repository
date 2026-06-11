@@ -59,9 +59,11 @@ func (b *backtestInteractorImpl) GetBacktestComparison(ctx context.Context, symb
 	}
 
 	exitParams := domain_service.ExitParams{
-		TakeProfit:  params.TakeProfit,
-		StopLoss:    params.StopLoss,
-		MaxHoldDays: params.MaxHoldDays,
+		TakeProfit:     params.TakeProfit,
+		StopLoss:       params.StopLoss,
+		MaxHoldDays:    params.MaxHoldDays,
+		CommissionRate: params.CommissionRate,
+		SlippageRate:   params.SlippageRate,
 	}
 
 	for _, strategy := range domain_service.StrategyOrder {

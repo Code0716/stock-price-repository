@@ -21,9 +21,11 @@ import (
 func TestBacktestHandler_GetBacktest(t *testing.T) {
 	date, _ := time.Parse(util.DateLayout, "2021-01-04")
 	defaultParams := models.BacktestParams{
-		TakeProfit:  decimal.NewFromFloat(0.10),
-		StopLoss:    decimal.NewFromFloat(0.05),
-		MaxHoldDays: 20,
+		TakeProfit:     decimal.NewFromFloat(0.10),
+		StopLoss:       decimal.NewFromFloat(0.05),
+		MaxHoldDays:    20,
+		CommissionRate: decimal.Zero,
+		SlippageRate:   decimal.Zero,
 	}
 
 	type fields struct {
@@ -62,6 +64,8 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "slippage").Return("")
 					return m
 				},
 			},
@@ -150,6 +154,8 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "slippage").Return("")
 					return m
 				},
 			},
@@ -177,6 +183,148 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 			} else {
 				assert.Equal(t, tt.wantBody, w.Body.String())
 			}
+		})
+	}
+}
+
+func TestBacktestHandler_GetBacktest_CostParams(t *testing.T) {
+	type fields struct {
+		usecase    func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor
+		httpServer func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer
+	}
+	tests := []struct {
+		name           string
+		fields         fields
+		req            *http.Request
+		wantStatusCode int
+		wantBody       string
+	}{
+		{
+			name: "異常系: commissionが負値",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor {
+					return mock_usecase.NewMockBacktestInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("-0.001")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/backtest?symbol=7203&commission=-0.001", nil),
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "commissionは0以上0.05以下である必要があります\n",
+		},
+		{
+			name: "異常系: commissionが0.05超",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor {
+					return mock_usecase.NewMockBacktestInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("0.06")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/backtest?symbol=7203&commission=0.06", nil),
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "commissionは0以上0.05以下である必要があります\n",
+		},
+		{
+			name: "異常系: commissionが非数",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor {
+					return mock_usecase.NewMockBacktestInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("abc")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/backtest?symbol=7203&commission=abc", nil),
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "commissionは0以上0.05以下である必要があります\n",
+		},
+		{
+			name: "異常系: slippageが0.05超",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor {
+					return mock_usecase.NewMockBacktestInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "slippage").Return("0.1")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/backtest?symbol=7203&slippage=0.1", nil),
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "slippageは0以上0.05以下である必要があります\n",
+		},
+		{
+			name: "異常系: slippageが負値",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor {
+					return mock_usecase.NewMockBacktestInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "slippage").Return("-0.001")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/backtest?symbol=7203&slippage=-0.001", nil),
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "slippageは0以上0.05以下である必要があります\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			h := NewBacktestHandler(tt.fields.usecase(ctrl), tt.fields.httpServer(ctrl), zap.NewNop())
+
+			w := httptest.NewRecorder()
+			h.GetBacktest(w, tt.req)
+
+			assert.Equal(t, tt.wantStatusCode, w.Code)
+			assert.Equal(t, tt.wantBody, w.Body.String())
 		})
 	}
 }

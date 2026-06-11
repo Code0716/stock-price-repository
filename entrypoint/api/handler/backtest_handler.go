@@ -53,6 +53,19 @@ func parsePositiveRate(raw string, def decimal.Decimal) (decimal.Decimal, bool) 
 	return decimal.NewFromFloat(f), true
 }
 
+// parseNonNegativeRate 0以上0.05以下のレート文字列をパースする。空なら0（コストなし）。
+// commission / slippage などコストパラメータ用（ゼロ値は後方互換でコストなし）。
+func parseNonNegativeRate(raw string) (decimal.Decimal, bool) {
+	if raw == "" {
+		return decimal.Zero, true
+	}
+	f, err := strconv.ParseFloat(raw, 64)
+	if err != nil || f < 0 || f > 0.05 {
+		return decimal.Zero, false
+	}
+	return decimal.NewFromFloat(f), true
+}
+
 func (h *BacktestHandler) validateGetBacktestParams(r *http.Request) (*getBacktestParams, error) {
 	p := &getBacktestParams{}
 
@@ -97,10 +110,21 @@ func (h *BacktestHandler) validateGetBacktestParams(r *http.Request) (*getBackte
 		maxHoldDays = d
 	}
 
+	commissionRate, ok := parseNonNegativeRate(h.httpServer.GetQueryParam(r, "commission"))
+	if !ok {
+		return nil, &validationError{message: "commissionは0以上0.05以下である必要があります"}
+	}
+	slippageRate, ok := parseNonNegativeRate(h.httpServer.GetQueryParam(r, "slippage"))
+	if !ok {
+		return nil, &validationError{message: "slippageは0以上0.05以下である必要があります"}
+	}
+
 	p.params = models.BacktestParams{
-		TakeProfit:  takeProfit,
-		StopLoss:    stopLoss,
-		MaxHoldDays: maxHoldDays,
+		TakeProfit:     takeProfit,
+		StopLoss:       stopLoss,
+		MaxHoldDays:    maxHoldDays,
+		CommissionRate: commissionRate,
+		SlippageRate:   slippageRate,
 	}
 	return p, nil
 }

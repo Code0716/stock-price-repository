@@ -4,9 +4,11 @@ import "github.com/shopspring/decimal"
 
 // BacktestParams バックテストの共通イグジット・約定パラメータ。
 type BacktestParams struct {
-	TakeProfit  decimal.Decimal `json:"takeProfit"`  // 利確率（例: 0.10 = +10%）
-	StopLoss    decimal.Decimal `json:"stopLoss"`    // 損切り率（例: 0.05 = -5%）
-	MaxHoldDays int             `json:"maxHoldDays"` // 最大保有営業日数
+	TakeProfit     decimal.Decimal `json:"takeProfit"`     // 利確率（例: 0.10 = +10%）
+	StopLoss       decimal.Decimal `json:"stopLoss"`       // 損切り率（例: 0.05 = -5%）
+	MaxHoldDays    int             `json:"maxHoldDays"`    // 最大保有営業日数
+	CommissionRate decimal.Decimal `json:"commissionRate"` // 片道手数料率（例: 0.0005）。ゼロ値 = コストなし
+	SlippageRate   decimal.Decimal `json:"slippageRate"`   // 片道スリッページ率（例: 0.001）。ゼロ値 = コストなし
 }
 
 // BacktestEquityPoint エクイティカーブの1点（初期資金=1.0 を起点とした倍率）。

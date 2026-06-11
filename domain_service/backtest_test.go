@@ -133,3 +133,98 @@ func f64FromDec(d decimal.Decimal) float64 {
 	v, _ := d.Float64()
 	return v
 }
+
+func TestRunBacktest_WithCosts(t *testing.T) {
+	t.Run("コストゼロ時は既存結果と完全一致", func(t *testing.T) {
+		paramsNoCost := ExitParams{
+			TakeProfit:  decimal.NewFromFloat(0.10),
+			StopLoss:    decimal.NewFromFloat(0.05),
+			MaxHoldDays: 10,
+		}
+		paramsZeroCost := ExitParams{
+			TakeProfit:     decimal.NewFromFloat(0.10),
+			StopLoss:       decimal.NewFromFloat(0.05),
+			MaxHoldDays:    10,
+			CommissionRate: decimal.Zero,
+			SlippageRate:   decimal.Zero,
+		}
+		prices := pricesFromCloses(100, 100, 110, 110, 110, 104)
+		signals := boolsAt(6, 1, 3)
+
+		resNoCost := RunBacktest(prices, signals, paramsNoCost)
+		resZeroCost := RunBacktest(prices, signals, paramsZeroCost)
+
+		assert.True(t, resNoCost.TotalReturn.Equal(resZeroCost.TotalReturn), "TotalReturn 後方互換")
+		assert.True(t, resNoCost.WinRate.Equal(resZeroCost.WinRate), "WinRate 後方互換")
+		assert.True(t, resNoCost.ProfitFactor.Equal(resZeroCost.ProfitFactor), "ProfitFactor 後方互換")
+		assert.Equal(t, resNoCost.Trades, resZeroCost.Trades, "Trades 後方互換")
+	})
+
+	t.Run("コストあり: 1トレードのリターンが手計算と一致", func(t *testing.T) {
+		// Close: 100 → 110
+		// commission = 0.001, slippage = 0.002
+		// 実効エントリー価格 = 100 × 1.002 × 1.001 = 100.3002
+		// 手取りイグジット = 110 × 0.998 × 0.999 = 109.6901...
+		// リターン = 109.6901... / 100.3002 - 1
+		commission := decimal.NewFromFloat(0.001)
+		slippage := decimal.NewFromFloat(0.002)
+		params := ExitParams{
+			TakeProfit:     decimal.NewFromFloat(0.10),
+			StopLoss:       decimal.NewFromFloat(0.05),
+			MaxHoldDays:    10,
+			CommissionRate: commission,
+			SlippageRate:   slippage,
+		}
+		prices := pricesFromCloses(100, 100, 110)
+		res := RunBacktest(prices, boolsAt(3, 1), params)
+
+		// 手計算
+		one := decimal.NewFromInt(1)
+		entryClose := decimal.NewFromFloat(100)
+		exitClose := decimal.NewFromFloat(110)
+		effEntry := entryClose.Mul(one.Add(slippage)).Mul(one.Add(commission))
+		effExit := exitClose.Mul(one.Sub(slippage)).Mul(one.Sub(commission))
+		expectedRet := effExit.Div(effEntry).Sub(one)
+
+		assert.Equal(t, 1, res.Trades)
+		retGot, _ := res.TradeList[0].Return.Float64()
+		retExp, _ := expectedRet.Float64()
+		assert.InDelta(t, retExp, retGot, 1e-9, "コストあり1トレードリターン")
+
+		// コストなしより低いリターンになること
+		paramsNoCost := ExitParams{TakeProfit: decimal.NewFromFloat(0.10), StopLoss: decimal.NewFromFloat(0.05), MaxHoldDays: 10}
+		resNoCost := RunBacktest(prices, boolsAt(3, 1), paramsNoCost)
+		assert.True(t, res.TradeList[0].Return.LessThan(resNoCost.TradeList[0].Return), "コストあり < コストなし")
+	})
+
+	t.Run("コストありで勝率/PFが変化する", func(t *testing.T) {
+		// コストが大きいと、薄い利益は損失に転じて勝率が下がる
+		// entry@100, exit@100.5（+0.5%）: コストなしなら勝ち、高コストなら負け
+		commission := decimal.NewFromFloat(0.003)
+		slippage := decimal.NewFromFloat(0.003)
+		paramsCost := ExitParams{
+			TakeProfit:     decimal.NewFromFloat(0.50),
+			StopLoss:       decimal.NewFromFloat(0.50),
+			MaxHoldDays:    1,
+			CommissionRate: commission,
+			SlippageRate:   slippage,
+		}
+		paramsNoCost := ExitParams{
+			TakeProfit:  decimal.NewFromFloat(0.50),
+			StopLoss:    decimal.NewFromFloat(0.50),
+			MaxHoldDays: 1,
+		}
+		// 0.5% 上昇 → コストなしなら勝ち、コストあり（片道0.6%）なら負け
+		prices := pricesFromCloses(100, 100, 100.5)
+		signals := boolsAt(3, 1)
+
+		resCost := RunBacktest(prices, signals, paramsCost)
+		resNoCost := RunBacktest(prices, signals, paramsNoCost)
+
+		assert.Equal(t, 1, resCost.Trades)
+		assert.Equal(t, 1, resNoCost.Trades)
+		// コストなしは勝ち（WinRate=1）、コストありは負け（WinRate=0）
+		assert.True(t, resNoCost.WinRate.Equal(decimal.NewFromInt(1)), "コストなし: 勝率1")
+		assert.True(t, resCost.WinRate.Equal(decimal.Zero), "コストあり: 勝率0")
+	})
+}

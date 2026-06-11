@@ -31,8 +31,9 @@ func (ii *indexInteractorImpl) CreateNikkeiAndDjiHistoricalData(ctx context.Cont
 		return errors.Wrap(err, "CreateNikkeiAndDjiHistoricalData")
 	}
 	// TOPIX連動ETF (1306.T) の取得
-	// NEXT FUNDS TOPIX連動ETF (1306.T) を TOPIX 代理として使用（Yahoo に TOPIX 指数本体が無いため）
-	topixDailyPrices, err := ii.stockAPIClient.GetIndexPriceChart(
+	// NEXT FUNDS TOPIX連動ETF (1306.T) を TOPIX 代理として使用（Yahoo に TOPIX 指数本体が無いため）。
+	// ETF は通常の上場銘柄なので GetIndexPriceChart（"^" 前置）ではなく GetStockPriceChart を使う。
+	topixDailyPrices, err := ii.stockAPIClient.GetStockPriceChart(
 		ctx,
 		gateway.StockAPISymbolTopixETF,
 		gateway.StockAPIInterval1D,

@@ -25,6 +25,8 @@ func TestValuationHandler_GetValuation(t *testing.T) {
 	eps := decimal.NewFromFloat(100)
 	feps := decimal.NewFromFloat(125)
 	bps := decimal.NewFromFloat(500)
+	dps := decimal.NewFromFloat(20)
+	divYld := decimal.NewFromFloat(0.02)
 
 	type fields struct {
 		usecase    func(ctrl *gomock.Controller) *mock_usecase.MockValuationInteractor
@@ -38,7 +40,53 @@ func TestValuationHandler_GetValuation(t *testing.T) {
 		wantBody       interface{}
 	}{
 		{
-			name: "正常系: バリュエーション指標を返す",
+			name: "正常系: バリュエーション指標（予想配当利回り含む）を返す",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockValuationInteractor {
+					m := mock_usecase.NewMockValuationInteractor(ctrl)
+					m.EXPECT().GetValuation(gomock.Any(), "7203").Return(&models.Valuation{
+						Symbol:                         "7203",
+						Close:                          &close,
+						PriceDate:                      "2025-06-01",
+						PER:                            &per,
+						ForwardPER:                     &fwdPer,
+						PBR:                            &pbr,
+						ROE:                            &roe,
+						TrailingEPS:                    &eps,
+						ForecastEPS:                    &feps,
+						BPS:                            &bps,
+						ForecastDividendPerShareAnnual: &dps,
+						ForecastDividendYield:          &divYld,
+						FiscalPeriod:                   "2025-03",
+					}, nil)
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/valuation?symbol=7203", nil),
+			wantStatusCode: http.StatusOK,
+			wantBody: &models.Valuation{
+				Symbol:                         "7203",
+				Close:                          &close,
+				PriceDate:                      "2025-06-01",
+				PER:                            &per,
+				ForwardPER:                     &fwdPer,
+				PBR:                            &pbr,
+				ROE:                            &roe,
+				TrailingEPS:                    &eps,
+				ForecastEPS:                    &feps,
+				BPS:                            &bps,
+				ForecastDividendPerShareAnnual: &dps,
+				ForecastDividendYield:          &divYld,
+				FiscalPeriod:                   "2025-03",
+			},
+		},
+		{
+			name: "正常系: DPS/配当利回りなし（nilフィールドが含まれる）",
 			fields: fields{
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockValuationInteractor {
 					m := mock_usecase.NewMockValuationInteractor(ctrl)

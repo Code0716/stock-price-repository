@@ -36,7 +36,8 @@ type FinStatementResponse struct {
 	ForecastNetSales     *string `json:"forecastNetSales"`
 	ForecastOperatingProfit *string `json:"forecastOperatingProfit"`
 	ForecastProfit       *string `json:"forecastProfit"`
-	ForecastEPS          *string `json:"forecastEps"`
+	ForecastEPS                    *string `json:"forecastEps"`
+	ForecastDividendPerShareAnnual *string `json:"forecastDividendPerShareAnnual"`
 }
 
 type GetFinStatementsResponse struct {
@@ -94,6 +95,10 @@ func toFinStatementResponse(s *models.FinStatement) *FinStatementResponse {
 	if s.ForecastEPS != nil {
 		v := s.ForecastEPS.String()
 		resp.ForecastEPS = &v
+	}
+	if s.ForecastDividendPerShareAnnual != nil {
+		v := s.ForecastDividendPerShareAnnual.String()
+		resp.ForecastDividendPerShareAnnual = &v
 	}
 	return resp
 }

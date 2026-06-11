@@ -23,8 +23,9 @@ type FinStatement struct {
 	ForecastNetSales     *decimal.Decimal
 	ForecastOperatingProfit *decimal.Decimal
 	ForecastProfit       *decimal.Decimal
-	ForecastEPS          *decimal.Decimal
-	CreatedAt            time.Time
+	ForecastEPS                    *decimal.Decimal
+	ForecastDividendPerShareAnnual *decimal.Decimal
+	CreatedAt                      time.Time
 	UpdatedAt            time.Time
 }
 

@@ -15,6 +15,8 @@ type Valuation struct {
 	TrailingEPS *decimal.Decimal `json:"trailingEps"` // 実績(FY)EPS（算出根拠）
 	ForecastEPS *decimal.Decimal `json:"forecastEps"` // 通期予想EPS
 	BPS         *decimal.Decimal `json:"bps"`         // 1株あたり純資産
+	ForecastDividendPerShareAnnual *decimal.Decimal `json:"forecastDividendPerShareAnnual"` // 1株あたり年間予想配当
+	ForecastDividendYield          *decimal.Decimal `json:"forecastDividendYield"`          // 予想配当利回り（比率: 0.02=2%）
 	// FiscalPeriod 実績EPSの決算期末（例 "2025-03"）。trailingEPSが無い場合は ""。
 	FiscalPeriod string `json:"fiscalPeriod"`
 }

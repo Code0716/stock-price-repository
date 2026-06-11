@@ -77,7 +77,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 						},
 					}, nil)
 					// TOPIX ETF
-					mock.EXPECT().GetIndexPriceChart(
+					mock.EXPECT().GetStockPriceChart(
 						gomock.Any(),
 						gateway.StockAPISymbolTopixETF,
 						gateway.StockAPIInterval1D,
@@ -211,7 +211,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
-					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(nil, errors.New("api error"))
+					mock.EXPECT().GetStockPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(nil, errors.New("api error"))
 					return mock
 				},
 				tx:               nil,
@@ -232,7 +232,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
-					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetStockPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					return mock
 				},
 				tx: func(ctrl *gomock.Controller) *mock_repositories.MockTransaction {
@@ -257,7 +257,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
-					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetStockPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					return mock
 				},
 				tx: func(ctrl *gomock.Controller) *mock_repositories.MockTransaction {
@@ -288,7 +288,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
-					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetStockPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					return mock
 				},
 				tx: func(ctrl *gomock.Controller) *mock_repositories.MockTransaction {
@@ -323,7 +323,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
-					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetStockPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					return mock
 				},
 				tx: func(ctrl *gomock.Controller) *mock_repositories.MockTransaction {

@@ -98,8 +98,8 @@ func TestE2E_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					},
 				}, nil)
 
-				// TOPIX ETF (1306.T) を TOPIX 代理として使用
-				mockStockAPI.EXPECT().GetIndexPriceChart(
+				// TOPIX ETF (1306.T) を TOPIX 代理として使用（ETF なので GetStockPriceChart）
+				mockStockAPI.EXPECT().GetStockPriceChart(
 					gomock.Any(),
 					gateway.StockAPISymbolTopixETF,
 					gateway.StockAPIInterval1D,

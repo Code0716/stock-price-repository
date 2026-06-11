@@ -43,16 +43,16 @@ func (m *MockReturnAnalysisInteractor) EXPECT() *MockReturnAnalysisInteractorMoc
 }
 
 // GetReturnAnalysis mocks base method.
-func (m *MockReturnAnalysisInteractor) GetReturnAnalysis(ctx context.Context, symbol string, from, to *time.Time) (*models.ReturnAnalysis, error) {
+func (m *MockReturnAnalysisInteractor) GetReturnAnalysis(ctx context.Context, symbol string, from, to *time.Time, benchmark string) (*models.ReturnAnalysis, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetReturnAnalysis", ctx, symbol, from, to)
+	ret := m.ctrl.Call(m, "GetReturnAnalysis", ctx, symbol, from, to, benchmark)
 	ret0, _ := ret[0].(*models.ReturnAnalysis)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetReturnAnalysis indicates an expected call of GetReturnAnalysis.
-func (mr *MockReturnAnalysisInteractorMockRecorder) GetReturnAnalysis(ctx, symbol, from, to any) *gomock.Call {
+func (mr *MockReturnAnalysisInteractorMockRecorder) GetReturnAnalysis(ctx, symbol, from, to, benchmark any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReturnAnalysis", reflect.TypeOf((*MockReturnAnalysisInteractor)(nil).GetReturnAnalysis), ctx, symbol, from, to)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReturnAnalysis", reflect.TypeOf((*MockReturnAnalysisInteractor)(nil).GetReturnAnalysis), ctx, symbol, from, to, benchmark)
 }

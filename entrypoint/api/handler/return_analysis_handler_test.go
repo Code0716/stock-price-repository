@@ -33,12 +33,12 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 		wantBody       interface{}
 	}{
 		{
-			name: "正常系: リターン分析を取得できる",
+			name: "正常系: benchmark省略→nikkei",
 			fields: fields{
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockReturnAnalysisInteractor {
 					m := mock_usecase.NewMockReturnAnalysisInteractor(ctrl)
 					m.EXPECT().
-						GetReturnAnalysis(gomock.Any(), "7203", &date, &date).
+						GetReturnAnalysis(gomock.Any(), "7203", &date, &date, models.BenchmarkNikkei).
 						Return(&models.ReturnAnalysis{
 							Symbol:           "7203",
 							Benchmark:        models.BenchmarkNikkei,
@@ -54,6 +54,7 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
 					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "benchmark").Return("")
 					return m
 				},
 			},
@@ -67,6 +68,60 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 				TradingDays:      1,
 				CumulativeReturn: decimal.NewFromFloat(0.21),
 			},
+		},
+		{
+			name: "正常系: benchmark=topix",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockReturnAnalysisInteractor {
+					m := mock_usecase.NewMockReturnAnalysisInteractor(ctrl)
+					m.EXPECT().
+						GetReturnAnalysis(gomock.Any(), "7203", &date, &date, models.BenchmarkTopix).
+						Return(&models.ReturnAnalysis{
+							Symbol:      "7203",
+							Benchmark:   models.BenchmarkTopix,
+							From:        "2024-01-04",
+							To:          "2024-01-04",
+							TradingDays: 1,
+						}, nil)
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "benchmark").Return(models.BenchmarkTopix)
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/return-analysis?symbol=7203&benchmark=topix", nil),
+			wantStatusCode: http.StatusOK,
+			wantBody: &models.ReturnAnalysis{
+				Symbol:      "7203",
+				Benchmark:   models.BenchmarkTopix,
+				From:        "2024-01-04",
+				To:          "2024-01-04",
+				TradingDays: 1,
+			},
+		},
+		{
+			name: "異常系: benchmark不正値→400",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockReturnAnalysisInteractor {
+					return mock_usecase.NewMockReturnAnalysisInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "benchmark").Return("sp500")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/return-analysis?symbol=7203&benchmark=sp500", nil),
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "benchmarkは\"nikkei\"または\"topix\"である必要があります\n",
 		},
 		{
 			name: "異常系: symbolが指定されていない",
@@ -157,7 +212,7 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockReturnAnalysisInteractor {
 					m := mock_usecase.NewMockReturnAnalysisInteractor(ctrl)
 					m.EXPECT().
-						GetReturnAnalysis(gomock.Any(), "7203", &date, &date).
+						GetReturnAnalysis(gomock.Any(), "7203", &date, &date, models.BenchmarkNikkei).
 						Return(nil, errors.New("db error"))
 					return m
 				},
@@ -166,6 +221,7 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
 					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "benchmark").Return("")
 					return m
 				},
 			},

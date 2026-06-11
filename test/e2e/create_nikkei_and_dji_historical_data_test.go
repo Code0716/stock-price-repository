@@ -46,7 +46,7 @@ func TestE2E_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 		check   func(t *testing.T)
 	}{
 		{
-			name: "正常系: 日経平均とDJIの過去データ作成が成功する",
+			name: "正常系: 日経平均・DJI・TOPIXの過去データ作成が成功する",
 			args: args{
 				cmdArgs: []string{"main", "create_nikkei_and_dji_historical_data_v1"},
 			},
@@ -97,10 +97,32 @@ func TestE2E_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 						},
 					},
 				}, nil)
+
+				// TOPIX ETF (1306.T) を TOPIX 代理として使用
+				mockStockAPI.EXPECT().GetIndexPriceChart(
+					gomock.Any(),
+					gateway.StockAPISymbolTopixETF,
+					gateway.StockAPIInterval1D,
+					gateway.StockAPIValidRange10Y,
+				).Return(&gateway.StockChartWithRangeAPIResponseInfo{
+					TickerSymbol: string(gateway.StockAPISymbolTopixETF),
+					Indicator: []*gateway.StockPrice{
+						{
+							Date:            time.Now().AddDate(0, 0, -1),
+							TickerSymbol:    string(gateway.StockAPISymbolTopixETF),
+							Open:            decimal.NewFromInt(1900),
+							High:            decimal.NewFromInt(1950),
+							Low:             decimal.NewFromInt(1880),
+							Close:           decimal.NewFromInt(1940),
+							Volume:          500000,
+							AdjustmentClose: decimal.NewFromInt(1940),
+						},
+					},
+				}, nil)
 			},
 			wantErr: false,
 			check: func(t *testing.T) {
-				// Verify Results
+				// Verify Nikkei Results
 				var nikkeiPrices []*genModel.NikkeiStockAverageDailyPrice
 				err = db.Find(&nikkeiPrices).Error
 				assert.NoError(t, err)
@@ -112,6 +134,13 @@ func TestE2E_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Len(t, djiPrices, 1)
 				assert.Equal(t, 35000.0, djiPrices[0].OpenPrice)
+
+				// Verify TOPIX Results
+				var topixPrices []*genModel.TopixDailyPrice
+				err = db.Find(&topixPrices).Error
+				assert.NoError(t, err)
+				assert.Len(t, topixPrices, 1)
+				assert.Equal(t, 1900.0, topixPrices[0].OpenPrice)
 			},
 		},
 	}
@@ -133,10 +162,11 @@ func TestE2E_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 			// 4. Setup Repositories
 			djiRepo := database.NewDjiRepositoryImpl(db)
 			nikkeiRepo := database.NewNikkeiRepositoryImpl(db)
+			topixRepo := database.NewTopixRepositoryImpl(db)
 
 			// 5. Setup Interactor
 			tx := database.NewTransaction(db)
-			interactor := usecase.NewIndexInteractor(tx, redisClient, nikkeiRepo, djiRepo, mockStockAPI, mockSlackAPI)
+			interactor := usecase.NewIndexInteractor(tx, redisClient, nikkeiRepo, djiRepo, topixRepo, mockStockAPI, mockSlackAPI)
 
 			// 6. Setup Command
 			cmd := commands.NewCreateNikkeiAndDjiHistoricalDataV1Command(interactor)

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Code0716/stock-price-repository/driver"
+	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/usecase"
 	"github.com/Code0716/stock-price-repository/util"
 	"go.uber.org/zap"
@@ -12,9 +13,10 @@ import (
 
 // getReturnAnalysisParams GetReturnAnalysis のリクエストパラメータ
 type getReturnAnalysisParams struct {
-	symbol string
-	from   *time.Time
-	to     *time.Time
+	symbol    string
+	from      *time.Time
+	to        *time.Time
+	benchmark string
 }
 
 type ReturnAnalysisHandler struct {
@@ -58,6 +60,16 @@ func (h *ReturnAnalysisHandler) validateGetReturnAnalysisParams(r *http.Request)
 	}
 	params.to = to
 
+	// benchmark クエリパラメータ: "nikkei"（デフォルト）または "topix"
+	benchmark := h.httpServer.GetQueryParam(r, "benchmark")
+	if benchmark == "" {
+		benchmark = models.BenchmarkNikkei
+	}
+	if benchmark != models.BenchmarkNikkei && benchmark != models.BenchmarkTopix {
+		return nil, &validationError{message: "benchmarkは\"nikkei\"または\"topix\"である必要があります"}
+	}
+	params.benchmark = benchmark
+
 	return params, nil
 }
 
@@ -72,7 +84,7 @@ func (h *ReturnAnalysisHandler) GetReturnAnalysis(w http.ResponseWriter, r *http
 		return
 	}
 
-	result, err := h.usecase.GetReturnAnalysis(r.Context(), params.symbol, params.from, params.to)
+	result, err := h.usecase.GetReturnAnalysis(r.Context(), params.symbol, params.from, params.to, params.benchmark)
 	if err != nil {
 		h.logger.Error("failed to get return analysis", zap.Error(err))
 		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)

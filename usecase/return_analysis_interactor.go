@@ -20,24 +20,28 @@ const minReturnAnalysisDays = 2
 type returnAnalysisInteractorImpl struct {
 	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
 	nikkeiRepository                     repositories.NikkeiRepository
+	topixRepository                      repositories.TopixRepository
 }
 
 type ReturnAnalysisInteractor interface {
-	// GetReturnAnalysis 指定銘柄の期間リターン・リスク指標・対日経指標を算出する。
-	GetReturnAnalysis(ctx context.Context, symbol string, from, to *time.Time) (*models.ReturnAnalysis, error)
+	// GetReturnAnalysis 指定銘柄の期間リターン・リスク指標・対ベンチマーク指標を算出する。
+	// benchmark は "nikkei"（デフォルト）または "topix"。
+	GetReturnAnalysis(ctx context.Context, symbol string, from, to *time.Time, benchmark string) (*models.ReturnAnalysis, error)
 }
 
 func NewReturnAnalysisInteractor(
 	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
 	nikkeiRepository repositories.NikkeiRepository,
+	topixRepository repositories.TopixRepository,
 ) ReturnAnalysisInteractor {
 	return &returnAnalysisInteractorImpl{
 		stockBrandsDailyStockPriceRepository: stockBrandsDailyStockPriceRepository,
 		nikkeiRepository:                     nikkeiRepository,
+		topixRepository:                      topixRepository,
 	}
 }
 
-func (r *returnAnalysisInteractorImpl) GetReturnAnalysis(ctx context.Context, symbol string, from, to *time.Time) (*models.ReturnAnalysis, error) {
+func (r *returnAnalysisInteractorImpl) GetReturnAnalysis(ctx context.Context, symbol string, from, to *time.Time, benchmark string) (*models.ReturnAnalysis, error) {
 	// 銘柄日足（時系列・昇順）
 	order := models.SortOrderAsc
 	stockPrices, err := r.stockBrandsDailyStockPriceRepository.ListDailyPricesBySymbol(ctx, models.ListDailyPricesBySymbolFilter{
@@ -50,10 +54,22 @@ func (r *returnAnalysisInteractorImpl) GetReturnAnalysis(ctx context.Context, sy
 		return nil, errors.Wrap(err, "ListDailyPricesBySymbol error")
 	}
 
-	// ベンチマーク（日経平均）日足
-	benchPrices, err := r.nikkeiRepository.ListNikkeiStockAverageDailyPrices(ctx, from, to)
-	if err != nil {
-		return nil, errors.Wrap(err, "ListNikkeiStockAverageDailyPrices error")
+	// ベンチマーク日足の取得（nikkei / topix 切替）
+	var benchPrices models.IndexStockAverageDailyPrices
+	var benchmarkLabel string
+	switch benchmark {
+	case models.BenchmarkTopix:
+		benchPrices, err = r.topixRepository.ListTopixDailyPrices(ctx, from, to)
+		if err != nil {
+			return nil, errors.Wrap(err, "ListTopixDailyPrices error")
+		}
+		benchmarkLabel = models.BenchmarkTopix
+	default:
+		benchPrices, err = r.nikkeiRepository.ListNikkeiStockAverageDailyPrices(ctx, from, to)
+		if err != nil {
+			return nil, errors.Wrap(err, "ListNikkeiStockAverageDailyPrices error")
+		}
+		benchmarkLabel = models.BenchmarkNikkei
 	}
 
 	// 銘柄とベンチマークを日付で内部結合（両方に存在する日のみ採用）
@@ -61,7 +77,7 @@ func (r *returnAnalysisInteractorImpl) GetReturnAnalysis(ctx context.Context, sy
 
 	result := &models.ReturnAnalysis{
 		Symbol:      symbol,
-		Benchmark:   models.BenchmarkNikkei,
+		Benchmark:   benchmarkLabel,
 		TradingDays: len(dates),
 	}
 	if len(dates) > 0 {

@@ -20,6 +20,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 		tx               func(ctrl *gomock.Controller) *mock_repositories.MockTransaction
 		nikkeiRepository func(ctrl *gomock.Controller) *mock_repositories.MockNikkeiRepository
 		djiRepository    func(ctrl *gomock.Controller) *mock_repositories.MockDjiRepository
+		topixRepository  func(ctrl *gomock.Controller) *mock_repositories.MockTopixRepository
 		stockAPIClient   func(ctrl *gomock.Controller) *mock_gateway.MockStockAPIClient
 	}
 	type args struct {
@@ -75,6 +76,25 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 							},
 						},
 					}, nil)
+					// TOPIX ETF
+					mock.EXPECT().GetIndexPriceChart(
+						gomock.Any(),
+						gateway.StockAPISymbolTopixETF,
+						gateway.StockAPIInterval1D,
+						gateway.StockAPIValidRange10Y,
+					).Return(&gateway.StockChartWithRangeAPIResponseInfo{
+						Indicator: []*gateway.StockPrice{
+							{
+								Date:            time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+								Open:            decimal.NewFromInt(1900),
+								High:            decimal.NewFromInt(1950),
+								Low:             decimal.NewFromInt(1880),
+								Close:           decimal.NewFromInt(1940),
+								Volume:          500000,
+								AdjustmentClose: decimal.NewFromInt(1940),
+							},
+						},
+					}, nil)
 					return mock
 				},
 				tx: func(ctrl *gomock.Controller) *mock_repositories.MockTransaction {
@@ -110,6 +130,19 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					})
 					return mock
 				},
+				topixRepository: func(ctrl *gomock.Controller) *mock_repositories.MockTopixRepository {
+					mock := mock_repositories.NewMockTopixRepository(ctrl)
+					mock.EXPECT().CreateTopixDailyPrices(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, prices models.IndexStockAverageDailyPrices) error {
+						if len(prices) != 1 {
+							return errors.New("unexpected length")
+						}
+						if !prices[0].Close.Equal(decimal.NewFromInt(1940)) {
+							return errors.New("unexpected price")
+						}
+						return nil
+					})
+					return mock
+				},
 			},
 			args: args{
 				ctx: context.Background(),
@@ -133,6 +166,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 				tx:               nil,
 				nikkeiRepository: nil,
 				djiRepository:    nil,
+				topixRepository:  nil,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -162,6 +196,28 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 				tx:               nil,
 				nikkeiRepository: nil,
 				djiRepository:    nil,
+				topixRepository:  nil,
+			},
+			args: args{
+				ctx: context.Background(),
+				t:   time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+			},
+			wantErr: true,
+		},
+		{
+			name: "異常系: TOPIX取得エラー",
+			fields: fields{
+				stockAPIClient: func(ctrl *gomock.Controller) *mock_gateway.MockStockAPIClient {
+					mock := mock_gateway.NewMockStockAPIClient(ctrl)
+					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(nil, errors.New("api error"))
+					return mock
+				},
+				tx:               nil,
+				nikkeiRepository: nil,
+				djiRepository:    nil,
+				topixRepository:  nil,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -176,6 +232,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					return mock
 				},
 				tx: func(ctrl *gomock.Controller) *mock_repositories.MockTransaction {
@@ -185,6 +242,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 				},
 				nikkeiRepository: nil,
 				djiRepository:    nil,
+				topixRepository:  nil,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -199,6 +257,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					return mock
 				},
 				tx: func(ctrl *gomock.Controller) *mock_repositories.MockTransaction {
@@ -213,7 +272,8 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					mock.EXPECT().CreateNikkeiStockAverageDailyPrices(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 					return mock
 				},
-				djiRepository: nil,
+				djiRepository:   nil,
+				topixRepository: nil,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -228,6 +288,7 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 					mock := mock_gateway.NewMockStockAPIClient(ctrl)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
 					return mock
 				},
 				tx: func(ctrl *gomock.Controller) *mock_repositories.MockTransaction {
@@ -245,6 +306,46 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 				djiRepository: func(ctrl *gomock.Controller) *mock_repositories.MockDjiRepository {
 					mock := mock_repositories.NewMockDjiRepository(ctrl)
 					mock.EXPECT().CreateDjiStockAverageDailyPrices(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
+					return mock
+				},
+				topixRepository: nil,
+			},
+			args: args{
+				ctx: context.Background(),
+				t:   time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+			},
+			wantErr: true,
+		},
+		{
+			name: "異常系: TOPIX保存エラー(トランザクション内)",
+			fields: fields{
+				stockAPIClient: func(ctrl *gomock.Controller) *mock_gateway.MockStockAPIClient {
+					mock := mock_gateway.NewMockStockAPIClient(ctrl)
+					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolNikkei, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolDji, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					mock.EXPECT().GetIndexPriceChart(gomock.Any(), gateway.StockAPISymbolTopixETF, gomock.Any(), gomock.Any()).Return(&gateway.StockChartWithRangeAPIResponseInfo{}, nil)
+					return mock
+				},
+				tx: func(ctrl *gomock.Controller) *mock_repositories.MockTransaction {
+					mock := mock_repositories.NewMockTransaction(ctrl)
+					mock.EXPECT().DoInTx(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, f func(context.Context) error) error {
+						return f(ctx)
+					})
+					return mock
+				},
+				nikkeiRepository: func(ctrl *gomock.Controller) *mock_repositories.MockNikkeiRepository {
+					mock := mock_repositories.NewMockNikkeiRepository(ctrl)
+					mock.EXPECT().CreateNikkeiStockAverageDailyPrices(gomock.Any(), gomock.Any()).Return(nil)
+					return mock
+				},
+				djiRepository: func(ctrl *gomock.Controller) *mock_repositories.MockDjiRepository {
+					mock := mock_repositories.NewMockDjiRepository(ctrl)
+					mock.EXPECT().CreateDjiStockAverageDailyPrices(gomock.Any(), gomock.Any()).Return(nil)
+					return mock
+				},
+				topixRepository: func(ctrl *gomock.Controller) *mock_repositories.MockTopixRepository {
+					mock := mock_repositories.NewMockTopixRepository(ctrl)
+					mock.EXPECT().CreateTopixDailyPrices(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 					return mock
 				},
 			},
@@ -271,6 +372,9 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 			}
 			if tt.fields.djiRepository != nil {
 				ii.djiRepository = tt.fields.djiRepository(ctrl)
+			}
+			if tt.fields.topixRepository != nil {
+				ii.topixRepository = tt.fields.topixRepository(ctrl)
 			}
 
 			if err := ii.CreateNikkeiAndDjiHistoricalData(tt.args.ctx, tt.args.t); (err != nil) != tt.wantErr {

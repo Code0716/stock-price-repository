@@ -93,6 +93,10 @@ func Test_indexInteractorImpl_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 								Volume:          500000,
 								AdjustmentClose: decimal.NewFromInt(1940),
 							},
+							{
+								// Yahoo が祝日等に返す null 行（decimal ゼロ値）はスキップされる
+								Date: time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+							},
 						},
 					}, nil)
 					return mock

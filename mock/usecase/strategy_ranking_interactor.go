@@ -70,3 +70,18 @@ func (mr *MockStrategyRankingInteractorMockRecorder) GetStrategyRanking(ctx any)
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStrategyRanking", reflect.TypeOf((*MockStrategyRankingInteractor)(nil).GetStrategyRanking), ctx)
 }
+
+// GetStrategyRankingStocks mocks base method.
+func (m *MockStrategyRankingInteractor) GetStrategyRankingStocks(ctx context.Context, strategy string, limit int) (*models.StrategyStocks, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStrategyRankingStocks", ctx, strategy, limit)
+	ret0, _ := ret[0].(*models.StrategyStocks)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStrategyRankingStocks indicates an expected call of GetStrategyRankingStocks.
+func (mr *MockStrategyRankingInteractorMockRecorder) GetStrategyRankingStocks(ctx, strategy, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStrategyRankingStocks", reflect.TypeOf((*MockStrategyRankingInteractor)(nil).GetStrategyRankingStocks), ctx, strategy, limit)
+}

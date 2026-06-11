@@ -18,10 +18,33 @@ type StrategyRankingItem struct {
 
 // StrategyRanking 全戦略の横断集計（Redis に JSON で保存する）。
 type StrategyRanking struct {
-	Computed    bool                `json:"computed"`    // バッチ未実行なら false
-	ComputedAt  string              `json:"computedAt"`  // RFC3339 or ""
-	Universe    string              `json:"universe"`    // "main_markets"
-	TotalStocks int                 `json:"totalStocks"` // ユニバースの銘柄数
-	Params      BacktestParams      `json:"params"`
+	Computed    bool                  `json:"computed"`    // バッチ未実行なら false
+	ComputedAt  string                `json:"computedAt"`  // RFC3339 or ""
+	Universe    string                `json:"universe"`    // "main_markets"
+	TotalStocks int                   `json:"totalStocks"` // ユニバースの銘柄数
+	Params      BacktestParams        `json:"params"`
 	Items       []StrategyRankingItem `json:"items"` // AvgTotalReturn 降順
+}
+
+// StrategyStockResult 1戦略×1銘柄のバックテスト結果（ドリルダウン用）。
+type StrategyStockResult struct {
+	TickerSymbol string          `json:"tickerSymbol"`
+	Name         string          `json:"name"`
+	TotalReturn  decimal.Decimal `json:"totalReturn"`
+	Trades       int             `json:"trades"`
+	WinRate      decimal.Decimal `json:"winRate"`
+	ProfitFactor decimal.Decimal `json:"profitFactor"`
+	MaxDrawdown  decimal.Decimal `json:"maxDrawdown"`
+	PayoffRatio  decimal.Decimal `json:"payoffRatio"`
+	AvgHoldDays  float64         `json:"avgHoldDays"`
+}
+
+// StrategyStocks ドリルダウン API レスポンス（Redis に JSON で保存する）。
+type StrategyStocks struct {
+	Computed   bool                   `json:"computed"`   // バッチ未実行なら false
+	ComputedAt string                 `json:"computedAt"` // RFC3339 or ""
+	Strategy   string                 `json:"strategy"`
+	Label      string                 `json:"label"`
+	TotalCount int                    `json:"totalCount"` // limit 適用前の全件数
+	Items      []*StrategyStockResult `json:"items"`      // TotalReturn 降順
 }

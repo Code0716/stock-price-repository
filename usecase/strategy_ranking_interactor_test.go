@@ -189,3 +189,111 @@ func TestStrategyRankingInteractor_ComputeAndSaveStrategyRanking_PriceError(t *t
 	_, err := interactor.ComputeAndSaveStrategyRanking(context.Background(), params, 5, 2)
 	assert.Error(t, err)
 }
+
+func TestStrategyRankingInteractor_ComputeAndSaveStrategyRanking_SavesStockKeys(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mr, client := newTestRedis(t)
+
+	brandRepo := mock_repositories.NewMockStockBrandRepository(ctrl)
+	priceRepo := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+
+	brands := []*models.StockBrand{
+		{ID: "A", TickerSymbol: "7203", Name: "トヨタ自動車"},
+		{ID: "B", TickerSymbol: "6758", Name: "ソニーグループ"},
+	}
+	brandRepo.EXPECT().FindAllMainMarkets(gomock.Any()).Return(brands, nil)
+
+	prices := testPrices(90)
+	for range brands {
+		priceRepo.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Any()).Return(prices, nil)
+	}
+
+	params := models.BacktestParams{
+		TakeProfit:  decimal.NewFromFloat(0.10),
+		StopLoss:    decimal.NewFromFloat(0.05),
+		MaxHoldDays: 20,
+	}
+
+	interactor := NewStrategyRankingInteractor(brandRepo, priceRepo, client)
+	n, err := interactor.ComputeAndSaveStrategyRanking(context.Background(), params, 5, 2)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, n)
+
+	// 戦略ごとの銘柄キーが Redis に保存されているか確認
+	for _, s := range []string{"macd_bullish", "bollinger_breakout", "triangle_formation", "ma_cross", "multiple_signals"} {
+		key := strategyRankingStocksKeyPrefix + s
+		raw, err := mr.Get(key)
+		assert.NoError(t, err, "キー %s が存在しない", key)
+
+		var stocks models.StrategyStocks
+		assert.NoError(t, json.Unmarshal([]byte(raw), &stocks))
+		assert.True(t, stocks.Computed)
+		assert.Equal(t, s, stocks.Strategy)
+		assert.Equal(t, 2, stocks.TotalCount) // 2銘柄分
+		assert.Len(t, stocks.Items, 2)
+		// TotalReturn 降順確認
+		for i := 1; i < len(stocks.Items); i++ {
+			assert.True(t, stocks.Items[i-1].TotalReturn.GreaterThanOrEqual(stocks.Items[i].TotalReturn))
+		}
+	}
+}
+
+func TestStrategyRankingInteractor_GetStrategyRankingStocks_NotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	_, client := newTestRedis(t)
+
+	interactor := NewStrategyRankingInteractor(nil, nil, client)
+	got, err := interactor.GetStrategyRankingStocks(context.Background(), "macd_bullish", 100)
+	assert.NoError(t, err)
+	assert.False(t, got.Computed)
+	assert.Equal(t, "macd_bullish", got.Strategy)
+	assert.Empty(t, got.Items)
+}
+
+func TestStrategyRankingInteractor_GetStrategyRankingStocks_Found(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mr, client := newTestRedis(t)
+
+	// 3銘柄分のデータを Redis にセット（TotalReturn 降順保存済み想定）
+	items := []*models.StrategyStockResult{
+		{TickerSymbol: "7203", Name: "トヨタ自動車", TotalReturn: decimal.NewFromFloat(0.15)},
+		{TickerSymbol: "6758", Name: "ソニーグループ", TotalReturn: decimal.NewFromFloat(0.10)},
+		{TickerSymbol: "9984", Name: "ソフトバンクグループ", TotalReturn: decimal.NewFromFloat(0.05)},
+	}
+	payload := models.StrategyStocks{
+		Computed:   true,
+		ComputedAt: "2026-06-10T00:00:00Z",
+		Strategy:   "macd_bullish",
+		Label:      "MACD強気",
+		TotalCount: 3,
+		Items:      items,
+	}
+	b, _ := json.Marshal(payload)
+	mr.Set(strategyRankingStocksKeyPrefix+"macd_bullish", string(b))
+
+	interactor := NewStrategyRankingInteractor(nil, nil, client)
+
+	// limit=2 で切り取られ TotalCount=3 になるか確認
+	got, err := interactor.GetStrategyRankingStocks(context.Background(), "macd_bullish", 2)
+	assert.NoError(t, err)
+	assert.True(t, got.Computed)
+	assert.Equal(t, 3, got.TotalCount)
+	assert.Len(t, got.Items, 2)
+	assert.Equal(t, "7203", got.Items[0].TickerSymbol)
+	assert.Equal(t, "6758", got.Items[1].TickerSymbol)
+}
+
+func TestStrategyRankingInteractor_GetStrategyRankingStocks_InvalidJSON(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mr, client := newTestRedis(t)
+
+	mr.Set(strategyRankingStocksKeyPrefix+"macd_bullish", "invalid-json")
+
+	interactor := NewStrategyRankingInteractor(nil, nil, client)
+	_, err := interactor.GetStrategyRankingStocks(context.Background(), "macd_bullish", 100)
+	assert.Error(t, err)
+}

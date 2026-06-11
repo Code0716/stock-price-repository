@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	strategyRankingRedisKey = "strategy_ranking:v1"
-	strategyRankingUniverse = "main_markets"
+	strategyRankingRedisKey        = "strategy_ranking:v1"
+	strategyRankingStocksKeyPrefix = "strategy_ranking:v1:stocks:"
+	strategyRankingUniverse        = "main_markets"
 	// strategyRankingMinDays は指標ウォームアップに必要な最低日数（backtest_interactor.go と同値）。
 	strategyRankingMinDays = 80
 )
@@ -37,6 +38,8 @@ type strategyAcc struct {
 	sumPF          decimal.Decimal
 	totalTrades    int
 	bestCount      int
+	// stocks 銘柄別のドリルダウン結果リスト（ドリルダウン API 用）
+	stocks []*models.StrategyStockResult
 }
 
 // newAccs 戦略ごとの集計アキュムレータを初期化して返す。
@@ -60,12 +63,13 @@ func mergeAccs(dst, src map[string]*strategyAcc) {
 		d.sumPF = d.sumPF.Add(sa.sumPF)
 		d.totalTrades += sa.totalTrades
 		d.bestCount += sa.bestCount
+		d.stocks = append(d.stocks, sa.stocks...)
 	}
 }
 
 // accumulateResults 日足と exitParams から各戦略の結果を accs に集計する。
 // 集計用途のため Equity/TradeList を構築しない RunBacktestMetrics を使う。
-func accumulateResults(prices []*models.StockBrandDailyPrice, exitParams domain_service.ExitParams, accs map[string]*strategyAcc) {
+func accumulateResults(brand *models.StockBrand, prices []*models.StockBrandDailyPrice, exitParams domain_service.ExitParams, accs map[string]*strategyAcc) {
 	results := make(map[string]models.BacktestResult, len(domain_service.StrategyOrder))
 	for _, s := range domain_service.StrategyOrder {
 		signals := domain_service.EntrySignalsByStrategy(s, prices)
@@ -85,6 +89,18 @@ func accumulateResults(prices []*models.StockBrandDailyPrice, exitParams domain_
 			a.sumWinRate = a.sumWinRate.Add(res.WinRate)
 			a.sumPF = a.sumPF.Add(res.ProfitFactor)
 		}
+		// 銘柄別ドリルダウン用に結果を蓄積
+		a.stocks = append(a.stocks, &models.StrategyStockResult{
+			TickerSymbol: brand.TickerSymbol,
+			Name:         brand.Name,
+			TotalReturn:  res.TotalReturn,
+			Trades:       res.Trades,
+			WinRate:      res.WinRate,
+			ProfitFactor: res.ProfitFactor,
+			MaxDrawdown:  res.MaxDrawdown,
+			PayoffRatio:  res.PayoffRatio,
+			AvgHoldDays:  res.AvgHoldDays,
+		})
 	}
 	// この銘柄で最高 TotalReturn の戦略の bestCount を加算する
 	bestStrategy := ""
@@ -113,6 +129,9 @@ type StrategyRankingInteractor interface {
 	ComputeAndSaveStrategyRanking(ctx context.Context, params models.BacktestParams, years, concurrency int) (int, error)
 	// GetStrategyRanking Redis から集計を返す。未計算なら Computed=false の空の StrategyRanking を返す。
 	GetStrategyRanking(ctx context.Context) (*models.StrategyRanking, error)
+	// GetStrategyRankingStocks Redis から戦略別の銘柄ドリルダウン結果を返す。
+	// 未計算なら Computed=false の空の StrategyStocks を返す。Items は limit 件に切り、TotalCount は全件数。
+	GetStrategyRankingStocks(ctx context.Context, strategy string, limit int) (*models.StrategyStocks, error)
 }
 
 func NewStrategyRankingInteractor(
@@ -140,6 +159,32 @@ func (r *strategyRankingInteractorImpl) GetStrategyRanking(ctx context.Context) 
 		return nil, errors.Wrap(err, "json.Unmarshal error")
 	}
 	return &ranking, nil
+}
+
+func (r *strategyRankingInteractorImpl) GetStrategyRankingStocks(ctx context.Context, strategy string, limit int) (*models.StrategyStocks, error) {
+	key := strategyRankingStocksKeyPrefix + strategy
+	raw, err := r.redisClient.Get(ctx, key).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return &models.StrategyStocks{
+				Computed: false,
+				Strategy: strategy,
+				Items:    []*models.StrategyStockResult{},
+			}, nil
+		}
+		return nil, errors.Wrap(err, "redisClient.Get error")
+	}
+	var stocks models.StrategyStocks
+	if err := json.Unmarshal([]byte(raw), &stocks); err != nil {
+		return nil, errors.Wrap(err, "json.Unmarshal error")
+	}
+	// TotalCount は全件数
+	stocks.TotalCount = len(stocks.Items)
+	// limit 件に切る
+	if limit > 0 && len(stocks.Items) > limit {
+		stocks.Items = stocks.Items[:limit]
+	}
+	return &stocks, nil
 }
 
 func (r *strategyRankingInteractorImpl) ComputeAndSaveStrategyRanking(ctx context.Context, params models.BacktestParams, years, concurrency int) (int, error) {
@@ -206,6 +251,32 @@ func (r *strategyRankingInteractorImpl) ComputeAndSaveStrategyRanking(ctx contex
 		return processed, errors.Wrap(err, "redisClient.Set error")
 	}
 
+	// 戦略別銘柄ドリルダウンデータを Redis に保存
+	computedAt := now.Format(time.RFC3339)
+	for _, s := range domain_service.StrategyOrder {
+		a := accs[s]
+		// TotalReturn 降順にソート
+		sort.SliceStable(a.stocks, func(i, j int) bool {
+			return a.stocks[i].TotalReturn.GreaterThan(a.stocks[j].TotalReturn)
+		})
+		stocksPayload := models.StrategyStocks{
+			Computed:   true,
+			ComputedAt: computedAt,
+			Strategy:   s,
+			Label:      domain_service.StrategyLabels[s],
+			TotalCount: len(a.stocks),
+			Items:      a.stocks,
+		}
+		sb, err := json.Marshal(stocksPayload)
+		if err != nil {
+			return processed, errors.Wrap(err, "json.Marshal stocks error for "+s)
+		}
+		key := strategyRankingStocksKeyPrefix + s
+		if err := r.redisClient.Set(ctx, key, string(sb), 0).Err(); err != nil {
+			return processed, errors.Wrap(err, "redisClient.Set stocks error for "+s)
+		}
+	}
+
 	log.Printf("strategy ranking: completed. processed=%d/%d brands", processed, len(brands))
 	return processed, nil
 }
@@ -252,7 +323,7 @@ func (r *strategyRankingInteractorImpl) runWorkers(
 				if len(prices) < strategyRankingMinDays {
 					continue
 				}
-				accumulateResults(prices, exitParams, local)
+				accumulateResults(brand, prices, exitParams, local)
 				if n := processed.Add(1); n%200 == 0 {
 					log.Printf("strategy ranking: processed %d/%d brands", n, len(brands))
 				}

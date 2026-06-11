@@ -33,6 +33,7 @@ func NewRouter(
 	}
 	if strategyRankingHandler != nil {
 		mux.HandleFunc("/strategy-ranking", strategyRankingHandler.GetStrategyRanking)
+		mux.HandleFunc("/strategy-ranking-stocks", strategyRankingHandler.GetStrategyRankingStocks)
 	}
 	if valuationHandler != nil {
 		mux.HandleFunc("/valuation", valuationHandler.GetValuation)

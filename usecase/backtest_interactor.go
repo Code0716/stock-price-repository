@@ -70,7 +70,12 @@ func (b *backtestInteractorImpl) GetBacktestComparison(ctx context.Context, symb
 		var result models.BacktestResult
 		if len(prices) >= minBacktestDays {
 			signals := domain_service.EntrySignalsByStrategy(strategy, prices)
-			result = domain_service.RunBacktest(prices, signals, exitParams)
+			// exitMode=signal のとき戦略固有の反転シグナルを渡す。それ以外は nil（従来動作）。
+			var exitSignals []bool
+			if params.ExitMode == models.ExitModeSignal {
+				exitSignals = domain_service.ExitSignalsByStrategy(strategy, prices)
+			}
+			result = domain_service.RunBacktest(prices, signals, exitSignals, exitParams)
 		} else {
 			// データ不足時は空結果（取引0件）
 			result = models.BacktestResult{Equity: []models.BacktestEquityPoint{}, TradeList: []models.BacktestTrade{}}

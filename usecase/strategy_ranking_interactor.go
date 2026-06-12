@@ -73,7 +73,8 @@ func accumulateResults(brand *models.StockBrand, prices []*models.StockBrandDail
 	results := make(map[string]models.BacktestResult, len(domain_service.StrategyOrder))
 	for _, s := range domain_service.StrategyOrder {
 		signals := domain_service.EntrySignalsByStrategy(s, prices)
-		results[s] = domain_service.RunBacktestMetrics(prices, signals, exitParams)
+		// exitSignals は nil を渡して共通ルールのみ使用（ランキングバッチは挙動不変を優先）
+		results[s] = domain_service.RunBacktestMetrics(prices, signals, nil, exitParams)
 	}
 	for _, s := range domain_service.StrategyOrder {
 		res := results[s]

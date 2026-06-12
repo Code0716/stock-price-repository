@@ -54,6 +54,127 @@ func EntrySignalsByStrategy(strategy string, prices []*models.StockBrandDailyPri
 	}
 }
 
+// ExitSignalsByStrategy 指定戦略の反転（手仕舞い）シグナルを日次の []bool で返す純粋関数。
+// 返り値の長さは len(prices) と一致し、true はその日の終値時点でイグジット条件成立を表す。
+// 未知の strategy は全 false を返す。
+func ExitSignalsByStrategy(strategy string, prices []*models.StockBrandDailyPrice) []bool {
+	switch strategy {
+	case StrategyMACDBullish:
+		return MACDBullishExitSignals(prices)
+	case StrategyBollingerBreakout:
+		return BollingerBreakoutExitSignals(prices)
+	case StrategyTriangleFormation:
+		return GenericTrendBreakExitSignals(prices)
+	case StrategyMovingAverageCross:
+		return MovingAverageCrossExitSignals(prices)
+	case StrategyMultipleSignals:
+		return GenericTrendBreakExitSignals(prices)
+	default:
+		return make([]bool, len(prices))
+	}
+}
+
+// MACDBullishExitSignals MACDデッドクロス（前日 MACD >= Signal かつ当日 MACD < Signal）で手仕舞い。
+// MACDBullishEntrySignals（ゴールデンクロス）の反転シグナル。
+func MACDBullishExitSignals(prices []*models.StockBrandDailyPrice) []bool {
+	n := len(prices)
+	signals := make([]bool, n)
+	closes := ExtractClosePrices(prices)
+
+	macd := CalculateMACD(closes, 12, 26, 9)
+	if macd == nil {
+		return signals
+	}
+	// MACD/Signal が有効になる十分なウォームアップ後から評価（エントリーと同じ閾値）
+	const minIdx = 35
+	for i := minIdx; i < n; i++ {
+		cur := macd[i]
+		prev := macd[i-1]
+		// デッドクロス: 前日 MACD >= Signal かつ当日 MACD < Signal
+		deadCross := cur.MACD.LessThan(cur.Signal) &&
+			!prev.MACD.LessThan(prev.Signal)
+		if deadCross {
+			signals[i] = true
+		}
+	}
+	return signals
+}
+
+// BollingerBreakoutExitSignals 終値がボリンジャーミドルバンド（20SMA）を下抜け。
+// 前日 close >= middle かつ当日 close < middle の成立を手仕舞いシグナルとする。
+// BollingerBreakoutEntrySignals（アッパー上抜け）の反転シグナル。
+func BollingerBreakoutExitSignals(prices []*models.StockBrandDailyPrice) []bool {
+	n := len(prices)
+	signals := make([]bool, n)
+	closes := ExtractClosePrices(prices)
+
+	const bbPeriod = 20
+	bb := CalculateBollingerBands(closes, bbPeriod, decimal.NewFromInt(2))
+	if bb == nil {
+		return signals
+	}
+
+	// ミドルバンドが有効になる bbPeriod-1 日目以降から評価
+	for i := bbPeriod; i < n; i++ {
+		// 終値がミドルバンド（20SMA）を下抜け
+		belowMiddle := closes[i].LessThan(bb[i].Middle) &&
+			!closes[i-1].LessThan(bb[i-1].Middle)
+		if belowMiddle {
+			signals[i] = true
+		}
+	}
+	return signals
+}
+
+// MovingAverageCrossExitSignals 5日SMAが25日SMAを下抜け（前日 5SMA >= 25SMA かつ当日 5SMA < 25SMA）。
+// MovingAverageCrossEntrySignals（5/25/75全上抜け）の反転シグナル。
+func MovingAverageCrossExitSignals(prices []*models.StockBrandDailyPrice) []bool {
+	n := len(prices)
+	signals := make([]bool, n)
+	closes := ExtractClosePrices(prices)
+
+	sma5 := smaSeries(closes, 5)
+	sma25 := smaSeries(closes, 25)
+
+	// sma25 が有効になる index=24 以降、かつ前日も有効な index=25 以降から評価
+	for i := 25; i < n; i++ {
+		if sma5[i].IsZero() || sma25[i].IsZero() || sma5[i-1].IsZero() || sma25[i-1].IsZero() {
+			continue
+		}
+		// 5SMA が 25SMA を下抜け
+		crossUnder := sma5[i].LessThan(sma25[i]) &&
+			!sma5[i-1].LessThan(sma25[i-1])
+		if crossUnder {
+			signals[i] = true
+		}
+	}
+	return signals
+}
+
+// GenericTrendBreakExitSignals 汎用トレンド破れルール: 終値が25日SMAを下抜け。
+// TriangleFormation・MultipleSignals など固有の反転シグナルが定義しにくい戦略に使用する。
+func GenericTrendBreakExitSignals(prices []*models.StockBrandDailyPrice) []bool {
+	n := len(prices)
+	signals := make([]bool, n)
+	closes := ExtractClosePrices(prices)
+
+	sma25 := smaSeries(closes, 25)
+
+	// sma25 が有効になる index=24 以降、かつ前日も有効な index=25 以降から評価
+	for i := 25; i < n; i++ {
+		if sma25[i].IsZero() || sma25[i-1].IsZero() {
+			continue
+		}
+		// 終値が 25SMA を下抜け
+		belowSMA25 := closes[i].LessThan(sma25[i]) &&
+			!closes[i-1].LessThan(sma25[i-1])
+		if belowSMA25 {
+			signals[i] = true
+		}
+	}
+	return signals
+}
+
 // MACDBullishEntrySignals MACDゴールデンクロス(Signal≥0) + RSI<70 + 出来高>5日平均。
 func MACDBullishEntrySignals(prices []*models.StockBrandDailyPrice) []bool {
 	n := len(prices)

@@ -66,6 +66,18 @@ func parseNonNegativeRate(raw string) (decimal.Decimal, bool) {
 	return decimal.NewFromFloat(f), true
 }
 
+// parseExitMode "common"（デフォルト）/ "signal" をパースする。空なら "common"（デフォルト）。
+// それ以外の値は false を返す。
+func parseExitMode(raw string) (string, bool) {
+	if raw == "" {
+		return models.ExitModeCommon, true
+	}
+	if raw == models.ExitModeCommon || raw == models.ExitModeSignal {
+		return raw, true
+	}
+	return "", false
+}
+
 func (h *BacktestHandler) validateGetBacktestParams(r *http.Request) (*getBacktestParams, error) {
 	p := &getBacktestParams{}
 
@@ -119,12 +131,18 @@ func (h *BacktestHandler) validateGetBacktestParams(r *http.Request) (*getBackte
 		return nil, &validationError{message: "slippageは0以上0.05以下である必要があります"}
 	}
 
+	exitMode, ok := parseExitMode(h.httpServer.GetQueryParam(r, "exitMode"))
+	if !ok {
+		return nil, &validationError{message: "exitModeはcommonまたはsignalである必要があります"}
+	}
+
 	p.params = models.BacktestParams{
 		TakeProfit:     takeProfit,
 		StopLoss:       stopLoss,
 		MaxHoldDays:    maxHoldDays,
 		CommissionRate: commissionRate,
 		SlippageRate:   slippageRate,
+		ExitMode:       exitMode,
 	}
 	return p, nil
 }

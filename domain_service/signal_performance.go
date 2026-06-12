@@ -140,3 +140,112 @@ func calcHorizonStats(returns []decimal.Decimal) *models.HorizonStats {
 		WorstReturn:    worst.Round(6),
 	}
 }
+
+// rankBandDefs はランク帯の定義（帯名、min/max でシグナルを仕分け）
+type rankBandDef struct {
+	band string
+	min  int
+	max  int // -1 = 上限なし
+}
+
+var rankBandDefs = []rankBandDef{
+	{"1-3", 1, 3},
+	{"4-10", 4, 10},
+	{"11+", 11, -1},
+}
+
+// AggregateByRankBand SignalRank 非nilのシグナルをランク帯別に集計する。
+// 帯の順序は固定（1-3 / 4-10 / 11+）。対象0件の帯も SignalCount=0 で返す。
+func AggregateByRankBand(signals []*models.EvaluatedSignal, horizons []int) []*models.BandSummary {
+	type bucket struct {
+		signals []*models.EvaluatedSignal
+	}
+	buckets := make([]bucket, len(rankBandDefs))
+
+	for _, sig := range signals {
+		if sig.SignalRank == nil {
+			continue
+		}
+		rank := *sig.SignalRank
+		for i, def := range rankBandDefs {
+			if rank >= def.min && (def.max == -1 || rank <= def.max) {
+				buckets[i].signals = append(buckets[i].signals, sig)
+				break
+			}
+		}
+	}
+
+	result := make([]*models.BandSummary, len(rankBandDefs))
+	for i, def := range rankBandDefs {
+		sigs := buckets[i].signals
+		stats := calcBandStats(sigs, horizons)
+		result[i] = &models.BandSummary{
+			Band:        def.band,
+			SignalCount: len(sigs),
+			Stats:       stats,
+		}
+	}
+	return result
+}
+
+// AggregateByScoreQuartile Score 非nilのシグナルをスコア四分位別に集計する。
+// score 昇順で四分位に分割（Q1=下位〜Q4=上位、境界は件数ベースの等分割）。
+// n<4 のときは空スライスを返す。
+func AggregateByScoreQuartile(signals []*models.EvaluatedSignal, horizons []int) []*models.BandSummary {
+	// Score 非nilのみ抽出
+	scored := make([]*models.EvaluatedSignal, 0, len(signals))
+	for _, sig := range signals {
+		if sig.Score != nil {
+			scored = append(scored, sig)
+		}
+	}
+
+	if len(scored) < 4 {
+		return []*models.BandSummary{}
+	}
+
+	// score 昇順ソート
+	sort.Slice(scored, func(i, j int) bool {
+		return scored[i].Score.LessThan(*scored[j].Score)
+	})
+
+	n := len(scored)
+	result := make([]*models.BandSummary, 4)
+	for q := 0; q < 4; q++ {
+		// 件数ベースの等分割: [q*n/4, (q+1)*n/4)
+		lo := q * n / 4
+		hi := (q + 1) * n / 4
+		if q == 3 {
+			hi = n // 最後の四分位は端数を全て含む
+		}
+		qSigs := scored[lo:hi]
+		stats := calcBandStats(qSigs, horizons)
+		result[q] = &models.BandSummary{
+			Band:        "Q" + string(rune('1'+q)),
+			SignalCount: len(qSigs),
+			Stats:       stats,
+		}
+	}
+	return result
+}
+
+// calcBandStats シグナル群から horizon 別統計を生成する（Returns nil = skip）
+func calcBandStats(signals []*models.EvaluatedSignal, horizons []int) map[int]*models.HorizonStats {
+	returns := make(map[int][]decimal.Decimal, len(horizons))
+	for _, sig := range signals {
+		if sig.Returns == nil {
+			continue
+		}
+		for _, h := range horizons {
+			if v := sig.Returns[h]; v != nil {
+				returns[h] = append(returns[h], *v)
+			}
+		}
+	}
+
+	stats := make(map[int]*models.HorizonStats, len(horizons))
+	for _, h := range horizons {
+		stats[h] = calcHorizonStats(returns[h])
+	}
+	return stats
+}

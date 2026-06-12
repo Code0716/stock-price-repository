@@ -114,20 +114,27 @@ func (s *signalPerformanceInteractorImpl) GetSignalPerformance(ctx context.Conte
 
 	summaries := domain_service.AggregateSignalPerformance(evaluated, signalPerformanceHorizons)
 
-	// method 指定時のみ明細を返す
+	// method 指定時のみ明細と帯別集計を返す
 	var detail []*models.EvaluatedSignal
+	var rankBands []*models.BandSummary
+	var scoreQuartiles []*models.BandSummary
+
 	if filter.Method != "" {
 		detail = evaluated
+		rankBands = domain_service.AggregateByRankBand(evaluated, signalPerformanceHorizons)
+		scoreQuartiles = domain_service.AggregateByScoreQuartile(evaluated, signalPerformanceHorizons)
 	} else {
 		detail = []*models.EvaluatedSignal{}
 	}
 
 	return &models.SignalPerformance{
-		From:      filter.From,
-		To:        filter.To,
-		Horizons:  signalPerformanceHorizons,
-		Summaries: summaries,
-		Signals:   detail,
+		From:           filter.From,
+		To:             filter.To,
+		Horizons:       signalPerformanceHorizons,
+		Summaries:      summaries,
+		Signals:        detail,
+		RankBands:      rankBands,
+		ScoreQuartiles: scoreQuartiles,
 	}, nil
 }
 

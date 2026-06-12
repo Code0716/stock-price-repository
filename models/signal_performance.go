@@ -47,11 +47,20 @@ type EvaluatedSignal struct {
 	Returns      map[int]*decimal.Decimal `json:"returns"` // key: 5/10/20, nil=未到来
 }
 
+// BandSummary rank帯・score四分位など、シグナルの帯別集計
+type BandSummary struct {
+	Band        string                `json:"band"`        // 例: "1-3", "4-10", "11+", "Q1".."Q4"
+	SignalCount int                   `json:"signalCount"` // 帯に属するシグナル数（skip含む）
+	Stats       map[int]*HorizonStats `json:"stats"`
+}
+
 // SignalPerformance API レスポンス全体
 type SignalPerformance struct {
-	From      time.Time                  `json:"from"`
-	To        time.Time                  `json:"to"`
-	Horizons  []int                      `json:"horizons"`
-	Summaries []*SignalPerformanceSummary `json:"summaries"`
-	Signals   []*EvaluatedSignal         `json:"signals"` // method 指定時のみ、非 nil
+	From           time.Time                  `json:"from"`
+	To             time.Time                  `json:"to"`
+	Horizons       []int                      `json:"horizons"`
+	Summaries      []*SignalPerformanceSummary `json:"summaries"`
+	Signals        []*EvaluatedSignal         `json:"signals"`        // method 指定時のみ、非 nil
+	RankBands      []*BandSummary             `json:"rankBands"`      // method 指定時のみ非nil
+	ScoreQuartiles []*BandSummary             `json:"scoreQuartiles"` // method 指定時のみ非nil
 }

@@ -367,3 +367,173 @@ func TestFilterPricesFrom(t *testing.T) {
 		})
 	}
 }
+
+// --- rankBands / scoreQuartiles テスト ---
+
+func TestSignalPerformanceInteractor_BandAggregation(t *testing.T) {
+	from := spDate(2024, 1, 4)
+	to := spDate(2024, 3, 31)
+	signalDate := spDate(2024, 1, 10)
+	method1 := models.AnalyzeStockBrandPriceHistoryMethodFindMACDBullishV1
+
+	rank1 := 1
+	rank5 := 5
+	score1 := decimal.NewFromFloat(0.8)
+	score2 := decimal.NewFromFloat(0.3)
+
+	// SignalRank / Score 付きシグナルを返すヘルパー
+	spSignalWithBands := func(symbol string, rank *int, score *decimal.Decimal) *models.AnalyzeStockBrandPriceHistory {
+		sig := spSignal(symbol, method1, models.AnalyzeStockBrandPriceHistoryActionBuy, signalDate)
+		sig.SignalRank = rank
+		sig.Score = score
+		return sig
+	}
+
+	makePrices := func(symbol string) []*models.StockBrandDailyPrice {
+		prices := make([]*models.StockBrandDailyPrice, 30)
+		for i := 0; i < 30; i++ {
+			prices[i] = spPrice(symbol, signalDate.AddDate(0, 0, i), 1000+float64(i))
+		}
+		return prices
+	}
+
+	type fields struct {
+		analyzeRepo func(ctrl *gomock.Controller) *mock_repositories.MockAnalyzeStockBrandPriceHistoryRepository
+		priceRepo   func(ctrl *gomock.Controller) *mock_repositories.MockStockBrandsDailyPriceRepository
+	}
+
+	tests := []struct {
+		name   string
+		filter *models.SignalPerformanceFilter
+		fields fields
+		check  func(t *testing.T, got *models.SignalPerformance)
+	}{
+		{
+			name: "method 指定時は rankBands と scoreQuartiles が非nil",
+			filter: &models.SignalPerformanceFilter{
+				From:   from,
+				To:     to,
+				Method: method1,
+			},
+			fields: fields{
+				analyzeRepo: func(ctrl *gomock.Controller) *mock_repositories.MockAnalyzeStockBrandPriceHistoryRepository {
+					m := mock_repositories.NewMockAnalyzeStockBrandPriceHistoryRepository(ctrl)
+					m.EXPECT().FindByCreatedAtRange(gomock.Any(), gomock.Any()).Return([]*models.AnalyzeStockBrandPriceHistory{
+						spSignalWithBands("7203", &rank1, &score1),
+						spSignalWithBands("6758", &rank5, &score2),
+					}, nil)
+					return m
+				},
+				priceRepo: func(ctrl *gomock.Controller) *mock_repositories.MockStockBrandsDailyPriceRepository {
+					m := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+					m.EXPECT().ListRangePricesBySymbols(gomock.Any(), gomock.Any()).Return(
+						append(makePrices("7203"), makePrices("6758")...), nil,
+					)
+					return m
+				},
+			},
+			check: func(t *testing.T, got *models.SignalPerformance) {
+				// method 指定時は rankBands が3帯固定で返る
+				assert.NotNil(t, got.RankBands)
+				assert.Len(t, got.RankBands, 3, "ランク帯は常に3帯")
+				assert.Equal(t, "1-3", got.RankBands[0].Band)
+				assert.Equal(t, "4-10", got.RankBands[1].Band)
+				assert.Equal(t, "11+", got.RankBands[2].Band)
+				// rank=1 は 1-3 帯, rank=5 は 4-10 帯
+				assert.Equal(t, 1, got.RankBands[0].SignalCount)
+				assert.Equal(t, 1, got.RankBands[1].SignalCount)
+				assert.Equal(t, 0, got.RankBands[2].SignalCount)
+
+				// score が2件のため n<4 → scoreQuartiles は空スライス
+				assert.NotNil(t, got.ScoreQuartiles)
+				assert.Empty(t, got.ScoreQuartiles, "n<4 のとき空スライス")
+			},
+		},
+		{
+			name: "method 未指定時は rankBands と scoreQuartiles が nil",
+			filter: &models.SignalPerformanceFilter{
+				From: from,
+				To:   to,
+			},
+			fields: fields{
+				analyzeRepo: func(ctrl *gomock.Controller) *mock_repositories.MockAnalyzeStockBrandPriceHistoryRepository {
+					m := mock_repositories.NewMockAnalyzeStockBrandPriceHistoryRepository(ctrl)
+					m.EXPECT().FindByCreatedAtRange(gomock.Any(), gomock.Any()).Return([]*models.AnalyzeStockBrandPriceHistory{
+						spSignalWithBands("7203", &rank1, &score1),
+					}, nil)
+					return m
+				},
+				priceRepo: func(ctrl *gomock.Controller) *mock_repositories.MockStockBrandsDailyPriceRepository {
+					m := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+					m.EXPECT().ListRangePricesBySymbols(gomock.Any(), gomock.Any()).Return(
+						makePrices("7203"), nil,
+					)
+					return m
+				},
+			},
+			check: func(t *testing.T, got *models.SignalPerformance) {
+				// method 未指定時は rankBands/scoreQuartiles は nil
+				assert.Nil(t, got.RankBands)
+				assert.Nil(t, got.ScoreQuartiles)
+			},
+		},
+		{
+			name: "score 4件以上の場合 scoreQuartiles が4帯返る",
+			filter: &models.SignalPerformanceFilter{
+				From:   from,
+				To:     to,
+				Method: method1,
+			},
+			fields: fields{
+				analyzeRepo: func(ctrl *gomock.Controller) *mock_repositories.MockAnalyzeStockBrandPriceHistoryRepository {
+					m := mock_repositories.NewMockAnalyzeStockBrandPriceHistoryRepository(ctrl)
+					s1 := decimal.NewFromFloat(0.1)
+					s2 := decimal.NewFromFloat(0.3)
+					s3 := decimal.NewFromFloat(0.6)
+					s4 := decimal.NewFromFloat(0.9)
+					m.EXPECT().FindByCreatedAtRange(gomock.Any(), gomock.Any()).Return([]*models.AnalyzeStockBrandPriceHistory{
+						{ID: "1", TickerSymbol: "7203", Method: method1, Action: "Buy", CreatedAt: signalDate, Score: &s1},
+						{ID: "2", TickerSymbol: "6758", Method: method1, Action: "Buy", CreatedAt: signalDate, Score: &s2},
+						{ID: "3", TickerSymbol: "9984", Method: method1, Action: "Buy", CreatedAt: signalDate, Score: &s3},
+						{ID: "4", TickerSymbol: "3382", Method: method1, Action: "Buy", CreatedAt: signalDate, Score: &s4},
+					}, nil)
+					return m
+				},
+				priceRepo: func(ctrl *gomock.Controller) *mock_repositories.MockStockBrandsDailyPriceRepository {
+					m := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+					var prices []*models.StockBrandDailyPrice
+					for _, sym := range []string{"7203", "6758", "9984", "3382"} {
+						prices = append(prices, makePrices(sym)...)
+					}
+					m.EXPECT().ListRangePricesBySymbols(gomock.Any(), gomock.Any()).Return(prices, nil)
+					return m
+				},
+			},
+			check: func(t *testing.T, got *models.SignalPerformance) {
+				assert.NotNil(t, got.ScoreQuartiles)
+				assert.Len(t, got.ScoreQuartiles, 4, "n=4 のとき4帯返る")
+				assert.Equal(t, "Q1", got.ScoreQuartiles[0].Band)
+				assert.Equal(t, "Q2", got.ScoreQuartiles[1].Band)
+				assert.Equal(t, "Q3", got.ScoreQuartiles[2].Band)
+				assert.Equal(t, "Q4", got.ScoreQuartiles[3].Band)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			interactor := NewSignalPerformanceInteractor(
+				tt.fields.analyzeRepo(ctrl),
+				tt.fields.priceRepo(ctrl),
+			)
+			got, err := interactor.GetSignalPerformance(context.Background(), tt.filter)
+			assert.NoError(t, err)
+			if tt.check != nil {
+				tt.check(t, got)
+			}
+		})
+	}
+}

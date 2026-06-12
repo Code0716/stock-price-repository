@@ -20,6 +20,7 @@ func NewRouter(
 	valuationHandler *handler.ValuationHandler,
 	technicalIndicatorsHandler *handler.TechnicalIndicatorsHandler,
 	signalPerformanceHandler *handler.SignalPerformanceHandler,
+	sectorPerformanceHandler *handler.SectorPerformanceHandler,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
@@ -59,6 +60,9 @@ func NewRouter(
 	}
 	if signalPerformanceHandler != nil {
 		mux.HandleFunc("/signal-performance", signalPerformanceHandler.GetSignalPerformance)
+	}
+	if sectorPerformanceHandler != nil {
+		mux.HandleFunc("/sector-performance", sectorPerformanceHandler.GetSectorPerformance)
 	}
 	if daytradeHandler != nil {
 		mux.HandleFunc("/daytrade/executions/import", daytradeHandler.ImportSBICsv)

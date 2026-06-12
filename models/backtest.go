@@ -9,7 +9,17 @@ type BacktestParams struct {
 	MaxHoldDays    int             `json:"maxHoldDays"`    // 最大保有営業日数
 	CommissionRate decimal.Decimal `json:"commissionRate"` // 片道手数料率（例: 0.0005）。ゼロ値 = コストなし
 	SlippageRate   decimal.Decimal `json:"slippageRate"`   // 片道スリッページ率（例: 0.001）。ゼロ値 = コストなし
+	// ExitMode イグジットモード: "common"（デフォルト・従来動作）/ "signal"（戦略固有シグナルで手仕舞い）。
+	// "common" はリクエスト省略時のデフォルト。
+	ExitMode string `json:"exitMode"`
 }
+
+// ExitModeCommon 共通ルール（TakeProfit/StopLoss/MaxHoldDays）のみで手仕舞い。デフォルト動作。
+const ExitModeCommon = "common"
+
+// ExitModeSignal 戦略固有の反転シグナル（ExitSignalsByStrategy）で手仕舞い。
+// 共通ルールが同日に成立した場合は共通ルールが優先される。
+const ExitModeSignal = "signal"
 
 // BacktestEquityPoint エクイティカーブの1点（初期資金=1.0 を起点とした倍率）。
 type BacktestEquityPoint struct {

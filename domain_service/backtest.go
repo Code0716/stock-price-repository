@@ -47,14 +47,20 @@ func (ts *tradeStats) record(ret decimal.Decimal, holdDays int) {
 // （利確/損切り/最大保有/データ末尾）で終値手仕舞いするバックテストを実行する。
 // 同時に保有できるポジションは1つ。エクイティは初期資金 1.0 起点の倍率。
 // Equity / TradeList も構築する（フロント表示・ドリルダウン用）。
-func RunBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, params ExitParams) models.BacktestResult {
-	return runBacktest(prices, entrySignals, params, true)
+//
+// exitSignals: 戦略固有の手仕舞いシグナル（ExitSignalsByStrategy の戻り値）。nil を渡すと
+// 共通ルール（TakeProfit/StopLoss/MaxHoldDays）のみで判定する従来動作になる（後方互換）。
+// 優先順位: 既存の TP/SL 判定 -> シグナルイグジット（同日成立時は既存判定を優先）。
+func RunBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, exitSignals []bool, params ExitParams) models.BacktestResult {
+	return runBacktest(prices, entrySignals, exitSignals, params, true)
 }
 
 // RunBacktestMetrics RunBacktest と同じ成績指標を返すが、Equity / TradeList は構築しない
 // （日次の Date.Format とスライス確保を省く）。全銘柄横断バッチなど、集計のみ必要な用途向け。
-func RunBacktestMetrics(prices []*models.StockBrandDailyPrice, entrySignals []bool, params ExitParams) models.BacktestResult {
-	return runBacktest(prices, entrySignals, params, false)
+//
+// exitSignals: 戦略固有の手仕舞いシグナル。nil を渡すと従来動作（後方互換）。
+func RunBacktestMetrics(prices []*models.StockBrandDailyPrice, entrySignals []bool, exitSignals []bool, params ExitParams) models.BacktestResult {
+	return runBacktest(prices, entrySignals, exitSignals, params, false)
 }
 
 // exitReason 当日のリターンと保有日数から手仕舞い理由を返す。手仕舞い不要なら ""。
@@ -68,6 +74,18 @@ func exitReason(ret decimal.Decimal, holdDays int, params ExitParams) string {
 		return "stop_loss"
 	case holdDays >= params.MaxHoldDays:
 		return "max_hold"
+	}
+	return ""
+}
+
+// decideExitReason 共通ルールと戦略シグナルを組み合わせて手仕舞い理由を返す。手仕舞い不要なら ""。
+// 優先順位: 共通ルール（TP/SL/MaxHold） > 戦略シグナル（signal_exit）。
+func decideExitReason(rawRet decimal.Decimal, holdDays int, exitSignals []bool, idx int, params ExitParams) string {
+	if reason := exitReason(rawRet, holdDays, params); reason != "" {
+		return reason
+	}
+	if exitSignals != nil && idx < len(exitSignals) && exitSignals[idx] {
+		return "signal_exit"
 	}
 	return ""
 }
@@ -112,7 +130,7 @@ func effectiveExitReturn(exitClose, effectiveEntry, commissionRate, slippageRate
 	return exitEff.Div(effectiveEntry).Sub(decimal.NewFromInt(1))
 }
 
-func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, params ExitParams, collectSeries bool) models.BacktestResult {
+func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, exitSignals []bool, params ExitParams, collectSeries bool) models.BacktestResult {
 	n := len(prices)
 	result := models.BacktestResult{
 		TotalReturn:  decimal.Zero,
@@ -171,7 +189,7 @@ func runBacktest(prices []*models.StockBrandDailyPrice, entrySignals []bool, par
 		// 判定は生 Close ベース（コスト考慮前）
 		if inPosition && i > entryIdx {
 			rawRet := prices[i].Close.Div(entryClose).Sub(one)
-			if reason := exitReason(rawRet, i-entryIdx, params); reason != "" {
+			if reason := decideExitReason(rawRet, i-entryIdx, exitSignals, i, params); reason != "" {
 				closeTrade(i, reason)
 			}
 		}

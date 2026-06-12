@@ -26,6 +26,7 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 		MaxHoldDays:    20,
 		CommissionRate: decimal.Zero,
 		SlippageRate:   decimal.Zero,
+		ExitMode:       models.ExitModeCommon,
 	}
 
 	type fields struct {
@@ -66,6 +67,7 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "slippage").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "exitMode").Return("")
 					return m
 				},
 			},
@@ -156,6 +158,7 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "slippage").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "exitMode").Return("")
 					return m
 				},
 			},
@@ -325,6 +328,144 @@ func TestBacktestHandler_GetBacktest_CostParams(t *testing.T) {
 
 			assert.Equal(t, tt.wantStatusCode, w.Code)
 			assert.Equal(t, tt.wantBody, w.Body.String())
+		})
+	}
+}
+
+func TestBacktestHandler_GetBacktest_ExitMode(t *testing.T) {
+	date, _ := time.Parse(util.DateLayout, "2021-01-04")
+	type fields struct {
+		usecase    func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor
+		httpServer func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer
+	}
+	tests := []struct {
+		name           string
+		fields         fields
+		req            *http.Request
+		wantStatusCode int
+		wantBody       string
+	}{
+		{
+			name: "異常系: exitMode が不正値",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor {
+					return mock_usecase.NewMockBacktestInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "slippage").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "exitMode").Return("invalid")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/backtest?symbol=7203&exitMode=invalid", nil),
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "exitModeはcommonまたはsignalである必要があります\n",
+
+		},
+		{
+			name: "正常系: exitMode=signal でバックテスト取得",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor {
+					m := mock_usecase.NewMockBacktestInteractor(ctrl)
+					signalParams := models.BacktestParams{
+						TakeProfit:     decimal.NewFromFloat(0.10),
+						StopLoss:       decimal.NewFromFloat(0.05),
+						MaxHoldDays:    20,
+						CommissionRate: decimal.Zero,
+						SlippageRate:   decimal.Zero,
+						ExitMode:       models.ExitModeSignal,
+					}
+					m.EXPECT().
+						GetBacktestComparison(gomock.Any(), "7203", &date, &date, signalParams).
+						Return(&models.BacktestComparison{
+							Symbol:     "7203",
+							TradingDays: 1,
+							Params:     signalParams,
+							Strategies: []models.StrategyBacktest{},
+						}, nil)
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "slippage").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "exitMode").Return("signal")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/backtest?symbol=7203&from=2021-01-04&to=2021-01-04&exitMode=signal", nil),
+			wantStatusCode: http.StatusOK,
+		},
+		{
+			name: "正常系: exitMode=common でバックテスト取得",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor {
+					m := mock_usecase.NewMockBacktestInteractor(ctrl)
+					commonParams := models.BacktestParams{
+						TakeProfit:     decimal.NewFromFloat(0.10),
+						StopLoss:       decimal.NewFromFloat(0.05),
+						MaxHoldDays:    20,
+						CommissionRate: decimal.Zero,
+						SlippageRate:   decimal.Zero,
+						ExitMode:       models.ExitModeCommon,
+					}
+					m.EXPECT().
+						GetBacktestComparison(gomock.Any(), "7203", &date, &date, commonParams).
+						Return(&models.BacktestComparison{
+							Symbol:     "7203",
+							TradingDays: 1,
+							Params:     commonParams,
+							Strategies: []models.StrategyBacktest{},
+						}, nil)
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
+					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "commission").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "slippage").Return("")
+					m.EXPECT().GetQueryParam(gomock.Any(), "exitMode").Return("common")
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/backtest?symbol=7203&from=2021-01-04&to=2021-01-04&exitMode=common", nil),
+			wantStatusCode: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			h := NewBacktestHandler(tt.fields.usecase(ctrl), tt.fields.httpServer(ctrl), zap.NewNop())
+
+			w := httptest.NewRecorder()
+			h.GetBacktest(w, tt.req)
+
+			assert.Equal(t, tt.wantStatusCode, w.Code)
+			if tt.wantBody != "" {
+				assert.Equal(t, tt.wantBody, w.Body.String())
+			}
 		})
 	}
 }

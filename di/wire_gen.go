@@ -129,7 +129,10 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	technicalIndicatorsHandler := handler.NewTechnicalIndicatorsHandler(technicalIndicatorsInteractor, httpServer, logger)
 	signalPerformanceInteractor := usecase.NewSignalPerformanceInteractor(analyzeStockBrandPriceHistoryRepository, stockBrandsDailyPriceRepository)
 	signalPerformanceHandler := handler.NewSignalPerformanceHandler(signalPerformanceInteractor, httpServer, logger)
-	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler, daytradeHandler, returnAnalysisHandler, backtestHandler, strategyRankingHandler, valuationHandler, technicalIndicatorsHandler, signalPerformanceHandler)
+	sector33AverageDailyPriceRepository := database.NewSector33AverageDailyPriceRepositoryImpl(gormDB)
+	sectorPerformanceInteractor := usecase.NewSectorPerformanceInteractor(sector33AverageDailyPriceRepository)
+	sectorPerformanceHandler := handler.NewSectorPerformanceHandler(sectorPerformanceInteractor, httpServer, logger)
+	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler, daytradeHandler, returnAnalysisHandler, backtestHandler, strategyRankingHandler, valuationHandler, technicalIndicatorsHandler, signalPerformanceHandler, sectorPerformanceHandler)
 	return serveMux, func() {
 		cleanup()
 	}, nil
@@ -164,15 +167,15 @@ func InitializeStockServiceServer(ctx context.Context) (*GrpcServerComponents, f
 
 // wire.go:
 
-var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation, usecase.NewDaytradeInteractor, usecase.NewReturnAnalysisInteractor, usecase.NewBacktestInteractor, usecase.NewStrategyRankingInteractor, usecase.NewValuationInteractor, usecase.NewTechnicalIndicatorsInteractor, usecase.NewSignalPerformanceInteractor)
+var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation, usecase.NewDaytradeInteractor, usecase.NewReturnAnalysisInteractor, usecase.NewBacktestInteractor, usecase.NewStrategyRankingInteractor, usecase.NewValuationInteractor, usecase.NewTechnicalIndicatorsInteractor, usecase.NewSignalPerformanceInteractor, usecase.NewSectorPerformanceInteractor)
 
 var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewBoxAPIClient, driver.NewLogger)
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewAdjustHistoricalDataForStockConsolidationCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand, commands.NewSyncFinAnnouncementsCommand, commands.NewSyncFinStatementsCommand, commands.NewBacktestAllStocksCommand, commands.NewSyncFinStatementsAllStocksCommand)
 
-var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewTopixRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl, database.NewDaytradeTradeNoteRepositoryImpl)
+var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewTopixRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl, database.NewDaytradeTradeNoteRepositoryImpl, database.NewSector33AverageDailyPriceRepositoryImpl)
 
-var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, handler.NewReturnAnalysisHandler, handler.NewBacktestHandler, handler.NewStrategyRankingHandler, handler.NewValuationHandler, handler.NewTechnicalIndicatorsHandler, handler.NewSignalPerformanceHandler, router.NewRouter)
+var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, handler.NewReturnAnalysisHandler, handler.NewBacktestHandler, handler.NewStrategyRankingHandler, handler.NewValuationHandler, handler.NewTechnicalIndicatorsHandler, handler.NewSignalPerformanceHandler, handler.NewSectorPerformanceHandler, router.NewRouter)
 
 var grpcSet = wire.NewSet(server.NewStockServiceServer, usecase.NewGetHighVolumeStockBrandsUseCase, wire.Struct(new(GrpcServerComponents), "*"))
 

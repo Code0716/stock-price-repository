@@ -15,3 +15,10 @@ type Sector33AverageDailyPriceRepository interface {
 	// sector_33_code が NULL の行は除外される。
 	ListRangeAll(ctx context.Context, from, to time.Time) ([]*models.Sector33AverageDailyPrice, error)
 }
+
+// Sector17AverageDailyPriceRepository セクター17業種平均日足の読み取りインターフェース
+type Sector17AverageDailyPriceRepository interface {
+	// ListRangeAll 指定期間のセクター17業種平均日足を全業種・date 昇順で取得する。
+	// sector_17_code が NULL の行は除外される。
+	ListRangeAll(ctx context.Context, from, to time.Time) ([]*models.Sector17AverageDailyPrice, error)
+}

@@ -43,16 +43,16 @@ func (m *MockSectorPerformanceInteractor) EXPECT() *MockSectorPerformanceInterac
 }
 
 // GetSectorPerformance mocks base method.
-func (m *MockSectorPerformanceInteractor) GetSectorPerformance(ctx context.Context, from, to time.Time) (*models.SectorPerformance, error) {
+func (m *MockSectorPerformanceInteractor) GetSectorPerformance(ctx context.Context, from, to time.Time, granularity string) (*models.SectorPerformance, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSectorPerformance", ctx, from, to)
+	ret := m.ctrl.Call(m, "GetSectorPerformance", ctx, from, to, granularity)
 	ret0, _ := ret[0].(*models.SectorPerformance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetSectorPerformance indicates an expected call of GetSectorPerformance.
-func (mr *MockSectorPerformanceInteractorMockRecorder) GetSectorPerformance(ctx, from, to any) *gomock.Call {
+func (mr *MockSectorPerformanceInteractorMockRecorder) GetSectorPerformance(ctx, from, to, granularity any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSectorPerformance", reflect.TypeOf((*MockSectorPerformanceInteractor)(nil).GetSectorPerformance), ctx, from, to)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSectorPerformance", reflect.TypeOf((*MockSectorPerformanceInteractor)(nil).GetSectorPerformance), ctx, from, to, granularity)
 }

@@ -152,7 +152,7 @@ func TestCalcNDayReturn_InsufficientData(t *testing.T) {
 		makeRow("2024-01-05", "3700", 1050.0),
 	}
 	// 2本 → n=5 は不足
-	result := calcNDayReturn(series, 5)
+	result := calcNDayReturn33(series, 5)
 	assert.Nil(t, result)
 }
 
@@ -166,7 +166,7 @@ func TestCalcNDayReturn_Exact(t *testing.T) {
 			float64(1000+i*10),
 		)
 	}
-	result := calcNDayReturn(series, 5)
+	result := calcNDayReturn33(series, 5)
 	assert.NotNil(t, result)
 	// series[5]=1050, series[0]=1000: (1050/1000)-1 = 0.05
 	expected := decimal.NewFromFloat(0.05)

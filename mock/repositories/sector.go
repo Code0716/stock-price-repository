@@ -56,3 +56,42 @@ func (mr *MockSector33AverageDailyPriceRepositoryMockRecorder) ListRangeAll(ctx,
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRangeAll", reflect.TypeOf((*MockSector33AverageDailyPriceRepository)(nil).ListRangeAll), ctx, from, to)
 }
+
+// MockSector17AverageDailyPriceRepository is a mock of Sector17AverageDailyPriceRepository interface.
+type MockSector17AverageDailyPriceRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockSector17AverageDailyPriceRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockSector17AverageDailyPriceRepositoryMockRecorder is the mock recorder for MockSector17AverageDailyPriceRepository.
+type MockSector17AverageDailyPriceRepositoryMockRecorder struct {
+	mock *MockSector17AverageDailyPriceRepository
+}
+
+// NewMockSector17AverageDailyPriceRepository creates a new mock instance.
+func NewMockSector17AverageDailyPriceRepository(ctrl *gomock.Controller) *MockSector17AverageDailyPriceRepository {
+	mock := &MockSector17AverageDailyPriceRepository{ctrl: ctrl}
+	mock.recorder = &MockSector17AverageDailyPriceRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSector17AverageDailyPriceRepository) EXPECT() *MockSector17AverageDailyPriceRepositoryMockRecorder {
+	return m.recorder
+}
+
+// ListRangeAll mocks base method.
+func (m *MockSector17AverageDailyPriceRepository) ListRangeAll(ctx context.Context, from, to time.Time) ([]*models.Sector17AverageDailyPrice, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListRangeAll", ctx, from, to)
+	ret0, _ := ret[0].([]*models.Sector17AverageDailyPrice)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListRangeAll indicates an expected call of ListRangeAll.
+func (mr *MockSector17AverageDailyPriceRepositoryMockRecorder) ListRangeAll(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRangeAll", reflect.TypeOf((*MockSector17AverageDailyPriceRepository)(nil).ListRangeAll), ctx, from, to)
+}

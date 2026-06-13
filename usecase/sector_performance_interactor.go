@@ -14,36 +14,51 @@ import (
 )
 
 type sectorPerformanceInteractorImpl struct {
-	sectorRepo repositories.Sector33AverageDailyPriceRepository
+	sector33Repo repositories.Sector33AverageDailyPriceRepository
+	sector17Repo repositories.Sector17AverageDailyPriceRepository
 }
 
 // SectorPerformanceInteractor セクターパフォーマンス API のユースケース
 type SectorPerformanceInteractor interface {
 	// GetSectorPerformance 指定期間の業種別パフォーマンスを算出する。
-	GetSectorPerformance(ctx context.Context, from, to time.Time) (*models.SectorPerformance, error)
+	// granularity は "33"（デフォルト）または "17" を受け取る。
+	GetSectorPerformance(ctx context.Context, from, to time.Time, granularity string) (*models.SectorPerformance, error)
 }
 
 // NewSectorPerformanceInteractor コンストラクタ
 func NewSectorPerformanceInteractor(
-	sectorRepo repositories.Sector33AverageDailyPriceRepository,
+	sector33Repo repositories.Sector33AverageDailyPriceRepository,
+	sector17Repo repositories.Sector17AverageDailyPriceRepository,
 ) SectorPerformanceInteractor {
 	return &sectorPerformanceInteractorImpl{
-		sectorRepo: sectorRepo,
+		sector33Repo: sector33Repo,
+		sector17Repo: sector17Repo,
 	}
 }
 
-func (s *sectorPerformanceInteractorImpl) GetSectorPerformance(ctx context.Context, from, to time.Time) (*models.SectorPerformance, error) {
-	rows, err := s.sectorRepo.ListRangeAll(ctx, from, to)
-	if err != nil {
-		return nil, errors.Wrap(err, "sectorPerformanceInteractorImpl.GetSectorPerformance: ListRangeAll")
+func (s *sectorPerformanceInteractorImpl) GetSectorPerformance(ctx context.Context, from, to time.Time, granularity string) (*models.SectorPerformance, error) {
+	var items []*models.SectorPerformanceItem
+
+	switch granularity {
+	case "17":
+		rows, err := s.sector17Repo.ListRangeAll(ctx, from, to)
+		if err != nil {
+			return nil, errors.Wrap(err, "sectorPerformanceInteractorImpl.GetSectorPerformance: sector17 ListRangeAll")
+		}
+		items = domain_service.CalcSector17Performance(rows, models.Sector17Codes)
+	default:
+		// "33" またはデフォルト
+		rows, err := s.sector33Repo.ListRangeAll(ctx, from, to)
+		if err != nil {
+			return nil, errors.Wrap(err, "sectorPerformanceInteractorImpl.GetSectorPerformance: sector33 ListRangeAll")
+		}
+		items = domain_service.CalcSectorPerformance(rows, models.Sector33Codes)
 	}
 
-	// 業種名マップは models.Sector33Codes をそのまま利用
-	items := domain_service.CalcSectorPerformance(rows, models.Sector33Codes)
-
 	return &models.SectorPerformance{
-		From:    from.Format(util.DateLayout),
-		To:      to.Format(util.DateLayout),
-		Sectors: items,
+		Granularity: granularity,
+		From:        from.Format(util.DateLayout),
+		To:          to.Format(util.DateLayout),
+		Sectors:     items,
 	}, nil
 }

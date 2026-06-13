@@ -23,13 +23,28 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 	fixedFrom := fixedTo.AddDate(0, 0, -90)
 
 	pr := decimal.NewFromFloat(0.05)
-	okResult := &models.SectorPerformance{
-		From: "2024-01-01",
-		To:   "2024-03-31",
+	okResult33 := &models.SectorPerformance{
+		Granularity: "33",
+		From:        "2024-01-01",
+		To:          "2024-03-31",
 		Sectors: []*models.SectorPerformanceItem{
 			{
 				SectorCode:   "3700",
 				SectorName:   "輸送用機器",
+				PeriodReturn: &pr,
+				LatestClose:  &pr,
+				LatestDate:   "2024-03-31",
+			},
+		},
+	}
+	okResult17 := &models.SectorPerformance{
+		Granularity: "17",
+		From:        "2024-01-01",
+		To:          "2024-03-31",
+		Sectors: []*models.SectorPerformanceItem{
+			{
+				SectorCode:   "6",
+				SectorName:   "自動車・輸送機",
 				PeriodReturn: &pr,
 				LatestClose:  &pr,
 				LatestDate:   "2024-03-31",
@@ -50,11 +65,54 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 		wantBody       interface{}
 	}{
 		{
-			name: "正常系: to/from 指定 → usecase に渡る",
+			name: "正常系: granularity=33 / to/from 指定 → usecase に渡る",
 			fields: fields{
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockSectorPerformanceInteractor {
 					m := mock_usecase.NewMockSectorPerformanceInteractor(ctrl)
-					m.EXPECT().GetSectorPerformance(gomock.Any(), gomock.Eq(fixedFrom), gomock.Eq(fixedTo)).Return(okResult, nil)
+					m.EXPECT().GetSectorPerformance(gomock.Any(), gomock.Eq(fixedFrom), gomock.Eq(fixedTo), gomock.Eq("33")).Return(okResult33, nil)
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&fixedFrom, nil)
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/sector-performance?from=2024-01-01&to=2024-03-31&granularity=33", nil),
+			wantStatusCode: http.StatusOK,
+			wantBody:       okResult33,
+		},
+		{
+			name: "正常系: granularity=17 → usecase に 17 が渡る",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockSectorPerformanceInteractor {
+					m := mock_usecase.NewMockSectorPerformanceInteractor(ctrl)
+					m.EXPECT().GetSectorPerformance(gomock.Any(), gomock.Eq(fixedFrom), gomock.Eq(fixedTo), gomock.Eq("17")).Return(okResult17, nil)
+					return m
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&fixedFrom, nil)
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/sector-performance?from=2024-01-01&to=2024-03-31&granularity=17", nil),
+			wantStatusCode: http.StatusOK,
+			wantBody:       okResult17,
+		},
+		{
+			name: "正常系: granularity 省略時 → 33 がデフォルト",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockSectorPerformanceInteractor {
+					m := mock_usecase.NewMockSectorPerformanceInteractor(ctrl)
+					m.EXPECT().GetSectorPerformance(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Eq("33")).Return(&models.SectorPerformance{
+						Granularity: "33",
+						From:        fixedFrom.Format(util.DateLayout),
+						To:          fixedTo.Format(util.DateLayout),
+						Sectors:     []*models.SectorPerformanceItem{},
+					}, nil)
 					return m
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
@@ -66,24 +124,41 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/sector-performance?from=2024-01-01&to=2024-03-31", nil),
 			wantStatusCode: http.StatusOK,
-			wantBody:       okResult,
+		},
+		{
+			name: "異常系: granularity が不正値 → 400",
+			fields: fields{
+				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockSectorPerformanceInteractor {
+					return mock_usecase.NewMockSectorPerformanceInteractor(ctrl)
+				},
+				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
+					m := mock_driver.NewMockHTTPServer(ctrl)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
+					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&fixedFrom, nil)
+					return m
+				},
+			},
+			req:            httptest.NewRequest(http.MethodGet, "/sector-performance?granularity=99", nil),
+			wantStatusCode: http.StatusBadRequest,
+			wantBody:       "granularityは\"33\"または\"17\"を指定してください\n",
 		},
 		{
 			name: "正常系: パラメータ省略時 to=今日 / from=to-90日",
 			fields: fields{
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockSectorPerformanceInteractor {
 					m := mock_usecase.NewMockSectorPerformanceInteractor(ctrl)
-					m.EXPECT().GetSectorPerformance(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-						func(_ interface{}, from, to time.Time) (*models.SectorPerformance, error) {
+					m.EXPECT().GetSectorPerformance(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Eq("33")).DoAndReturn(
+						func(_ interface{}, from, to time.Time, granularity string) (*models.SectorPerformance, error) {
 							now := time.Now()
 							today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 							expectedFrom := today.AddDate(0, 0, -90)
 							assert.Equal(t, today.Truncate(24*time.Hour), to.Truncate(24*time.Hour))
 							assert.Equal(t, expectedFrom.Truncate(24*time.Hour), from.Truncate(24*time.Hour))
 							return &models.SectorPerformance{
-								From:    from.Format(util.DateLayout),
-								To:      to.Format(util.DateLayout),
-								Sectors: []*models.SectorPerformanceItem{},
+								Granularity: "33",
+								From:        from.Format(util.DateLayout),
+								To:          to.Format(util.DateLayout),
+								Sectors:     []*models.SectorPerformanceItem{},
 							}, nil
 						},
 					)
@@ -173,7 +248,7 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 			fields: fields{
 				usecase: func(ctrl *gomock.Controller) *mock_usecase.MockSectorPerformanceInteractor {
 					m := mock_usecase.NewMockSectorPerformanceInteractor(ctrl)
-					m.EXPECT().GetSectorPerformance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
+					m.EXPECT().GetSectorPerformance(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
 					return m
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {

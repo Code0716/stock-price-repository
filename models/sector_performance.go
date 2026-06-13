@@ -17,6 +17,17 @@ type Sector33AverageDailyPrice struct {
 	Adjclose   decimal.Decimal
 }
 
+// Sector17AverageDailyPrice sector_17_average_daily_price テーブルのドメインモデル
+type Sector17AverageDailyPrice struct {
+	Date       time.Time
+	SectorCode string
+	Open       decimal.Decimal
+	Close      decimal.Decimal
+	High       decimal.Decimal
+	Low        decimal.Decimal
+	Adjclose   decimal.Decimal
+}
+
 // SectorPerformanceItem 1業種のパフォーマンス指標
 type SectorPerformanceItem struct {
 	SectorCode   string           `json:"sectorCode"`
@@ -30,7 +41,8 @@ type SectorPerformanceItem struct {
 
 // SectorPerformance GET /sector-performance のレスポンス全体
 type SectorPerformance struct {
-	From    string                   `json:"from"`
-	To      string                   `json:"to"`
-	Sectors []*SectorPerformanceItem `json:"sectors"`
+	Granularity string                   `json:"granularity"`
+	From        string                   `json:"from"`
+	To          string                   `json:"to"`
+	Sectors     []*SectorPerformanceItem `json:"sectors"`
 }

@@ -26,8 +26,9 @@ func NewSectorPerformanceHandler(u usecase.SectorPerformanceInteractor, h driver
 }
 
 type sectorPerformanceParams struct {
-	from time.Time
-	to   time.Time
+	from        time.Time
+	to          time.Time
+	granularity string
 }
 
 func (h *SectorPerformanceHandler) validateParams(r *http.Request) (*sectorPerformanceParams, error) {
@@ -59,7 +60,15 @@ func (h *SectorPerformanceHandler) validateParams(r *http.Request) (*sectorPerfo
 		return nil, &validationError{message: "期間は最大366日以内で指定してください"}
 	}
 
-	return &sectorPerformanceParams{from: from, to: to}, nil
+	granularity := r.URL.Query().Get("granularity")
+	if granularity == "" {
+		granularity = "33"
+	}
+	if granularity != "33" && granularity != "17" {
+		return nil, &validationError{message: "granularityは\"33\"または\"17\"を指定してください"}
+	}
+
+	return &sectorPerformanceParams{from: from, to: to, granularity: granularity}, nil
 }
 
 // GetSectorPerformance GET /sector-performance
@@ -74,7 +83,7 @@ func (h *SectorPerformanceHandler) GetSectorPerformance(w http.ResponseWriter, r
 		return
 	}
 
-	result, err := h.usecase.GetSectorPerformance(r.Context(), params.from, params.to)
+	result, err := h.usecase.GetSectorPerformance(r.Context(), params.from, params.to, params.granularity)
 	if err != nil {
 		h.logger.Error("failed to get sector performance", zap.Error(err))
 		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)

@@ -82,6 +82,7 @@ var databaseSet = wire.NewSet(
 	database.NewDaytradeExecutionRepositoryImpl,
 	database.NewDaytradeTradeNoteRepositoryImpl,
 	database.NewSector33AverageDailyPriceRepositoryImpl,
+	database.NewSector17AverageDailyPriceRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {

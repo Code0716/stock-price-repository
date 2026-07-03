@@ -33,6 +33,9 @@ var usecaseSet = wire.NewSet(
 	usecase.NewTechnicalIndicatorsInteractor,
 	usecase.NewSignalPerformanceInteractor,
 	usecase.NewSectorPerformanceInteractor,
+	usecase.NewCreateQuizDailyUniverseInteractor,
+	usecase.NewGradeQuizAnswersInteractor,
+	usecase.NewQuizInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -63,6 +66,8 @@ var cliSet = wire.NewSet(
 	commands.NewSyncFinStatementsCommand,
 	commands.NewBacktestAllStocksCommand,
 	commands.NewSyncFinStatementsAllStocksCommand,
+	commands.NewGradeQuizAnswersV1Command,
+	commands.NewCreateQuizDailyUniverseV1Command,
 )
 
 var databaseSet = wire.NewSet(
@@ -83,6 +88,8 @@ var databaseSet = wire.NewSet(
 	database.NewDaytradeTradeNoteRepositoryImpl,
 	database.NewSector33AverageDailyPriceRepositoryImpl,
 	database.NewSector17AverageDailyPriceRepositoryImpl,
+	database.NewQuizDailyUniverseRepositoryImpl,
+	database.NewQuizAnswerRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
@@ -110,6 +117,7 @@ var apiSet = wire.NewSet(
 	handler.NewTechnicalIndicatorsHandler,
 	handler.NewSignalPerformanceHandler,
 	handler.NewSectorPerformanceHandler,
+	handler.NewQuizHandler,
 	router.NewRouter,
 )
 

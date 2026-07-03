@@ -36,6 +36,8 @@ func NewRunner(
 	syncFinStatementsCommand *commands.SyncFinStatementsCommand,
 	backtestAllStocksCommand *commands.BacktestAllStocksCommand,
 	syncFinStatementsAllStocksCommand *commands.SyncFinStatementsAllStocksCommand,
+	gradeQuizAnswersV1Command *commands.GradeQuizAnswersV1Command,
+	createQuizDailyUniverseV1Command *commands.CreateQuizDailyUniverseV1Command,
 	indexInteractor usecase.IndexInteractor,
 	slackAPIClient gateway.SlackAPIClient,
 ) *Runner {
@@ -54,6 +56,9 @@ func NewRunner(
 			syncFinStatementsCommand.Command(),
 			backtestAllStocksCommand.Command(),
 			syncFinStatementsAllStocksCommand.Command(),
+			// grade_quiz_answers_v1 は create_daily_stock_price_v1 の後に実行すること（翌営業日終値の確定が前提）。
+			gradeQuizAnswersV1Command.Command(),
+			createQuizDailyUniverseV1Command.Command(),
 		},
 		indexInteractor: indexInteractor,
 		slackAPIClient:  slackAPIClient,

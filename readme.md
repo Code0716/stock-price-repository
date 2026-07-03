@@ -162,6 +162,22 @@ make cli command=sync_fin_announcements
 make cli command="sync_fin_statements --symbol=7203"
 ```
 
+### クイズ出題ユニバース作成
+
+出来高がありよく動く300銘柄（直近20営業日の平均売買代金上位600→平均値幅率上位300）を選定し、その日のクイズ出題を作成します（`create_daily_stock_price_v1` の後、当日終値取得後に実行）。
+
+```bash
+make cli command=create_quiz_daily_universe_v1
+```
+
+### クイズ回答の採点
+
+翌営業日の終値が確定した未採点のクイズ回答を採点します（`create_daily_stock_price_v1` の後に実行。`create_quiz_daily_universe_v1` より先に実行し、その日の採点を早く確定させる）。
+
+```bash
+make cli command=grade_quiz_answers_v1
+```
+
 ### データエクスポート
 
 DB のデータを SQL ファイルとして mysqldump し、Box (box.com) へ自動アップロードします。
@@ -537,6 +553,70 @@ curl "http://localhost:8080/fin-statements?symbol=7203&limit=8"
     }
   ]
 }
+```
+
+#### クイズ設問一覧取得
+
+出題日の設問一覧（銘柄名・コードは含まない）と回答状況を取得します。`date` 省略時は最新の出題日。
+
+- **URL**: `/quiz/questions`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `date` (任意): 出題日 (YYYY-MM-DD)
+
+```bash
+curl "http://localhost:8080/quiz/questions"
+```
+
+#### クイズチャート取得
+
+指定設問の匿名チャート（ローソク足 + MA5/25/75 + 出来高、直近6ヶ月分）を取得します。
+
+- **URL**: `/quiz/chart`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `quiz_date` (必須): 出題日 (YYYY-MM-DD)
+  - `stock_brand_id` (必須): 銘柄ID
+
+```bash
+curl "http://localhost:8080/quiz/chart?quiz_date=2026-07-03&stock_brand_id=..."
+```
+
+#### クイズ回答送信
+
+翌営業日終値の予想を1件送信します。同一設問への重複回答は `409` を返します。
+
+- **URL**: `/quiz/answers`
+- **Method**: `POST`
+- **Body**: `{"quizDate": "2026-07-03", "stockBrandId": "...", "prediction": "strong_up"}` （`prediction`: `strong_down`/`down`/`up`/`strong_up`）
+
+```bash
+curl -X POST "http://localhost:8080/quiz/answers" \
+  -d '{"quizDate":"2026-07-03","stockBrandId":"...","prediction":"up"}'
+```
+
+#### クイズ結果取得
+
+指定日の採点結果（銘柄名を公開）を取得します。採点前は `graded: false`。
+
+- **URL**: `/quiz/results`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `date` (必須): 出題日 (YYYY-MM-DD)
+
+```bash
+curl "http://localhost:8080/quiz/results?date=2026-07-03"
+```
+
+#### クイズ統計取得
+
+累計スコア・的中率・確信度別（通常/強く）的中率・直近の日次スコア推移を取得します。
+
+- **URL**: `/quiz/stats`
+- **Method**: `GET`
+
+```bash
+curl "http://localhost:8080/quiz/stats"
 ```
 
 ## Box セットアップ

@@ -21,6 +21,8 @@ type TestRunnerOptions struct {
 	SyncFinStatementsCommand                         *commands.SyncFinStatementsCommand
 	BacktestAllStocksCommand                         *commands.BacktestAllStocksCommand
 	SyncFinStatementsAllStocksCommand                *commands.SyncFinStatementsAllStocksCommand
+	GradeQuizAnswersV1Command                        *commands.GradeQuizAnswersV1Command
+	CreateQuizDailyUniverseV1Command                 *commands.CreateQuizDailyUniverseV1Command
 	IndexInteractor                                  usecase.IndexInteractor
 	SlackAPIClient                                   gateway.SlackAPIClient
 	MySQLDumpClient                                  gateway.MySQLDumpClient
@@ -67,6 +69,7 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 	if opts.SyncFinStatementsAllStocksCommand == nil {
 		opts.SyncFinStatementsAllStocksCommand = commands.NewSyncFinStatementsAllStocksCommand(nil)
 	}
+	applyQuizCommandDefaults(&opts)
 
 	return cli.NewRunner(
 		opts.HealthCheckCommand,
@@ -82,7 +85,18 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.SyncFinStatementsCommand,
 		opts.BacktestAllStocksCommand,
 		opts.SyncFinStatementsAllStocksCommand,
+		opts.GradeQuizAnswersV1Command,
+		opts.CreateQuizDailyUniverseV1Command,
 		opts.IndexInteractor,
 		opts.SlackAPIClient,
 	)
+}
+
+func applyQuizCommandDefaults(opts *TestRunnerOptions) {
+	if opts.GradeQuizAnswersV1Command == nil {
+		opts.GradeQuizAnswersV1Command = commands.NewGradeQuizAnswersV1Command(nil)
+	}
+	if opts.CreateQuizDailyUniverseV1Command == nil {
+		opts.CreateQuizDailyUniverseV1Command = commands.NewCreateQuizDailyUniverseV1Command(nil)
+	}
 }

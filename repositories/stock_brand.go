@@ -22,6 +22,8 @@ type StockBrandRepository interface {
 	FindFromSymbolMainMarkets(ctx context.Context, symbolFrom string, limit int) ([]*models.StockBrand, error)
 	// フィルタ条件に基づいて銘柄を取得する。
 	FindWithFilter(ctx context.Context, filter *models.StockBrandFilter) ([]*models.StockBrand, error)
+	// IDのリストから銘柄を取得する（クイズ結果画面での銘柄名解決用）。
+	FindByIDs(ctx context.Context, ids []string) ([]*models.StockBrand, error)
 	// 上場廃止銘柄の取得
 	// upsertされたタイミングで利用。upsertされてなかったら上場廃止と判断する
 	FindDelistingStockBrandsFromUpdateTime(ctx context.Context, now time.Time) ([]string, error)

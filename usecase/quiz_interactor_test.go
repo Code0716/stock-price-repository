@@ -131,6 +131,47 @@ func TestQuizInteractorImpl_GetQuestions(t *testing.T) {
 	assert.Nil(t, got.Questions[1].Prediction)
 }
 
+func TestQuizInteractorImpl_GetResults_SortedByQuestionOrder(t *testing.T) {
+	quizDate := time.Date(2026, 7, 2, 0, 0, 0, 0, time.UTC)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
+	universeRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizUniverseEntry{
+		{StockBrandID: "brand-a", QuestionOrder: 1, BaseClosePrice: decimal.NewFromInt(100)},
+		{StockBrandID: "brand-b", QuestionOrder: 2, BaseClosePrice: decimal.NewFromInt(200)},
+	}, nil)
+
+	// リポジトリからは question_order と無関係な順で返ってくる想定
+	answerRepo := mock_repositories.NewMockQuizAnswerRepository(ctrl)
+	answerRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizAnswer{
+		{StockBrandID: "brand-b", TickerSymbol: "B001", Prediction: models.QuizPredictionUp},
+		{StockBrandID: "brand-a", TickerSymbol: "A001", Prediction: models.QuizPredictionDown},
+	}, nil)
+
+	stockBrandRepo := mock_repositories.NewMockStockBrandRepository(ctrl)
+	stockBrandRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return([]*models.StockBrand{
+		{ID: "brand-a", Name: "銘柄A"},
+		{ID: "brand-b", Name: "銘柄B"},
+	}, nil)
+
+	interactor := NewQuizInteractor(
+		universeRepo,
+		answerRepo,
+		mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
+		stockBrandRepo,
+	)
+
+	got, err := interactor.GetResults(context.Background(), quizDate)
+	assert.NoError(t, err)
+	assert.Len(t, got.Items, 2)
+	assert.Equal(t, 1, got.Items[0].QuestionOrder)
+	assert.Equal(t, "A001", got.Items[0].TickerSymbol)
+	assert.Equal(t, 2, got.Items[1].QuestionOrder)
+	assert.Equal(t, "B001", got.Items[1].TickerSymbol)
+}
+
 func TestQuizInteractorImpl_GetStats(t *testing.T) {
 	quizDate1 := time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)
 	quizDate2 := time.Date(2026, 7, 2, 0, 0, 0, 0, time.UTC)

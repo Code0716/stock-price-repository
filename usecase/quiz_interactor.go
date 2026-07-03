@@ -4,6 +4,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"sort"
 	"time"
 
 	pkgerrors "github.com/pkg/errors"
@@ -180,6 +181,10 @@ func (qi *quizInteractorImpl) GetResults(ctx context.Context, quizDate time.Time
 		orderByBrand[u.StockBrandID] = u.QuestionOrder
 		baseCloseByBrand[u.StockBrandID] = u.BaseClosePrice
 	}
+
+	sort.Slice(answers, func(i, j int) bool {
+		return orderByBrand[answers[i].StockBrandID] < orderByBrand[answers[j].StockBrandID]
+	})
 
 	brandIDs := make([]string, 0, len(answers))
 	for _, a := range answers {

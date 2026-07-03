@@ -182,6 +182,78 @@ func (si *StockBrandsDailyPriceRepositoryImpl) ListRangePricesBySymbols(ctx cont
 	return prices, nil
 }
 
+// ListRecentTradingDates onOrBefore以前の直近の営業日（データが存在する日）を新しい順にlimit件取得する（クイズのユニバース選定用）。
+func (si *StockBrandsDailyPriceRepositoryImpl) ListRecentTradingDates(ctx context.Context, onOrBefore time.Time, limit int) ([]time.Time, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	dateOnly := time.Date(onOrBefore.Year(), onOrBefore.Month(), onOrBefore.Day(), 0, 0, 0, 0, onOrBefore.Location())
+
+	var dates []time.Time
+	if err := tx.StockBrandsDailyPrice.WithContext(ctx).
+		Where(tx.StockBrandsDailyPrice.Date.Lte(dateOnly)).
+		Distinct(tx.StockBrandsDailyPrice.Date).
+		Order(tx.StockBrandsDailyPrice.Date.Desc()).
+		Limit(limit).
+		Pluck(tx.StockBrandsDailyPrice.Date, &dates); err != nil {
+		return nil, errors.Wrap(err, "StockBrandsDailyPriceRepositoryImpl.ListRecentTradingDates error")
+	}
+
+	return dates, nil
+}
+
+// ListPricesByDateRange 期間中の全銘柄の日足を取得する（クイズのユニバース選定用）。
+func (si *StockBrandsDailyPriceRepositoryImpl) ListPricesByDateRange(ctx context.Context, from, to time.Time) ([]*models.StockBrandDailyPrice, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	dateFrom := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, from.Location())
+	dateTo := time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, to.Location())
+
+	rows, err := tx.StockBrandsDailyPrice.WithContext(ctx).
+		Where(tx.StockBrandsDailyPrice.Date.Gte(dateFrom)).
+		Where(tx.StockBrandsDailyPrice.Date.Lte(dateTo)).
+		Order(tx.StockBrandsDailyPrice.TickerSymbol).
+		Order(tx.StockBrandsDailyPrice.Date).
+		Find()
+	if err != nil {
+		return nil, errors.Wrap(err, "StockBrandsDailyPriceRepositoryImpl.ListPricesByDateRange error")
+	}
+
+	prices := make([]*models.StockBrandDailyPrice, 0, len(rows))
+	for _, r := range rows {
+		prices = append(prices, si.convertToDomainModel(r))
+	}
+	return prices, nil
+}
+
+// FindNextTradingDate afterより後の直近の営業日を1件取得する（存在しなければnil。クイズ採点用）。
+func (si *StockBrandsDailyPriceRepositoryImpl) FindNextTradingDate(ctx context.Context, after time.Time) (*time.Time, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	dateOnly := time.Date(after.Year(), after.Month(), after.Day(), 0, 0, 0, 0, after.Location())
+
+	price, err := tx.StockBrandsDailyPrice.WithContext(ctx).
+		Where(tx.StockBrandsDailyPrice.Date.Gt(dateOnly)).
+		Order(tx.StockBrandsDailyPrice.Date).
+		First()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "StockBrandsDailyPriceRepositoryImpl.FindNextTradingDate error")
+	}
+
+	return &price.Date, nil
+}
+
 func (si *StockBrandsDailyPriceRepositoryImpl) convertToDomainModel(dailyPriceDB *genModel.StockBrandsDailyPrice) *models.StockBrandDailyPrice {
 	if dailyPriceDB == nil {
 		return nil
@@ -189,6 +261,7 @@ func (si *StockBrandsDailyPriceRepositoryImpl) convertToDomainModel(dailyPriceDB
 
 	return &models.StockBrandDailyPrice{
 		ID:           dailyPriceDB.ID,
+		StockBrandID: dailyPriceDB.StockBrandID,
 		TickerSymbol: dailyPriceDB.TickerSymbol,
 		Date:         dailyPriceDB.Date,
 		Open:         decimal.NewFromFloat(dailyPriceDB.OpenPrice),

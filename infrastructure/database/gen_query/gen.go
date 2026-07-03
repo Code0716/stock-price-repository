@@ -27,6 +27,8 @@ var (
 	FinStatement                      *finStatement
 	HighVolumeStockBrand              *highVolumeStockBrand
 	NikkeiStockAverageDailyPrice      *nikkeiStockAverageDailyPrice
+	QuizAnswer                        *quizAnswer
+	QuizDailyUniverse                 *quizDailyUniverse
 	SchemaMigration                   *schemaMigration
 	Sector17AverageDailyPrice         *sector17AverageDailyPrice
 	Sector33AverageDailyPrice         *sector33AverageDailyPrice
@@ -48,6 +50,8 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	FinStatement = &Q.FinStatement
 	HighVolumeStockBrand = &Q.HighVolumeStockBrand
 	NikkeiStockAverageDailyPrice = &Q.NikkeiStockAverageDailyPrice
+	QuizAnswer = &Q.QuizAnswer
+	QuizDailyUniverse = &Q.QuizDailyUniverse
 	SchemaMigration = &Q.SchemaMigration
 	Sector17AverageDailyPrice = &Q.Sector17AverageDailyPrice
 	Sector33AverageDailyPrice = &Q.Sector33AverageDailyPrice
@@ -70,6 +74,8 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		FinStatement:                      newFinStatement(db, opts...),
 		HighVolumeStockBrand:              newHighVolumeStockBrand(db, opts...),
 		NikkeiStockAverageDailyPrice:      newNikkeiStockAverageDailyPrice(db, opts...),
+		QuizAnswer:                        newQuizAnswer(db, opts...),
+		QuizDailyUniverse:                 newQuizDailyUniverse(db, opts...),
 		SchemaMigration:                   newSchemaMigration(db, opts...),
 		Sector17AverageDailyPrice:         newSector17AverageDailyPrice(db, opts...),
 		Sector33AverageDailyPrice:         newSector33AverageDailyPrice(db, opts...),
@@ -93,6 +99,8 @@ type Query struct {
 	FinStatement                      finStatement
 	HighVolumeStockBrand              highVolumeStockBrand
 	NikkeiStockAverageDailyPrice      nikkeiStockAverageDailyPrice
+	QuizAnswer                        quizAnswer
+	QuizDailyUniverse                 quizDailyUniverse
 	SchemaMigration                   schemaMigration
 	Sector17AverageDailyPrice         sector17AverageDailyPrice
 	Sector33AverageDailyPrice         sector33AverageDailyPrice
@@ -119,6 +127,8 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		FinStatement:                      q.FinStatement.clone(db),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.clone(db),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.clone(db),
+		QuizAnswer:                        q.QuizAnswer.clone(db),
+		QuizDailyUniverse:                 q.QuizDailyUniverse.clone(db),
 		SchemaMigration:                   q.SchemaMigration.clone(db),
 		Sector17AverageDailyPrice:         q.Sector17AverageDailyPrice.clone(db),
 		Sector33AverageDailyPrice:         q.Sector33AverageDailyPrice.clone(db),
@@ -150,6 +160,8 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		FinStatement:                      q.FinStatement.replaceDB(db),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.replaceDB(db),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.replaceDB(db),
+		QuizAnswer:                        q.QuizAnswer.replaceDB(db),
+		QuizDailyUniverse:                 q.QuizDailyUniverse.replaceDB(db),
 		SchemaMigration:                   q.SchemaMigration.replaceDB(db),
 		Sector17AverageDailyPrice:         q.Sector17AverageDailyPrice.replaceDB(db),
 		Sector33AverageDailyPrice:         q.Sector33AverageDailyPrice.replaceDB(db),
@@ -171,6 +183,8 @@ type queryCtx struct {
 	FinStatement                      IFinStatementDo
 	HighVolumeStockBrand              IHighVolumeStockBrandDo
 	NikkeiStockAverageDailyPrice      INikkeiStockAverageDailyPriceDo
+	QuizAnswer                        IQuizAnswerDo
+	QuizDailyUniverse                 IQuizDailyUniverseDo
 	SchemaMigration                   ISchemaMigrationDo
 	Sector17AverageDailyPrice         ISector17AverageDailyPriceDo
 	Sector33AverageDailyPrice         ISector33AverageDailyPriceDo
@@ -192,6 +206,8 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		FinStatement:                      q.FinStatement.WithContext(ctx),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.WithContext(ctx),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.WithContext(ctx),
+		QuizAnswer:                        q.QuizAnswer.WithContext(ctx),
+		QuizDailyUniverse:                 q.QuizDailyUniverse.WithContext(ctx),
 		SchemaMigration:                   q.SchemaMigration.WithContext(ctx),
 		Sector17AverageDailyPrice:         q.Sector17AverageDailyPrice.WithContext(ctx),
 		Sector33AverageDailyPrice:         q.Sector33AverageDailyPrice.WithContext(ctx),

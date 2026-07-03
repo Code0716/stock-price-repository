@@ -12,6 +12,7 @@ package mock_repositories
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	models "github.com/Code0716/stock-price-repository/models"
 	gomock "go.uber.org/mock/gomock"
@@ -69,6 +70,21 @@ func (mr *MockStockBrandsDailyPriceRepositoryMockRecorder) DeleteByIDs(ctx, ids 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByIDs", reflect.TypeOf((*MockStockBrandsDailyPriceRepository)(nil).DeleteByIDs), ctx, ids)
 }
 
+// FindNextTradingDate mocks base method.
+func (m *MockStockBrandsDailyPriceRepository) FindNextTradingDate(ctx context.Context, after time.Time) (*time.Time, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindNextTradingDate", ctx, after)
+	ret0, _ := ret[0].(*time.Time)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindNextTradingDate indicates an expected call of FindNextTradingDate.
+func (mr *MockStockBrandsDailyPriceRepositoryMockRecorder) FindNextTradingDate(ctx, after any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindNextTradingDate", reflect.TypeOf((*MockStockBrandsDailyPriceRepository)(nil).FindNextTradingDate), ctx, after)
+}
+
 // GetLatestPriceBySymbol mocks base method.
 func (m *MockStockBrandsDailyPriceRepository) GetLatestPriceBySymbol(ctx context.Context, symbol string) (*models.StockBrandDailyPrice, error) {
 	m.ctrl.T.Helper()
@@ -99,6 +115,21 @@ func (mr *MockStockBrandsDailyPriceRepositoryMockRecorder) ListDailyPricesBySymb
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDailyPricesBySymbol", reflect.TypeOf((*MockStockBrandsDailyPriceRepository)(nil).ListDailyPricesBySymbol), ctx, filter)
 }
 
+// ListPricesByDateRange mocks base method.
+func (m *MockStockBrandsDailyPriceRepository) ListPricesByDateRange(ctx context.Context, from, to time.Time) ([]*models.StockBrandDailyPrice, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPricesByDateRange", ctx, from, to)
+	ret0, _ := ret[0].([]*models.StockBrandDailyPrice)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPricesByDateRange indicates an expected call of ListPricesByDateRange.
+func (mr *MockStockBrandsDailyPriceRepositoryMockRecorder) ListPricesByDateRange(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPricesByDateRange", reflect.TypeOf((*MockStockBrandsDailyPriceRepository)(nil).ListPricesByDateRange), ctx, from, to)
+}
+
 // ListRangePricesBySymbols mocks base method.
 func (m *MockStockBrandsDailyPriceRepository) ListRangePricesBySymbols(ctx context.Context, filter models.ListRangePricesBySymbolsFilter) ([]*models.StockBrandDailyPrice, error) {
 	m.ctrl.T.Helper()
@@ -112,4 +143,19 @@ func (m *MockStockBrandsDailyPriceRepository) ListRangePricesBySymbols(ctx conte
 func (mr *MockStockBrandsDailyPriceRepositoryMockRecorder) ListRangePricesBySymbols(ctx, filter any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRangePricesBySymbols", reflect.TypeOf((*MockStockBrandsDailyPriceRepository)(nil).ListRangePricesBySymbols), ctx, filter)
+}
+
+// ListRecentTradingDates mocks base method.
+func (m *MockStockBrandsDailyPriceRepository) ListRecentTradingDates(ctx context.Context, onOrBefore time.Time, limit int) ([]time.Time, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListRecentTradingDates", ctx, onOrBefore, limit)
+	ret0, _ := ret[0].([]time.Time)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListRecentTradingDates indicates an expected call of ListRecentTradingDates.
+func (mr *MockStockBrandsDailyPriceRepositoryMockRecorder) ListRecentTradingDates(ctx, onOrBefore, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRecentTradingDates", reflect.TypeOf((*MockStockBrandsDailyPriceRepository)(nil).ListRecentTradingDates), ctx, onOrBefore, limit)
 }

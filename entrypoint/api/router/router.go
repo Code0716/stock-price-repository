@@ -21,6 +21,7 @@ func NewRouter(
 	technicalIndicatorsHandler *handler.TechnicalIndicatorsHandler,
 	signalPerformanceHandler *handler.SignalPerformanceHandler,
 	sectorPerformanceHandler *handler.SectorPerformanceHandler,
+	quizHandler *handler.QuizHandler,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
@@ -64,17 +65,34 @@ func NewRouter(
 	if sectorPerformanceHandler != nil {
 		mux.HandleFunc("/sector-performance", sectorPerformanceHandler.GetSectorPerformance)
 	}
-	if daytradeHandler != nil {
-		mux.HandleFunc("/daytrade/executions/import", daytradeHandler.ImportSBICsv)
-		mux.HandleFunc("/daytrade/summary", daytradeHandler.GetSummary)
-		mux.HandleFunc("/daytrade/summary-by-symbol", daytradeHandler.GetSummaryByTickerSymbol)
-		mux.HandleFunc("/daytrade/executions", daytradeHandler.GetExecutionsByDate)
-		mux.HandleFunc("/daytrade/range", daytradeHandler.GetCoveredRange)
-		mux.HandleFunc("/daytrade/stats", daytradeHandler.GetStats)
-		mux.HandleFunc("/daytrade/insights", daytradeHandler.GetInsights)
-		mux.HandleFunc("/daytrade/trades", daytradeHandler.GetTrades)
-		mux.HandleFunc("/daytrade/trades/note", daytradeHandler.UpsertTradeNote)
-		mux.HandleFunc("/daytrade/tag-stats", daytradeHandler.GetTagStats)
-	}
+	registerQuizRoutes(mux, quizHandler)
+	registerDaytradeRoutes(mux, daytradeHandler)
 	return mux
+}
+
+func registerQuizRoutes(mux *http.ServeMux, quizHandler *handler.QuizHandler) {
+	if quizHandler == nil {
+		return
+	}
+	mux.HandleFunc("/quiz/questions", quizHandler.GetQuestions)
+	mux.HandleFunc("/quiz/chart", quizHandler.GetChart)
+	mux.HandleFunc("/quiz/answers", quizHandler.SubmitAnswer)
+	mux.HandleFunc("/quiz/results", quizHandler.GetResults)
+	mux.HandleFunc("/quiz/stats", quizHandler.GetStats)
+}
+
+func registerDaytradeRoutes(mux *http.ServeMux, daytradeHandler *handler.DaytradeHandler) {
+	if daytradeHandler == nil {
+		return
+	}
+	mux.HandleFunc("/daytrade/executions/import", daytradeHandler.ImportSBICsv)
+	mux.HandleFunc("/daytrade/summary", daytradeHandler.GetSummary)
+	mux.HandleFunc("/daytrade/summary-by-symbol", daytradeHandler.GetSummaryByTickerSymbol)
+	mux.HandleFunc("/daytrade/executions", daytradeHandler.GetExecutionsByDate)
+	mux.HandleFunc("/daytrade/range", daytradeHandler.GetCoveredRange)
+	mux.HandleFunc("/daytrade/stats", daytradeHandler.GetStats)
+	mux.HandleFunc("/daytrade/insights", daytradeHandler.GetInsights)
+	mux.HandleFunc("/daytrade/trades", daytradeHandler.GetTrades)
+	mux.HandleFunc("/daytrade/trades/note", daytradeHandler.UpsertTradeNote)
+	mux.HandleFunc("/daytrade/tag-stats", daytradeHandler.GetTagStats)
 }

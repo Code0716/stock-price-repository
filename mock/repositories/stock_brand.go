@@ -87,6 +87,21 @@ func (mr *MockStockBrandRepositoryMockRecorder) FindAllMainMarkets(ctx any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllMainMarkets", reflect.TypeOf((*MockStockBrandRepository)(nil).FindAllMainMarkets), ctx)
 }
 
+// FindByIDs mocks base method.
+func (m *MockStockBrandRepository) FindByIDs(ctx context.Context, ids []string) ([]*models.StockBrand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByIDs", ctx, ids)
+	ret0, _ := ret[0].([]*models.StockBrand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByIDs indicates an expected call of FindByIDs.
+func (mr *MockStockBrandRepositoryMockRecorder) FindByIDs(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByIDs", reflect.TypeOf((*MockStockBrandRepository)(nil).FindByIDs), ctx, ids)
+}
+
 // FindDelistingStockBrandsFromUpdateTime mocks base method.
 func (m *MockStockBrandRepository) FindDelistingStockBrandsFromUpdateTime(ctx context.Context, now time.Time) ([]string, error) {
 	m.ctrl.T.Helper()

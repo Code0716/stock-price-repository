@@ -147,6 +147,34 @@ func (si *StockBrandRepositoryImpl) FindWithFilter(ctx context.Context, filter *
 	return result, nil
 }
 
+// FindByIDs IDのリストから銘柄を取得する（クイズ結果画面での銘柄名解決用）。
+func (si *StockBrandRepositoryImpl) FindByIDs(ctx context.Context, ids []string) ([]*models.StockBrand, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = si.query
+	}
+
+	if len(ids) == 0 {
+		return []*models.StockBrand{}, nil
+	}
+
+	resultRow, err := tx.StockBrand.WithContext(ctx).
+		Where(tx.StockBrand.ID.In(ids...)).
+		Find()
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.Wrap(err, "StockBrandRepositoryImpl.FindByIDs error")
+	}
+	if err != nil {
+		return nil, nil
+	}
+
+	result := make([]*models.StockBrand, 0, len(resultRow))
+	for _, v := range resultRow {
+		result = append(result, si.convertToDomainModel(v))
+	}
+	return result, nil
+}
+
 func (si *StockBrandRepositoryImpl) FindDelistingStockBrandsFromUpdateTime(ctx context.Context, now time.Time) ([]string, error) {
 	tx, ok := GetTxQuery(ctx)
 	if !ok {
@@ -236,6 +264,14 @@ func escapeLike(s string) string {
 	return string(result)
 }
 
+// derefString nilなら空文字を返す（sector_33_code等はNULL許容カラムのため）。
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 func (si *StockBrandRepositoryImpl) convertToDomainModel(stockBrand *genModel.StockBrand) *models.StockBrand {
 	return &models.StockBrand{
 		ID:               stockBrand.ID,
@@ -243,10 +279,10 @@ func (si *StockBrandRepositoryImpl) convertToDomainModel(stockBrand *genModel.St
 		Name:             stockBrand.Name,
 		MarketCode:       stockBrand.MarketCode,
 		MarketName:       stockBrand.MarketName,
-		Sector33Code:     *stockBrand.Sector33Code,
-		Sector33CodeName: *stockBrand.Sector33CodeName,
-		Sector17Code:     *stockBrand.Sector17Code,
-		Sector17CodeName: *stockBrand.Sector17CodeName,
+		Sector33Code:     derefString(stockBrand.Sector33Code),
+		Sector33CodeName: derefString(stockBrand.Sector33CodeName),
+		Sector17Code:     derefString(stockBrand.Sector17Code),
+		Sector17CodeName: derefString(stockBrand.Sector17CodeName),
 		CreatedAt:        stockBrand.CreatedAt,
 		UpdatedAt:        stockBrand.UpdatedAt,
 	}

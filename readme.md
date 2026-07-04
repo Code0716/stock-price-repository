@@ -586,13 +586,17 @@ curl "http://localhost:8080/quiz/chart?quiz_date=2026-07-03&stock_brand_id=..."
 
 翌営業日終値の予想を1件送信します。同一設問への重複回答は `409` を返します。
 
+出題中は銘柄名・コードとも非公開ですが、回答直後のレスポンスでのみその設問の銘柄コード・名称を公開します（出題中の常時表示はしません）。
+
 - **URL**: `/quiz/answers`
 - **Method**: `POST`
 - **Body**: `{"quizDate": "2026-07-03", "stockBrandId": "...", "prediction": "strong_up"}` （`prediction`: `strong_down`/`down`/`up`/`strong_up`）
+- **Response** (`201`): `{"tickerSymbol": "...", "name": "..."}`
 
 ```bash
 curl -X POST "http://localhost:8080/quiz/answers" \
   -d '{"quizDate":"2026-07-03","stockBrandId":"...","prediction":"up"}'
+# => {"tickerSymbol":"1234","name":"サンプル株式会社"}
 ```
 
 #### クイズ結果取得

@@ -103,11 +103,12 @@ func (mr *MockQuizInteractorMockRecorder) GetStats(ctx any) *gomock.Call {
 }
 
 // SubmitAnswer mocks base method.
-func (m *MockQuizInteractor) SubmitAnswer(ctx context.Context, quizDate time.Time, stockBrandID string, prediction models.QuizPrediction) error {
+func (m *MockQuizInteractor) SubmitAnswer(ctx context.Context, quizDate time.Time, stockBrandID string, prediction models.QuizPrediction) (*models.QuizAnswerReveal, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SubmitAnswer", ctx, quizDate, stockBrandID, prediction)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*models.QuizAnswerReveal)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SubmitAnswer indicates an expected call of SubmitAnswer.

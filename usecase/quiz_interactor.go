@@ -38,7 +38,8 @@ type QuizInteractor interface {
 	// GetChart 指定設問の匿名チャート（ローソク足+MA5/25/75+出来高）を返す。
 	GetChart(ctx context.Context, quizDate time.Time, stockBrandID string) (*models.QuizChart, error)
 	// SubmitAnswer 回答を1件登録する。既に回答済みの場合は repositories.ErrQuizAnswerAlreadyExists を返す。
-	SubmitAnswer(ctx context.Context, quizDate time.Time, stockBrandID string, prediction models.QuizPrediction) error
+	// 登録成功時は回答直後に公開する銘柄情報（コード・名称）を返す。
+	SubmitAnswer(ctx context.Context, quizDate time.Time, stockBrandID string, prediction models.QuizPrediction) (*models.QuizAnswerReveal, error)
 	// GetResults 指定日の採点結果を返す（銘柄名を公開）。
 	GetResults(ctx context.Context, quizDate time.Time) (*models.QuizResults, error)
 	// GetStats 累計統計（スコア・的中率・確信度別的中率・日次推移）を返す。
@@ -136,17 +137,26 @@ func (qi *quizInteractorImpl) GetChart(ctx context.Context, quizDate time.Time, 
 	return domain_service.BuildQuizChartSeries(prices, visibleFrom), nil
 }
 
-func (qi *quizInteractorImpl) SubmitAnswer(ctx context.Context, quizDate time.Time, stockBrandID string, prediction models.QuizPrediction) error {
+func (qi *quizInteractorImpl) SubmitAnswer(ctx context.Context, quizDate time.Time, stockBrandID string, prediction models.QuizPrediction) (*models.QuizAnswerReveal, error) {
 	if !prediction.Valid() {
-		return pkgerrors.New("invalid prediction")
+		return nil, pkgerrors.New("invalid prediction")
 	}
 
 	entry, err := qi.quizDailyUniverseRepository.FindByQuizDateAndStockBrandID(ctx, quizDate, stockBrandID)
 	if err != nil {
-		return pkgerrors.Wrap(err, "FindByQuizDateAndStockBrandID error")
+		return nil, pkgerrors.Wrap(err, "FindByQuizDateAndStockBrandID error")
 	}
 	if entry == nil {
-		return ErrQuizQuestionNotFound
+		return nil, ErrQuizQuestionNotFound
+	}
+
+	name := ""
+	brands, err := qi.stockBrandRepository.FindByIDs(ctx, []string{stockBrandID})
+	if err != nil {
+		return nil, pkgerrors.Wrap(err, "FindByIDs error")
+	}
+	if len(brands) > 0 {
+		name = brands[0].Name
 	}
 
 	answer := &models.QuizAnswer{
@@ -158,11 +168,15 @@ func (qi *quizInteractorImpl) SubmitAnswer(ctx context.Context, quizDate time.Ti
 	}
 	if err := qi.quizAnswerRepository.Create(ctx, answer); err != nil {
 		if errors.Is(err, repositories.ErrQuizAnswerAlreadyExists) {
-			return repositories.ErrQuizAnswerAlreadyExists
+			return nil, repositories.ErrQuizAnswerAlreadyExists
 		}
-		return pkgerrors.Wrap(err, "Create error")
+		return nil, pkgerrors.Wrap(err, "Create error")
 	}
-	return nil
+
+	return &models.QuizAnswerReveal{
+		TickerSymbol: entry.TickerSymbol,
+		Name:         name,
+	}, nil
 }
 
 func (qi *quizInteractorImpl) GetResults(ctx context.Context, quizDate time.Time) (*models.QuizResults, error) {

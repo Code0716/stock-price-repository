@@ -123,6 +123,12 @@ type QuizChart struct {
 	MA75     []*QuizChartMAPoint `json:"ma75"`
 }
 
+// QuizAnswerReveal 回答直後に公開する銘柄情報（POST /quiz/answers のレスポンス）。
+type QuizAnswerReveal struct {
+	TickerSymbol string `json:"tickerSymbol"`
+	Name         string `json:"name"`
+}
+
 // QuizResultItem 採点済み1件の結果（銘柄名を公開）。
 type QuizResultItem struct {
 	QuestionOrder  int              `json:"questionOrder"`

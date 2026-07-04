@@ -99,7 +99,8 @@ func (h *QuizHandler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.usecase.SubmitAnswer(r.Context(), quizDate, req.StockBrandID, prediction); err != nil {
+	reveal, err := h.usecase.SubmitAnswer(r.Context(), quizDate, req.StockBrandID, prediction)
+	if err != nil {
 		if errors.Is(err, usecase.ErrQuizQuestionNotFound) {
 			http.Error(w, "指定された設問が見つかりません", http.StatusNotFound)
 			return
@@ -112,7 +113,7 @@ func (h *QuizHandler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	respondJSONStatus(w, h.logger, http.StatusCreated, reveal)
 }
 
 func (h *QuizHandler) GetResults(w http.ResponseWriter, r *http.Request) {

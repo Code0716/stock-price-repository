@@ -28,7 +28,7 @@ func TestQuizInteractorImpl_SubmitAnswer(t *testing.T) {
 			mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
 			mock_repositories.NewMockStockBrandRepository(ctrl),
 		)
-		err := interactor.SubmitAnswer(context.Background(), quizDate, "brand-a", models.QuizPrediction("invalid"))
+		_, err := interactor.SubmitAnswer(context.Background(), quizDate, "brand-a", models.QuizPrediction("invalid"))
 		assert.Error(t, err)
 	})
 
@@ -45,7 +45,7 @@ func TestQuizInteractorImpl_SubmitAnswer(t *testing.T) {
 			mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
 			mock_repositories.NewMockStockBrandRepository(ctrl),
 		)
-		err := interactor.SubmitAnswer(context.Background(), quizDate, "brand-a", models.QuizPredictionUp)
+		_, err := interactor.SubmitAnswer(context.Background(), quizDate, "brand-a", models.QuizPredictionUp)
 		assert.ErrorIs(t, err, ErrQuizQuestionNotFound)
 	})
 
@@ -57,6 +57,10 @@ func TestQuizInteractorImpl_SubmitAnswer(t *testing.T) {
 		universeRepo.EXPECT().FindByQuizDateAndStockBrandID(gomock.Any(), quizDate, "brand-a").Return(
 			&models.QuizUniverseEntry{StockBrandID: "brand-a", TickerSymbol: "A001"}, nil)
 
+		stockBrandRepo := mock_repositories.NewMockStockBrandRepository(ctrl)
+		stockBrandRepo.EXPECT().FindByIDs(gomock.Any(), []string{"brand-a"}).Return(
+			[]*models.StockBrand{{ID: "brand-a", Name: "銘柄A"}}, nil)
+
 		answerRepo := mock_repositories.NewMockQuizAnswerRepository(ctrl)
 		answerRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(repositories.ErrQuizAnswerAlreadyExists)
 
@@ -64,9 +68,9 @@ func TestQuizInteractorImpl_SubmitAnswer(t *testing.T) {
 			universeRepo,
 			answerRepo,
 			mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
-			mock_repositories.NewMockStockBrandRepository(ctrl),
+			stockBrandRepo,
 		)
-		err := interactor.SubmitAnswer(context.Background(), quizDate, "brand-a", models.QuizPredictionUp)
+		_, err := interactor.SubmitAnswer(context.Background(), quizDate, "brand-a", models.QuizPredictionUp)
 		assert.True(t, errors.Is(err, repositories.ErrQuizAnswerAlreadyExists))
 	})
 
@@ -77,6 +81,10 @@ func TestQuizInteractorImpl_SubmitAnswer(t *testing.T) {
 		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
 		universeRepo.EXPECT().FindByQuizDateAndStockBrandID(gomock.Any(), quizDate, "brand-a").Return(
 			&models.QuizUniverseEntry{StockBrandID: "brand-a", TickerSymbol: "A001"}, nil)
+
+		stockBrandRepo := mock_repositories.NewMockStockBrandRepository(ctrl)
+		stockBrandRepo.EXPECT().FindByIDs(gomock.Any(), []string{"brand-a"}).Return(
+			[]*models.StockBrand{{ID: "brand-a", Name: "銘柄A"}}, nil)
 
 		answerRepo := mock_repositories.NewMockQuizAnswerRepository(ctrl)
 		answerRepo.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -90,10 +98,12 @@ func TestQuizInteractorImpl_SubmitAnswer(t *testing.T) {
 			universeRepo,
 			answerRepo,
 			mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
-			mock_repositories.NewMockStockBrandRepository(ctrl),
+			stockBrandRepo,
 		)
-		err := interactor.SubmitAnswer(context.Background(), quizDate, "brand-a", models.QuizPredictionStrongUp)
+		reveal, err := interactor.SubmitAnswer(context.Background(), quizDate, "brand-a", models.QuizPredictionStrongUp)
 		assert.NoError(t, err)
+		assert.Equal(t, "A001", reveal.TickerSymbol)
+		assert.Equal(t, "銘柄A", reveal.Name)
 	})
 }
 

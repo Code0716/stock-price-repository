@@ -26,6 +26,7 @@ func NewRouter(
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
 		mux.HandleFunc("/daily-prices", stockPriceHandler.GetDailyPrices)
+		mux.HandleFunc("/daily-prices/chart", stockPriceHandler.GetDailyPriceChart)
 	}
 	if returnAnalysisHandler != nil {
 		mux.HandleFunc("/return-analysis", returnAnalysisHandler.GetReturnAnalysis)

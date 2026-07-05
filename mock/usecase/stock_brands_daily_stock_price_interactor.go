@@ -85,6 +85,21 @@ func (mr *MockStockBrandsDailyPriceInteractorMockRecorder) CreateHistoricalDaily
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateHistoricalDailyStockPrices", reflect.TypeOf((*MockStockBrandsDailyPriceInteractor)(nil).CreateHistoricalDailyStockPrices), ctx, now)
 }
 
+// GetDailyStockPriceChart mocks base method.
+func (m *MockStockBrandsDailyPriceInteractor) GetDailyStockPriceChart(ctx context.Context, symbol string, from, to *time.Time) (*models.DailyPriceChart, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDailyStockPriceChart", ctx, symbol, from, to)
+	ret0, _ := ret[0].(*models.DailyPriceChart)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDailyStockPriceChart indicates an expected call of GetDailyStockPriceChart.
+func (mr *MockStockBrandsDailyPriceInteractorMockRecorder) GetDailyStockPriceChart(ctx, symbol, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDailyStockPriceChart", reflect.TypeOf((*MockStockBrandsDailyPriceInteractor)(nil).GetDailyStockPriceChart), ctx, symbol, from, to)
+}
+
 // GetDailyStockPrices mocks base method.
 func (m *MockStockBrandsDailyPriceInteractor) GetDailyStockPrices(ctx context.Context, symbol string, from, to *time.Time) ([]*models.StockBrandDailyPrice, error) {
 	m.ctrl.T.Helper()

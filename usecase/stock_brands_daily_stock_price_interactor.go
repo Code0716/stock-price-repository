@@ -32,6 +32,7 @@ type StockBrandsDailyPriceInteractor interface {
 	AdjustHistoricalDataForStockSplit(ctx context.Context, symbol string, splitRatio decimal.Decimal, effectiveDate time.Time, dryRun bool) error
 	GetDailyStockPrices(ctx context.Context, symbol string, from, to *time.Time) ([]*models.StockBrandDailyPrice, error)
 	GetDailyStockPricesWithOrder(ctx context.Context, symbol string, from, to *time.Time, order *models.SortOrder) ([]*models.StockBrandDailyPrice, error)
+	GetDailyStockPriceChart(ctx context.Context, symbol string, from, to *time.Time) (*models.DailyPriceChart, error)
 }
 
 func NewStockBrandsDailyPriceInteractor(

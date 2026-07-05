@@ -19,6 +19,13 @@ type getDailyPricesParams struct {
 	sortOrder *models.SortOrder
 }
 
+// getDailyPriceChartParams GetDailyPriceChartのリクエストパラメータ
+type getDailyPriceChartParams struct {
+	symbol string
+	from   *time.Time
+	to     *time.Time
+}
+
 type StockPriceHandler struct {
 	usecase    usecase.StockBrandsDailyPriceInteractor
 	httpServer driver.HTTPServer
@@ -99,4 +106,63 @@ func (h *StockPriceHandler) GetDailyPrices(w http.ResponseWriter, r *http.Reques
 	}
 
 	respondJSON(w, h.logger, prices)
+}
+
+// validateGetDailyPriceChartParams GetDailyPriceChartのリクエストパラメータをバリデーションする
+func (h *StockPriceHandler) validateGetDailyPriceChartParams(r *http.Request) (*getDailyPriceChartParams, error) {
+	params := &getDailyPriceChartParams{}
+
+	// symbol パラメータの取得とバリデーション
+	params.symbol = h.httpServer.GetQueryParam(r, "symbol")
+	if params.symbol == "" {
+		return nil, &validationError{message: "シンボルは必須です"}
+	}
+
+	if len(params.symbol) > 10 {
+		return nil, &validationError{message: "シンボルが長すぎます"}
+	}
+
+	if !alphanumericRequiredRegex.MatchString(params.symbol) {
+		return nil, &validationError{message: "シンボルは英数字である必要があります"}
+	}
+
+	// from パラメータの取得とバリデーション
+	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	if err != nil {
+		return nil, &validationError{message: "fromの日付形式が不正です"}
+	}
+	params.from = from
+
+	// to パラメータの取得とバリデーション
+	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
+	if err != nil {
+		return nil, &validationError{message: "toの日付形式が不正です"}
+	}
+	params.to = to
+
+	return params, nil
+}
+
+// GetDailyPriceChart 日足ローソク足+MA5/25/75のチャートデータを取得する
+func (h *StockPriceHandler) GetDailyPriceChart(w http.ResponseWriter, r *http.Request) {
+	// パラメータのバリデーション
+	params, err := h.validateGetDailyPriceChartParams(r)
+	if err != nil {
+		if verr, ok := err.(*validationError); ok {
+			http.Error(w, verr.message, http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		return
+	}
+
+	// ユースケース呼び出し
+	chart, err := h.usecase.GetDailyStockPriceChart(r.Context(), params.symbol, params.from, params.to)
+	if err != nil {
+		h.logger.Error("failed to get daily stock price chart", zap.Error(err))
+		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, h.logger, chart)
 }

@@ -98,29 +98,13 @@ type QuizQuestionSet struct {
 	Questions     []*QuizQuestion `json:"questions"`
 }
 
-// QuizChartCandle チャート用の1本の日足。
-type QuizChartCandle struct {
-	Date   string          `json:"date"`
-	Open   decimal.Decimal `json:"open"`
-	High   decimal.Decimal `json:"high"`
-	Low    decimal.Decimal `json:"low"`
-	Close  decimal.Decimal `json:"close"`
-	Volume int64           `json:"volume"`
-}
-
-// QuizChartMAPoint 移動平均線の1点。
-type QuizChartMAPoint struct {
-	Date  string          `json:"date"`
-	Value decimal.Decimal `json:"value"`
-}
-
 // QuizChart GET /quiz/chart のレスポンス（銘柄名・コードは含まない）。
 type QuizChart struct {
-	QuizDate string              `json:"quizDate"`
-	Candles  []*QuizChartCandle  `json:"candles"`
-	MA5      []*QuizChartMAPoint `json:"ma5"`
-	MA25     []*QuizChartMAPoint `json:"ma25"`
-	MA75     []*QuizChartMAPoint `json:"ma75"`
+	QuizDate string          `json:"quizDate"`
+	Candles  []*ChartCandle  `json:"candles"`
+	MA5      []*ChartMAPoint `json:"ma5"`
+	MA25     []*ChartMAPoint `json:"ma25"`
+	MA75     []*ChartMAPoint `json:"ma75"`
 }
 
 // QuizAnswerReveal 回答直後に公開する銘柄情報（POST /quiz/answers のレスポンス）。

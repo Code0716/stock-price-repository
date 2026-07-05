@@ -326,6 +326,22 @@ curl "http://localhost:8080/stock-brands?symbol_from=9900&limit=100"
 curl "http://localhost:8080/daily-prices?symbol=1301&from=2023-01-01&to=2023-01-31"
 ```
 
+#### 日足チャート取得
+
+指定した銘柄の日足ローソク足と移動平均線（MA5/25/75）を取得します。`from` を指定した場合、MA75計算のウォームアップとして内部的に5ヶ月前から日足を取得し、`from`より前の点はレスポンスから除外されます。`from`未指定時は全期間を返します。
+
+- **URL**: `/daily-prices/chart`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `symbol` (必須): 銘柄コード (例: `1301`)
+  - `from` (任意): 表示開始日 (YYYY-MM-DD)
+  - `to` (任意): 終了日 (YYYY-MM-DD)
+- **Response**: `{ "candles": [...], "ma5": [...], "ma25": [...], "ma75": [...] }`
+
+```bash
+curl "http://localhost:8080/daily-prices/chart?symbol=1301&from=2023-01-01&to=2023-01-31"
+```
+
 #### 決算発表予定一覧取得
 
 近日の決算発表予定を取得します。

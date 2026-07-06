@@ -40,8 +40,9 @@ type QuizInteractor interface {
 	// SubmitAnswer 回答を1件登録する。既に回答済みの場合は repositories.ErrQuizAnswerAlreadyExists を返す。
 	// 登録成功時は回答直後に公開する銘柄情報（コード・名称）を返す。
 	SubmitAnswer(ctx context.Context, quizDate time.Time, stockBrandID string, prediction models.QuizPrediction) (*models.QuizAnswerReveal, error)
-	// GetResults 指定日の採点結果を返す（銘柄名を公開）。
-	GetResults(ctx context.Context, quizDate time.Time) (*models.QuizResults, error)
+	// GetResults 指定した回答日（answered_at の日付、JST）の採点結果を返す（銘柄名を公開）。
+	// 1回答日には複数の quiz_date（出題基準日）の設問が混在しうる。
+	GetResults(ctx context.Context, answeredDate time.Time) (*models.QuizResults, error)
 	// GetStats 累計統計（スコア・的中率・確信度別的中率・日次推移）を返す。
 	GetStats(ctx context.Context) (*models.QuizStats, error)
 }
@@ -179,25 +180,42 @@ func (qi *quizInteractorImpl) SubmitAnswer(ctx context.Context, quizDate time.Ti
 	}, nil
 }
 
-func (qi *quizInteractorImpl) GetResults(ctx context.Context, quizDate time.Time) (*models.QuizResults, error) {
-	universe, err := qi.quizDailyUniverseRepository.ListByQuizDate(ctx, quizDate)
+func (qi *quizInteractorImpl) GetResults(ctx context.Context, answeredDate time.Time) (*models.QuizResults, error) {
+	answers, err := qi.quizAnswerRepository.ListByAnsweredDate(ctx, answeredDate)
 	if err != nil {
-		return nil, pkgerrors.Wrap(err, "ListByQuizDate error")
-	}
-	answers, err := qi.quizAnswerRepository.ListByQuizDate(ctx, quizDate)
-	if err != nil {
-		return nil, pkgerrors.Wrap(err, "ListByQuizDate(answers) error")
+		return nil, pkgerrors.Wrap(err, "ListByAnsweredDate error")
 	}
 
-	orderByBrand := make(map[string]int, len(universe))
-	baseCloseByBrand := make(map[string]decimal.Decimal, len(universe))
-	for _, u := range universe {
-		orderByBrand[u.StockBrandID] = u.QuestionOrder
-		baseCloseByBrand[u.StockBrandID] = u.BaseClosePrice
+	// 回答日には複数の quiz_date（出題基準日）が混在しうるため、distinct な quiz_date ごとに
+	// universe（question_order/base_close_price）を引いてマージする。
+	quizDateSeen := make(map[string]struct{}, len(answers))
+	orderByKey := make(map[string]int)
+	baseCloseByKey := make(map[string]decimal.Decimal)
+	for _, a := range answers {
+		quizDateKey := a.QuizDate.Format(util.DateLayout)
+		if _, ok := quizDateSeen[quizDateKey]; ok {
+			continue
+		}
+		quizDateSeen[quizDateKey] = struct{}{}
+
+		universe, err := qi.quizDailyUniverseRepository.ListByQuizDate(ctx, a.QuizDate)
+		if err != nil {
+			return nil, pkgerrors.Wrap(err, "ListByQuizDate error")
+		}
+		for _, u := range universe {
+			key := quizResultKey(u.QuizDate, u.StockBrandID)
+			orderByKey[key] = u.QuestionOrder
+			baseCloseByKey[key] = u.BaseClosePrice
+		}
 	}
 
 	sort.Slice(answers, func(i, j int) bool {
-		return orderByBrand[answers[i].StockBrandID] < orderByBrand[answers[j].StockBrandID]
+		oi := orderByKey[quizResultKey(answers[i].QuizDate, answers[i].StockBrandID)]
+		oj := orderByKey[quizResultKey(answers[j].QuizDate, answers[j].StockBrandID)]
+		if oi != oj {
+			return oi < oj
+		}
+		return answers[i].QuizDate.Before(answers[j].QuizDate)
 	})
 
 	brandIDs := make([]string, 0, len(answers))
@@ -221,16 +239,23 @@ func (qi *quizInteractorImpl) GetResults(ctx context.Context, quizDate time.Time
 		if !a.Graded() {
 			graded = false
 		}
-		items = append(items, buildQuizResultItem(a, orderByBrand[a.StockBrandID], nameByBrand[a.StockBrandID], baseCloseByBrand[a.StockBrandID]))
+		key := quizResultKey(a.QuizDate, a.StockBrandID)
+		items = append(items, buildQuizResultItem(a, orderByKey[key], nameByBrand[a.StockBrandID], baseCloseByKey[key]))
 		tallyQuizResultSummary(&summary, a)
 	}
 
 	return &models.QuizResults{
-		QuizDate: quizDate.Format(util.DateLayout),
+		QuizDate: answeredDate.Format(util.DateLayout),
 		Graded:   graded,
 		Summary:  summary,
 		Items:    items,
 	}, nil
+}
+
+// quizResultKey quiz_date と stock_brand_id の複合キー。同一銘柄が複数の quiz_date の
+// universe に登場しうるため、question_order/base_close_price の引き当てをこのキーで行う。
+func quizResultKey(quizDate time.Time, stockBrandID string) string {
+	return quizDate.Format(util.DateLayout) + "|" + stockBrandID
 }
 
 func buildQuizResultItem(a *models.QuizAnswer, questionOrder int, name string, baseClosePrice decimal.Decimal) *models.QuizResultItem {
@@ -268,9 +293,9 @@ func tallyQuizResultSummary(summary *models.QuizResultsSummary, a *models.QuizAn
 }
 
 func (qi *quizInteractorImpl) GetStats(ctx context.Context) (*models.QuizStats, error) {
-	graded, err := qi.quizAnswerRepository.ListAllGraded(ctx)
+	all, err := qi.quizAnswerRepository.ListAll(ctx)
 	if err != nil {
-		return nil, pkgerrors.Wrap(err, "ListAllGraded error")
+		return nil, pkgerrors.Wrap(err, "ListAll error")
 	}
 
 	stats := &models.QuizStats{}
@@ -279,18 +304,14 @@ func (qi *quizInteractorImpl) GetStats(ctx context.Context) (*models.QuizStats, 
 	strongAcc := &confidenceAccumulator{}
 
 	type dailyAccumulator struct {
-		answered, correct, score int
+		answered, correct, score, pending int
 	}
 	dailyByDate := make(map[string]*dailyAccumulator)
 	var dailyOrder []string
 
-	for _, a := range graded {
-		if a.Score != nil {
-			stats.TotalScore += *a.Score
-		}
-		stats.TotalAnswered++
-
-		dateStr := a.QuizDate.Format(util.DateLayout)
+	for _, a := range all {
+		// 日次集計キーは回答日（DATE(answered_at)、JST）。quiz_date（出題基準日）ではない。
+		dateStr := a.AnsweredAt.Format(util.DateLayout)
 		acc, ok := dailyByDate[dateStr]
 		if !ok {
 			acc = &dailyAccumulator{}
@@ -298,13 +319,17 @@ func (qi *quizInteractorImpl) GetStats(ctx context.Context) (*models.QuizStats, 
 			dailyOrder = append(dailyOrder, dateStr)
 		}
 		acc.answered++
+		stats.TotalAnswered++
 		if a.Score != nil {
+			stats.TotalScore += *a.Score
 			acc.score += *a.Score
 		}
 
-		if a.Outcome == nil {
+		if !a.Graded() {
+			acc.pending++
 			continue
 		}
+
 		switch *a.Outcome {
 		case models.QuizOutcomeCorrect:
 			stats.TotalCorrect++
@@ -339,6 +364,7 @@ func (qi *quizInteractorImpl) GetStats(ctx context.Context) (*models.QuizStats, 
 			Answered: acc.answered,
 			Correct:  acc.correct,
 			Score:    acc.score,
+			Pending:  acc.pending,
 		})
 	}
 

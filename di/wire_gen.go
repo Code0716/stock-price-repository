@@ -74,7 +74,7 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	quizDailyUniverseRepository := database.NewQuizDailyUniverseRepositoryImpl(gormDB)
 	gradeQuizAnswersInteractor := usecase.NewGradeQuizAnswersInteractor(transaction, quizAnswerRepository, quizDailyUniverseRepository, stockBrandsDailyPriceRepository, appliedStockSplitsHistoryRepository, appliedStockConsolidationsHistoryRepository)
 	gradeQuizAnswersV1Command := commands.NewGradeQuizAnswersV1Command(gradeQuizAnswersInteractor)
-	createQuizDailyUniverseInteractor := usecase.NewCreateQuizDailyUniverseInteractor(stockBrandsDailyPriceRepository, quizDailyUniverseRepository)
+	createQuizDailyUniverseInteractor := usecase.NewCreateQuizDailyUniverseInteractor(stockBrandsDailyPriceRepository, quizDailyUniverseRepository, stockBrandRepository)
 	createQuizDailyUniverseV1Command := commands.NewCreateQuizDailyUniverseV1Command(createQuizDailyUniverseInteractor)
 	runner := cli.NewRunner(healthCheckCommand, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, adjustHistoricalDataForStockConsolidationCommand, exportYearlyDataCommand, exportMasterDataCommand, syncFinAnnouncementsCommand, syncFinStatementsCommand, backtestAllStocksCommand, syncFinStatementsAllStocksCommand, gradeQuizAnswersV1Command, createQuizDailyUniverseV1Command, indexInteractor, slackAPIClient)
 	return runner, func() {

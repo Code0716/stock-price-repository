@@ -11,8 +11,8 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
-	github.com/redis/go-redis/extra/redisotel/v9 v9.20.1
-	github.com/redis/go-redis/v9 v9.20.1
+	github.com/redis/go-redis/extra/redisotel/v9 v9.21.0
+	github.com/redis/go-redis/v9 v9.21.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
@@ -20,11 +20,11 @@ require (
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.21.0
 	golang.org/x/text v0.38.0
-	google.golang.org/grpc v1.81.1
+	google.golang.org/grpc v1.82.0
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gen v0.3.28
-	gorm.io/gorm v1.31.1
+	gorm.io/gorm v1.31.2
 	gorm.io/plugin/dbresolver v1.6.2
 )
 
@@ -38,7 +38,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/redis/go-redis/extra/rediscmd/v9 v9.20.1 // indirect
+	github.com/redis/go-redis/extra/rediscmd/v9 v9.21.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect

@@ -137,6 +137,7 @@ type QuizResultsSummary struct {
 }
 
 // QuizResults GET /quiz/results のレスポンス。
+// QuizDate は互換のため JSON タグを維持しているが、中身は「回答日」（DATE(answered_at)、JST）。1回答日に複数の quiz_date（出題基準日）の設問が混在しうる。
 type QuizResults struct {
 	QuizDate string             `json:"quizDate"`
 	Graded   bool               `json:"graded"`
@@ -152,11 +153,14 @@ type QuizConfidenceStats struct {
 }
 
 // QuizDailyScore 日別スコア推移の1点。
+// QuizDate は互換のため JSON タグを維持しているが、中身は「回答日」（DATE(answered_at)、JST）であり quiz_date（採点基準日）ではない。
 type QuizDailyScore struct {
 	QuizDate string `json:"quizDate"`
 	Answered int    `json:"answered"`
 	Correct  int    `json:"correct"`
 	Score    int    `json:"score"`
+	// Pending 当該回答日のうち未採点（Outcome未確定）の件数。Answered/Score/Correctの分母には含まない。
+	Pending int `json:"pending"`
 }
 
 // QuizStats GET /quiz/stats のレスポンス。

@@ -56,6 +56,21 @@ func (mr *MockQuizAnswerRepositoryMockRecorder) Create(ctx, answer any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockQuizAnswerRepository)(nil).Create), ctx, answer)
 }
 
+// ListAll mocks base method.
+func (m *MockQuizAnswerRepository) ListAll(ctx context.Context) ([]*models.QuizAnswer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAll", ctx)
+	ret0, _ := ret[0].([]*models.QuizAnswer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAll indicates an expected call of ListAll.
+func (mr *MockQuizAnswerRepositoryMockRecorder) ListAll(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*MockQuizAnswerRepository)(nil).ListAll), ctx)
+}
+
 // ListAllGraded mocks base method.
 func (m *MockQuizAnswerRepository) ListAllGraded(ctx context.Context) ([]*models.QuizAnswer, error) {
 	m.ctrl.T.Helper()
@@ -69,6 +84,21 @@ func (m *MockQuizAnswerRepository) ListAllGraded(ctx context.Context) ([]*models
 func (mr *MockQuizAnswerRepositoryMockRecorder) ListAllGraded(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllGraded", reflect.TypeOf((*MockQuizAnswerRepository)(nil).ListAllGraded), ctx)
+}
+
+// ListByAnsweredDate mocks base method.
+func (m *MockQuizAnswerRepository) ListByAnsweredDate(ctx context.Context, date time.Time) ([]*models.QuizAnswer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByAnsweredDate", ctx, date)
+	ret0, _ := ret[0].([]*models.QuizAnswer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByAnsweredDate indicates an expected call of ListByAnsweredDate.
+func (mr *MockQuizAnswerRepositoryMockRecorder) ListByAnsweredDate(ctx, date any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByAnsweredDate", reflect.TypeOf((*MockQuizAnswerRepository)(nil).ListByAnsweredDate), ctx, date)
 }
 
 // ListByQuizDate mocks base method.

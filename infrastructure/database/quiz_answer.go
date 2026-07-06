@@ -65,6 +65,30 @@ func (qi *QuizAnswerRepositoryImpl) ListByQuizDate(ctx context.Context, quizDate
 	return answers, nil
 }
 
+func (qi *QuizAnswerRepositoryImpl) ListByAnsweredDate(ctx context.Context, date time.Time) ([]*models.QuizAnswer, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = qi.query
+	}
+
+	from := dateOnlyOf(date)
+	to := from.AddDate(0, 0, 1)
+
+	rows, err := tx.QuizAnswer.WithContext(ctx).
+		Where(tx.QuizAnswer.AnsweredAt.Gte(from)).
+		Where(tx.QuizAnswer.AnsweredAt.Lt(to)).
+		Find()
+	if err != nil {
+		return nil, pkgerrors.Wrap(err, "QuizAnswerRepositoryImpl.ListByAnsweredDate error")
+	}
+
+	answers := make([]*models.QuizAnswer, 0, len(rows))
+	for _, r := range rows {
+		answers = append(answers, qi.convertToDomainModel(r))
+	}
+	return answers, nil
+}
+
 func (qi *QuizAnswerRepositoryImpl) ListUngraded(ctx context.Context) ([]*models.QuizAnswer, error) {
 	tx, ok := GetTxQuery(ctx)
 	if !ok {
@@ -113,6 +137,26 @@ func (qi *QuizAnswerRepositoryImpl) ListAllGraded(ctx context.Context) ([]*model
 		Find()
 	if err != nil {
 		return nil, pkgerrors.Wrap(err, "QuizAnswerRepositoryImpl.ListAllGraded error")
+	}
+
+	answers := make([]*models.QuizAnswer, 0, len(rows))
+	for _, r := range rows {
+		answers = append(answers, qi.convertToDomainModel(r))
+	}
+	return answers, nil
+}
+
+func (qi *QuizAnswerRepositoryImpl) ListAll(ctx context.Context) ([]*models.QuizAnswer, error) {
+	tx, ok := GetTxQuery(ctx)
+	if !ok {
+		tx = qi.query
+	}
+
+	rows, err := tx.QuizAnswer.WithContext(ctx).
+		Order(tx.QuizAnswer.AnsweredAt).
+		Find()
+	if err != nil {
+		return nil, pkgerrors.Wrap(err, "QuizAnswerRepositoryImpl.ListAll error")
 	}
 
 	answers := make([]*models.QuizAnswer, 0, len(rows))

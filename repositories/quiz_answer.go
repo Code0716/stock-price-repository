@@ -18,8 +18,6 @@ type QuizAnswerRepository interface {
 	Create(ctx context.Context, answer *models.QuizAnswer) error
 	// ListByQuizDate 指定日の回答一覧を取得する。
 	ListByQuizDate(ctx context.Context, quizDate time.Time) ([]*models.QuizAnswer, error)
-	// ListByAnsweredDate 指定した回答日（answered_at の日付、JST）の回答一覧を取得する。
-	ListByAnsweredDate(ctx context.Context, date time.Time) ([]*models.QuizAnswer, error)
 	// ListUngraded 未採点（outcome IS NULL）の回答を全て取得する。
 	ListUngraded(ctx context.Context) ([]*models.QuizAnswer, error)
 	// UpdateGrading 採点結果（NextClosePrice/ActualReturn/Outcome/Score/GradedAt）を一括反映する。

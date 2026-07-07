@@ -73,18 +73,18 @@ func (mr *MockQuizInteractorMockRecorder) GetQuestions(ctx, date any) *gomock.Ca
 }
 
 // GetResults mocks base method.
-func (m *MockQuizInteractor) GetResults(ctx context.Context, answeredDate time.Time) (*models.QuizResults, error) {
+func (m *MockQuizInteractor) GetResults(ctx context.Context, quizDate time.Time) (*models.QuizResults, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetResults", ctx, answeredDate)
+	ret := m.ctrl.Call(m, "GetResults", ctx, quizDate)
 	ret0, _ := ret[0].(*models.QuizResults)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetResults indicates an expected call of GetResults.
-func (mr *MockQuizInteractorMockRecorder) GetResults(ctx, answeredDate any) *gomock.Call {
+func (mr *MockQuizInteractorMockRecorder) GetResults(ctx, quizDate any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResults", reflect.TypeOf((*MockQuizInteractor)(nil).GetResults), ctx, answeredDate)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResults", reflect.TypeOf((*MockQuizInteractor)(nil).GetResults), ctx, quizDate)
 }
 
 // GetStats mocks base method.

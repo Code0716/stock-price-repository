@@ -116,6 +116,7 @@ type QuizAnswerReveal struct {
 // QuizResultItem 採点済み1件の結果（銘柄名を公開）。
 type QuizResultItem struct {
 	QuestionOrder  int              `json:"questionOrder"`
+	StockBrandID   string           `json:"stockBrandId"`
 	TickerSymbol   string           `json:"tickerSymbol"`
 	Name           string           `json:"name"`
 	Prediction     QuizPrediction   `json:"prediction"`

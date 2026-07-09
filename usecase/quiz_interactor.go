@@ -22,6 +22,9 @@ const quizChartWarmupMonths = 9
 // quizChartVisibleMonths チャートとして実際に表示する期間（月数）。
 const quizChartVisibleMonths = 6
 
+// quizChartRevealDays 答え合わせ用に出題基準日の翌営業日＋数日分を含める日数。
+const quizChartRevealDays = 7
+
 // ErrQuizQuestionNotFound 指定された quiz_date・銘柄の設問が存在しない。
 var ErrQuizQuestionNotFound = errors.New("quiz question not found")
 
@@ -36,7 +39,8 @@ type QuizInteractor interface {
 	// GetQuestions 出題日の設問一覧と回答状況を返す（銘柄名は含まない）。dateがnilの場合は最新の出題日を使う。
 	GetQuestions(ctx context.Context, date *time.Time) (*models.QuizQuestionSet, error)
 	// GetChart 指定設問の匿名チャート（ローソク足+MA5/25/75+出来高）を返す。
-	GetChart(ctx context.Context, quizDate time.Time, stockBrandID string) (*models.QuizChart, error)
+	// reveal=true の場合は答え合わせ用に出題基準日より後のローソク足も含める。
+	GetChart(ctx context.Context, quizDate time.Time, stockBrandID string, reveal bool) (*models.QuizChart, error)
 	// SubmitAnswer 回答を1件登録する。既に回答済みの場合は repositories.ErrQuizAnswerAlreadyExists を返す。
 	// 登録成功時は回答直後に公開する銘柄情報（コード・名称）を返す。
 	SubmitAnswer(ctx context.Context, quizDate time.Time, stockBrandID string, prediction models.QuizPrediction) (*models.QuizAnswerReveal, error)
@@ -112,7 +116,7 @@ func (qi *quizInteractorImpl) GetQuestions(ctx context.Context, date *time.Time)
 	}, nil
 }
 
-func (qi *quizInteractorImpl) GetChart(ctx context.Context, quizDate time.Time, stockBrandID string) (*models.QuizChart, error) {
+func (qi *quizInteractorImpl) GetChart(ctx context.Context, quizDate time.Time, stockBrandID string, reveal bool) (*models.QuizChart, error) {
 	entry, err := qi.quizDailyUniverseRepository.FindByQuizDateAndStockBrandID(ctx, quizDate, stockBrandID)
 	if err != nil {
 		return nil, pkgerrors.Wrap(err, "FindByQuizDateAndStockBrandID error")
@@ -122,11 +126,16 @@ func (qi *quizInteractorImpl) GetChart(ctx context.Context, quizDate time.Time, 
 	}
 
 	from := quizDate.AddDate(0, -quizChartWarmupMonths, 0)
+	dateTo := quizDate
+	if reveal {
+		// 答え合わせ用に出題基準日の翌営業日＋数日分のローソク足を含める。
+		dateTo = quizDate.AddDate(0, 0, quizChartRevealDays)
+	}
 	order := models.SortOrderAsc
 	prices, err := qi.stockBrandsDailyStockPriceRepository.ListDailyPricesBySymbol(ctx, models.ListDailyPricesBySymbolFilter{
 		TickerSymbol: entry.TickerSymbol,
 		DateFrom:     &from,
-		DateTo:       &quizDate,
+		DateTo:       &dateTo,
 		DateOrder:    &order,
 	})
 	if err != nil {
@@ -134,7 +143,11 @@ func (qi *quizInteractorImpl) GetChart(ctx context.Context, quizDate time.Time, 
 	}
 
 	visibleFrom := quizDate.AddDate(0, -quizChartVisibleMonths, 0)
-	return domain_service.BuildQuizChartSeries(prices, visibleFrom), nil
+	chart := domain_service.BuildQuizChartSeries(prices, visibleFrom)
+	// BuildQuizChartSeries は最終足の日付を QuizDate に入れるため、front がマーカー位置に
+	// 使う出題基準日を維持するようここで明示的に上書きする。
+	chart.QuizDate = quizDate.Format(util.DateLayout)
+	return chart, nil
 }
 
 func (qi *quizInteractorImpl) SubmitAnswer(ctx context.Context, quizDate time.Time, stockBrandID string, prediction models.QuizPrediction) (*models.QuizAnswerReveal, error) {
@@ -236,6 +249,7 @@ func (qi *quizInteractorImpl) GetResults(ctx context.Context, quizDate time.Time
 func buildQuizResultItem(a *models.QuizAnswer, questionOrder int, name string, baseClosePrice decimal.Decimal) *models.QuizResultItem {
 	return &models.QuizResultItem{
 		QuestionOrder:  questionOrder,
+		StockBrandID:   a.StockBrandID,
 		TickerSymbol:   a.TickerSymbol,
 		Name:           name,
 		Prediction:     a.Prediction,

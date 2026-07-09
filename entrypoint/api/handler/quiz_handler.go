@@ -56,8 +56,9 @@ func (h *QuizHandler) GetChart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "stock_brand_idは必須です", http.StatusBadRequest)
 		return
 	}
+	reveal := h.httpServer.GetQueryParam(r, "reveal") == "true"
 
-	chart, err := h.usecase.GetChart(r.Context(), *quizDate, stockBrandID)
+	chart, err := h.usecase.GetChart(r.Context(), *quizDate, stockBrandID, reveal)
 	if err != nil {
 		if errors.Is(err, usecase.ErrQuizQuestionNotFound) {
 			http.Error(w, "指定された設問が見つかりません", http.StatusNotFound)

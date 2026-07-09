@@ -178,9 +178,101 @@ func TestQuizInteractorImpl_GetResults_SortedByQuestionOrder(t *testing.T) {
 	assert.Equal(t, "2026-07-02", got.QuizDate)
 	assert.Len(t, got.Items, 2)
 	assert.Equal(t, 1, got.Items[0].QuestionOrder)
+	assert.Equal(t, "brand-a", got.Items[0].StockBrandID)
 	assert.Equal(t, "A001", got.Items[0].TickerSymbol)
 	assert.Equal(t, 2, got.Items[1].QuestionOrder)
+	assert.Equal(t, "brand-b", got.Items[1].StockBrandID)
 	assert.Equal(t, "B001", got.Items[1].TickerSymbol)
+}
+
+func TestQuizInteractorImpl_GetChart(t *testing.T) {
+	quizDate := time.Date(2026, 7, 2, 0, 0, 0, 0, time.UTC)
+	from := quizDate.AddDate(0, -quizChartWarmupMonths, 0)
+	order := models.SortOrderAsc
+
+	t.Run("reveal=falseの場合はDateToが出題基準日のまま", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
+		universeRepo.EXPECT().FindByQuizDateAndStockBrandID(gomock.Any(), quizDate, "brand-a").Return(
+			&models.QuizUniverseEntry{StockBrandID: "brand-a", TickerSymbol: "A001"}, nil)
+
+		priceRepo := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+		priceRepo.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Eq(models.ListDailyPricesBySymbolFilter{
+			TickerSymbol: "A001",
+			DateFrom:     &from,
+			DateTo:       &quizDate,
+			DateOrder:    &order,
+		})).Return([]*models.StockBrandDailyPrice{
+			{Date: quizDate, Close: decimal.NewFromInt(100)},
+		}, nil)
+
+		interactor := NewQuizInteractor(
+			universeRepo,
+			mock_repositories.NewMockQuizAnswerRepository(ctrl),
+			priceRepo,
+			mock_repositories.NewMockStockBrandRepository(ctrl),
+		)
+
+		got, err := interactor.GetChart(context.Background(), quizDate, "brand-a", false)
+		assert.NoError(t, err)
+		assert.Equal(t, "2026-07-02", got.QuizDate)
+	})
+
+	t.Run("reveal=trueの場合はDateToが出題基準日+7日に延長され、QuizDateは出題基準日のまま", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		revealDateTo := quizDate.AddDate(0, 0, quizChartRevealDays)
+
+		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
+		universeRepo.EXPECT().FindByQuizDateAndStockBrandID(gomock.Any(), quizDate, "brand-a").Return(
+			&models.QuizUniverseEntry{StockBrandID: "brand-a", TickerSymbol: "A001"}, nil)
+
+		priceRepo := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+		priceRepo.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Eq(models.ListDailyPricesBySymbolFilter{
+			TickerSymbol: "A001",
+			DateFrom:     &from,
+			DateTo:       &revealDateTo,
+			DateOrder:    &order,
+		})).Return([]*models.StockBrandDailyPrice{
+			{Date: quizDate, Close: decimal.NewFromInt(100)},
+			// 答え合わせ用の翌営業日の足。BuildQuizChartSeriesは最終足の日付をQuizDateに
+			// 入れてしまうが、usecase側でquizDateへ上書きされることを検証する。
+			{Date: quizDate.AddDate(0, 0, 1), Close: decimal.NewFromInt(110)},
+		}, nil)
+
+		interactor := NewQuizInteractor(
+			universeRepo,
+			mock_repositories.NewMockQuizAnswerRepository(ctrl),
+			priceRepo,
+			mock_repositories.NewMockStockBrandRepository(ctrl),
+		)
+
+		got, err := interactor.GetChart(context.Background(), quizDate, "brand-a", true)
+		assert.NoError(t, err)
+		assert.Equal(t, "2026-07-02", got.QuizDate)
+		assert.Len(t, got.Candles, 2)
+	})
+
+	t.Run("設問が存在しなければErrQuizQuestionNotFound", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
+		universeRepo.EXPECT().FindByQuizDateAndStockBrandID(gomock.Any(), quizDate, "brand-a").Return(nil, nil)
+
+		interactor := NewQuizInteractor(
+			universeRepo,
+			mock_repositories.NewMockQuizAnswerRepository(ctrl),
+			mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
+			mock_repositories.NewMockStockBrandRepository(ctrl),
+		)
+
+		_, err := interactor.GetChart(context.Background(), quizDate, "brand-a", false)
+		assert.ErrorIs(t, err, ErrQuizQuestionNotFound)
+	})
 }
 
 func TestQuizInteractorImpl_GetStats(t *testing.T) {

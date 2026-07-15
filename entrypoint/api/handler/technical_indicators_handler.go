@@ -62,18 +62,13 @@ func (h *TechnicalIndicatorsHandler) validateGetTechnicalIndicatorsParams(r *htt
 func (h *TechnicalIndicatorsHandler) GetTechnicalIndicators(w http.ResponseWriter, r *http.Request) {
 	params, err := h.validateGetTechnicalIndicatorsParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get technical indicators params", err)
 		return
 	}
 
 	result, err := h.usecase.GetTechnicalIndicators(r.Context(), params.symbol, params.from, params.to)
 	if err != nil {
-		h.logger.Error("failed to get technical indicators", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get technical indicators", err)
 		return
 	}
 

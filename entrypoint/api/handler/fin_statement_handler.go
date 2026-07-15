@@ -117,11 +117,7 @@ func (h *FinStatementHandler) GetFinStatements(w http.ResponseWriter, r *http.Re
 
 	limit, err := parseBoundedInt(h.httpServer, r, "limit", 8, 20)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get fin statements params", err)
 		return
 	}
 
@@ -130,8 +126,7 @@ func (h *FinStatementHandler) GetFinStatements(w http.ResponseWriter, r *http.Re
 		Limit:        limit,
 	})
 	if err != nil {
-		h.logger.Error("failed to get fin statements", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get fin statements", err)
 		return
 	}
 

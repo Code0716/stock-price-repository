@@ -150,18 +150,13 @@ func (h *BacktestHandler) validateGetBacktestParams(r *http.Request) (*getBackte
 func (h *BacktestHandler) GetBacktest(w http.ResponseWriter, r *http.Request) {
 	p, err := h.validateGetBacktestParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get backtest params", err)
 		return
 	}
 
 	result, err := h.usecase.GetBacktestComparison(r.Context(), p.symbol, p.from, p.to, p.params)
 	if err != nil {
-		h.logger.Error("failed to get backtest", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get backtest", err)
 		return
 	}
 

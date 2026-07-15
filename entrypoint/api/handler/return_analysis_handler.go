@@ -76,18 +76,13 @@ func (h *ReturnAnalysisHandler) validateGetReturnAnalysisParams(r *http.Request)
 func (h *ReturnAnalysisHandler) GetReturnAnalysis(w http.ResponseWriter, r *http.Request) {
 	params, err := h.validateGetReturnAnalysisParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get return analysis params", err)
 		return
 	}
 
 	result, err := h.usecase.GetReturnAnalysis(r.Context(), params.symbol, params.from, params.to, params.benchmark)
 	if err != nil {
-		h.logger.Error("failed to get return analysis", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get return analysis", err)
 		return
 	}
 

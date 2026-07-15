@@ -172,11 +172,7 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) validateGetAnalyzeStockBrandPrice
 func (h *AnalyzeStockBrandPriceHistoryHandler) GetAnalyzeStockBrandPriceHistories(w http.ResponseWriter, r *http.Request) {
 	params, err := h.validateGetAnalyzeStockBrandPriceHistoriesParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get analyze stock brand price histories params", err)
 		return
 	}
 
@@ -192,8 +188,7 @@ func (h *AnalyzeStockBrandPriceHistoryHandler) GetAnalyzeStockBrandPriceHistorie
 		DateLimit:    params.dateLimit,
 	})
 	if err != nil {
-		h.logger.Error("failed to get analyze stock brand price histories", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get analyze stock brand price histories", err)
 		return
 	}
 

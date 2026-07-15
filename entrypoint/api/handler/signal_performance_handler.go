@@ -66,18 +66,13 @@ func (h *SignalPerformanceHandler) validateParams(r *http.Request) (*models.Sign
 func (h *SignalPerformanceHandler) GetSignalPerformance(w http.ResponseWriter, r *http.Request) {
 	filter, err := h.validateParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate signal performance params", err)
 		return
 	}
 
 	result, err := h.usecase.GetSignalPerformance(r.Context(), filter)
 	if err != nil {
-		h.logger.Error("failed to get signal performance", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get signal performance", err)
 		return
 	}
 

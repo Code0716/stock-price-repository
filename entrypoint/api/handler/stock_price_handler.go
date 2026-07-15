@@ -89,19 +89,14 @@ func (h *StockPriceHandler) GetDailyPrices(w http.ResponseWriter, r *http.Reques
 	// パラメータのバリデーション
 	params, err := h.validateGetDailyPricesParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get daily prices params", err)
 		return
 	}
 
 	// ユースケース呼び出し
 	prices, err := h.usecase.GetDailyStockPricesWithOrder(r.Context(), params.symbol, params.from, params.to, params.sortOrder)
 	if err != nil {
-		h.logger.Error("failed to get daily stock prices", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get daily stock prices", err)
 		return
 	}
 
@@ -148,19 +143,14 @@ func (h *StockPriceHandler) GetDailyPriceChart(w http.ResponseWriter, r *http.Re
 	// パラメータのバリデーション
 	params, err := h.validateGetDailyPriceChartParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get daily price chart params", err)
 		return
 	}
 
 	// ユースケース呼び出し
 	chart, err := h.usecase.GetDailyStockPriceChart(r.Context(), params.symbol, params.from, params.to)
 	if err != nil {
-		h.logger.Error("failed to get daily stock price chart", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get daily stock price chart", err)
 		return
 	}
 

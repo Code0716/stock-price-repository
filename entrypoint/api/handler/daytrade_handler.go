@@ -44,8 +44,7 @@ func (h *DaytradeHandler) ImportSBICsv(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 			return
 		}
-		h.logger.Error("daytrade import failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade import failed", err)
 		return
 	}
 	respondJSON(w, h.logger, result)
@@ -86,8 +85,7 @@ func (h *DaytradeHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 
 	buckets, err := h.usecase.GetSummary(r.Context(), from, to, g)
 	if err != nil {
-		h.logger.Error("daytrade summary failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade summary failed", err)
 		return
 	}
 
@@ -125,8 +123,7 @@ func (h *DaytradeHandler) GetExecutionsByDate(w http.ResponseWriter, r *http.Req
 
 	executions, err := h.usecase.GetExecutionsByDate(r.Context(), date)
 	if err != nil {
-		h.logger.Error("daytrade executions by date failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade executions by date failed", err)
 		return
 	}
 
@@ -160,8 +157,7 @@ func (h *DaytradeHandler) GetSummaryByTickerSymbol(w http.ResponseWriter, r *htt
 
 	items, err := h.usecase.GetSummaryByTickerSymbol(r.Context(), from, to)
 	if err != nil {
-		h.logger.Error("daytrade summary by ticker symbol failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade summary by ticker symbol failed", err)
 		return
 	}
 
@@ -195,8 +191,7 @@ func (h *DaytradeHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := h.usecase.GetPeriodStats(r.Context(), from, to)
 	if err != nil {
-		h.logger.Error("daytrade stats failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade stats failed", err)
 		return
 	}
 	respondJSON(w, h.logger, stats)
@@ -220,8 +215,7 @@ func (h *DaytradeHandler) GetInsights(w http.ResponseWriter, r *http.Request) {
 
 	insights, err := h.usecase.GetInsights(r.Context(), from, to)
 	if err != nil {
-		h.logger.Error("daytrade insights failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade insights failed", err)
 		return
 	}
 	respondJSON(w, h.logger, insights)
@@ -235,8 +229,7 @@ type daytradeRangeResponse struct {
 func (h *DaytradeHandler) GetCoveredRange(w http.ResponseWriter, r *http.Request) {
 	minDate, maxDate, err := h.usecase.GetCoveredRange(r.Context())
 	if err != nil {
-		h.logger.Error("daytrade covered range failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade covered range failed", err)
 		return
 	}
 
@@ -270,8 +263,7 @@ func (h *DaytradeHandler) GetTrades(w http.ResponseWriter, r *http.Request) {
 
 	trades, err := h.usecase.GetTrades(r.Context(), from, to)
 	if err != nil {
-		h.logger.Error("daytrade trades failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade trades failed", err)
 		return
 	}
 	respondJSON(w, h.logger, trades)
@@ -320,8 +312,7 @@ func (h *DaytradeHandler) UpsertTradeNote(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := h.usecase.UpsertTradeNote(r.Context(), rec); err != nil {
-		h.logger.Error("daytrade upsert trade note failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade upsert trade note failed", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -345,8 +336,7 @@ func (h *DaytradeHandler) GetTagStats(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := h.usecase.GetTagStats(r.Context(), from, to)
 	if err != nil {
-		h.logger.Error("daytrade tag stats failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "daytrade tag stats failed", err)
 		return
 	}
 	respondJSON(w, h.logger, stats)

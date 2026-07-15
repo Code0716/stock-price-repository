@@ -75,18 +75,13 @@ func (h *SectorPerformanceHandler) validateParams(r *http.Request) (*sectorPerfo
 func (h *SectorPerformanceHandler) GetSectorPerformance(w http.ResponseWriter, r *http.Request) {
 	params, err := h.validateParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate sector performance params", err)
 		return
 	}
 
 	result, err := h.usecase.GetSectorPerformance(r.Context(), params.from, params.to, params.granularity)
 	if err != nil {
-		h.logger.Error("failed to get sector performance", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get sector performance", err)
 		return
 	}
 

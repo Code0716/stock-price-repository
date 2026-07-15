@@ -81,11 +81,7 @@ func (h *MultipleSignalStocksHandler) validateGetMultipleSignalStocksParams(r *h
 func (h *MultipleSignalStocksHandler) GetMultipleSignalStocks(w http.ResponseWriter, r *http.Request) {
 	params, err := h.validateGetMultipleSignalStocksParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get multiple signal stocks params", err)
 		return
 	}
 
@@ -95,8 +91,7 @@ func (h *MultipleSignalStocksHandler) GetMultipleSignalStocks(w http.ResponseWri
 		Limit:  params.limit,
 	})
 	if err != nil {
-		h.logger.Error("failed to get multiple signal stocks", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get multiple signal stocks", err)
 		return
 	}
 

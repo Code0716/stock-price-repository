@@ -11,21 +11,18 @@ database/
   setup_test.go E2E テスト用 DB セットアップ
 ```
 
-## GetTxQuery パターン（必須）
+## TxOrDefault パターン（必須）
 
 書き込みを行う全メソッドで使用する。`transaction.go` を参照:
 
 ```go
 func (r *MyRepositoryImpl) Upsert(ctx context.Context, items []*models.MyModel) error {
-    tx, ok := GetTxQuery(ctx)
-    if !ok {
-        tx = r.query  // トランザクション外の場合は通常クエリを使用
-    }
+    tx := TxOrDefault(ctx, r.query) // ctx にトランザクションがあればそれを、なければ r.query を使用
     // tx.MyTable.xxx() で操作
 }
 ```
 
-読み取り専用メソッドでも GetTxQuery パターンを統一して使うこと（トランザクション内で読み取る場合があるため）。
+読み取り専用メソッドでも TxOrDefault パターンを統一して使うこと（トランザクション内で読み取る場合があるため）。
 
 ## GORM Gen の使い方
 

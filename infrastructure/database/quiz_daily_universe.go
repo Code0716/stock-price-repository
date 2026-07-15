@@ -26,10 +26,7 @@ func NewQuizDailyUniverseRepositoryImpl(db *gorm.DB) repositories.QuizDailyUnive
 }
 
 func (qi *QuizDailyUniverseRepositoryImpl) BulkCreate(ctx context.Context, entries []*models.QuizUniverseEntry) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	if len(entries) == 0 {
 		return nil
@@ -43,10 +40,7 @@ func (qi *QuizDailyUniverseRepositoryImpl) BulkCreate(ctx context.Context, entri
 }
 
 func (qi *QuizDailyUniverseRepositoryImpl) ListByQuizDate(ctx context.Context, quizDate time.Time) ([]*models.QuizUniverseEntry, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	dateOnly := dateOnlyOf(quizDate)
 
@@ -66,10 +60,7 @@ func (qi *QuizDailyUniverseRepositoryImpl) ListByQuizDate(ctx context.Context, q
 }
 
 func (qi *QuizDailyUniverseRepositoryImpl) FindLatestQuizDate(ctx context.Context) (*time.Time, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	row, err := tx.QuizDailyUniverse.WithContext(ctx).
 		Order(tx.QuizDailyUniverse.QuizDate.Desc()).
@@ -85,10 +76,7 @@ func (qi *QuizDailyUniverseRepositoryImpl) FindLatestQuizDate(ctx context.Contex
 }
 
 func (qi *QuizDailyUniverseRepositoryImpl) FindByQuizDateAndStockBrandID(ctx context.Context, quizDate time.Time, stockBrandID string) (*models.QuizUniverseEntry, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	row, err := tx.QuizDailyUniverse.WithContext(ctx).
 		Where(tx.QuizDailyUniverse.QuizDate.Eq(dateOnlyOf(quizDate))).
@@ -105,10 +93,7 @@ func (qi *QuizDailyUniverseRepositoryImpl) FindByQuizDateAndStockBrandID(ctx con
 }
 
 func (qi *QuizDailyUniverseRepositoryImpl) ExistsByQuizDate(ctx context.Context, quizDate time.Time) (bool, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	count, err := tx.QuizDailyUniverse.WithContext(ctx).
 		Where(tx.QuizDailyUniverse.QuizDate.Eq(dateOnlyOf(quizDate))).

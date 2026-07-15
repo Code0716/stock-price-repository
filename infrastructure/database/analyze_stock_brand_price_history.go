@@ -346,10 +346,7 @@ func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) FindMultipleSignals(ctx c
 
 // DeleteByStockBrandIDs 銘柄IDと一致したものを削除する
 func (ai *AnalyzeStockBrandPriceHistoryRepositoryImpl) DeleteByStockBrandIDs(ctx context.Context, ids []string) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = ai.query
-	}
+	tx := TxOrDefault(ctx, ai.query)
 
 	if _, err := tx.AnalyzeStockBrandPriceHistory.WithContext(ctx).
 		Where(tx.AnalyzeStockBrandPriceHistory.StockBrandID.In(ids...)).

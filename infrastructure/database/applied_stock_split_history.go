@@ -23,10 +23,7 @@ func NewAppliedStockSplitsHistoryRepositoryImpl(db *gorm.DB) repositories.Applie
 }
 
 func (r *AppliedStockSplitsHistoryRepositoryImpl) Exists(ctx context.Context, symbol string, splitDate time.Time) (bool, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = r.query
-	}
+	tx := TxOrDefault(ctx, r.query)
 
 	count, err := tx.AppliedStockSplitsHistory.WithContext(ctx).
 		Where(tx.AppliedStockSplitsHistory.Symbol.Eq(symbol)).
@@ -36,10 +33,7 @@ func (r *AppliedStockSplitsHistoryRepositoryImpl) Exists(ctx context.Context, sy
 }
 
 func (r *AppliedStockSplitsHistoryRepositoryImpl) Create(ctx context.Context, history *models.AppliedStockSplitHistory) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = r.query
-	}
+	tx := TxOrDefault(ctx, r.query)
 
 	ratioVal, _ := history.Ratio.Float64()
 

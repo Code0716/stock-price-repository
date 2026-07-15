@@ -28,10 +28,7 @@ func NewTopixRepositoryImpl(db *gorm.DB) repositories.TopixRepository {
 }
 
 func (tr *TopixRepositoryImpl) CreateTopixDailyPrices(ctx context.Context, dailyPrices models.IndexStockAverageDailyPrices) error {
-	query, ok := GetTxQuery(ctx)
-	if !ok {
-		query = tr.query
-	}
+	query := TxOrDefault(ctx, tr.query)
 
 	if err := query.
 		TopixDailyPrice.WithContext(ctx).
@@ -54,10 +51,7 @@ func (tr *TopixRepositoryImpl) CreateTopixDailyPrices(ctx context.Context, daily
 }
 
 func (tr *TopixRepositoryImpl) ListTopixDailyPrices(ctx context.Context, from, to *time.Time) (models.IndexStockAverageDailyPrices, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = tr.query
-	}
+	tx := TxOrDefault(ctx, tr.query)
 
 	do := tx.TopixDailyPrice.WithContext(ctx)
 	if from != nil {

@@ -268,10 +268,7 @@ func (r *DaytradeExecutionRepositoryImpl) AggregateStats(ctx context.Context, fr
 }
 
 func (r *DaytradeExecutionRepositoryImpl) FindByDate(ctx context.Context, date time.Time) ([]*models.DaytradeExecution, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = r.query
-	}
+	tx := TxOrDefault(ctx, r.query)
 
 	q := tx.DaytradeExecution
 	rows, err := q.WithContext(ctx).
@@ -290,10 +287,7 @@ func (r *DaytradeExecutionRepositoryImpl) FindByDate(ctx context.Context, date t
 }
 
 func (r *DaytradeExecutionRepositoryImpl) FindByDateRange(ctx context.Context, from, to *time.Time) ([]*models.DaytradeExecution, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = r.query
-	}
+	tx := TxOrDefault(ctx, r.query)
 
 	q := tx.DaytradeExecution
 	stmt := q.WithContext(ctx)

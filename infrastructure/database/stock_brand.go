@@ -40,10 +40,7 @@ func (si *StockBrandRepositoryImpl) FindAll(ctx context.Context) ([]*models.Stoc
 }
 
 func (si *StockBrandRepositoryImpl) UpsertStockBrands(ctx context.Context, stockBrands []*models.StockBrand) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	err := tx.StockBrand.WithContext(ctx).
 		Clauses(clause.OnConflict{
@@ -88,10 +85,7 @@ func (si *StockBrandRepositoryImpl) FindFromSymbolMainMarkets(ctx context.Contex
 
 // FindWithFilter フィルタ条件に基づいて銘柄を取得する
 func (si *StockBrandRepositoryImpl) FindWithFilter(ctx context.Context, filter *models.StockBrandFilter) ([]*models.StockBrand, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	// ベースクエリ: 削除済み除外、シンボル順
 	q := tx.StockBrand.WithContext(ctx).
@@ -149,10 +143,7 @@ func (si *StockBrandRepositoryImpl) FindWithFilter(ctx context.Context, filter *
 
 // FindByIDs IDのリストから銘柄を取得する（クイズ結果画面での銘柄名解決用）。
 func (si *StockBrandRepositoryImpl) FindByIDs(ctx context.Context, ids []string) ([]*models.StockBrand, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if len(ids) == 0 {
 		return []*models.StockBrand{}, nil
@@ -176,10 +167,7 @@ func (si *StockBrandRepositoryImpl) FindByIDs(ctx context.Context, ids []string)
 }
 
 func (si *StockBrandRepositoryImpl) FindDelistingStockBrandsFromUpdateTime(ctx context.Context, now time.Time) ([]string, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	resultRow, err := tx.StockBrand.Where(tx.StockBrand.UpdatedAt.Lt(now)).Find()
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -195,10 +183,7 @@ func (si *StockBrandRepositoryImpl) FindDelistingStockBrandsFromUpdateTime(ctx c
 }
 
 func (si *StockBrandRepositoryImpl) DeleteDelistingStockBrands(ctx context.Context, ids []string) ([]*models.StockBrand, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if len(ids) == 0 {
 		return nil, nil

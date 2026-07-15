@@ -28,10 +28,7 @@ func NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db *gorm.DB) repositories.
 }
 
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) CreateStockBrandDailyPriceForAnalyze(ctx context.Context, dailyPrices []*models.StockBrandDailyPriceForAnalyze) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).
 		Clauses(clause.OnConflict{
@@ -54,10 +51,7 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) CreateStockBrandDailyPr
 }
 
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListLatestPriceBySymbols(ctx context.Context, symbols []*string) ([]*models.StockBrandDailyPriceForAnalyze, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	// シンボルをstring型に変換
 	var symbolStrings []string
@@ -94,10 +88,7 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListLatestPriceBySymbol
 }
 
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx context.Context, deleteSymbols []string) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if _, err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).
 		Where(tx.StockBrandsDailyPriceForAnalyze.TickerSymbol.In(deleteSymbols...)).
@@ -108,10 +99,7 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx con
 }
 
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBeforeDate(ctx context.Context, date time.Time) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if _, err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).
 		Where(tx.StockBrandsDailyPriceForAnalyze.Date.Lt(date)).
@@ -122,10 +110,7 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBeforeDate(ctx co
 }
 
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPriceForAnalyze, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if filter.TickerSymbol == "" {
 		return nil, errors.New("TickerSymbol is required")

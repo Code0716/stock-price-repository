@@ -30,10 +30,7 @@ func NewQuizAnswerRepositoryImpl(db *gorm.DB) repositories.QuizAnswerRepository 
 }
 
 func (qi *QuizAnswerRepositoryImpl) Create(ctx context.Context, answer *models.QuizAnswer) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	if err := tx.QuizAnswer.WithContext(ctx).Create(qi.convertToDBModel(answer)); err != nil {
 		var mysqlErr *mysql.MySQLError
@@ -46,10 +43,7 @@ func (qi *QuizAnswerRepositoryImpl) Create(ctx context.Context, answer *models.Q
 }
 
 func (qi *QuizAnswerRepositoryImpl) ListByQuizDate(ctx context.Context, quizDate time.Time) ([]*models.QuizAnswer, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	rows, err := tx.QuizAnswer.WithContext(ctx).
 		Where(tx.QuizAnswer.QuizDate.Eq(dateOnlyOf(quizDate))).
@@ -66,10 +60,7 @@ func (qi *QuizAnswerRepositoryImpl) ListByQuizDate(ctx context.Context, quizDate
 }
 
 func (qi *QuizAnswerRepositoryImpl) ListUngraded(ctx context.Context) ([]*models.QuizAnswer, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	rows, err := tx.QuizAnswer.WithContext(ctx).
 		Where(tx.QuizAnswer.Outcome.IsNull()).
@@ -86,10 +77,7 @@ func (qi *QuizAnswerRepositoryImpl) ListUngraded(ctx context.Context) ([]*models
 }
 
 func (qi *QuizAnswerRepositoryImpl) UpdateGrading(ctx context.Context, answers []*models.QuizAnswer) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	for _, a := range answers {
 		if _, err := tx.QuizAnswer.WithContext(ctx).
@@ -102,10 +90,7 @@ func (qi *QuizAnswerRepositoryImpl) UpdateGrading(ctx context.Context, answers [
 }
 
 func (qi *QuizAnswerRepositoryImpl) ListAllGraded(ctx context.Context) ([]*models.QuizAnswer, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	rows, err := tx.QuizAnswer.WithContext(ctx).
 		Where(tx.QuizAnswer.Outcome.IsNotNull()).
@@ -123,10 +108,7 @@ func (qi *QuizAnswerRepositoryImpl) ListAllGraded(ctx context.Context) ([]*model
 }
 
 func (qi *QuizAnswerRepositoryImpl) ListAll(ctx context.Context) ([]*models.QuizAnswer, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = qi.query
-	}
+	tx := TxOrDefault(ctx, qi.query)
 
 	rows, err := tx.QuizAnswer.WithContext(ctx).
 		Order(tx.QuizAnswer.AnsweredAt).

@@ -102,19 +102,18 @@ return fmt.Errorf("...: %w", err) // パッケージ違い
 _ = riskyCall()                   // エラー無視禁止
 ```
 
-### 2. DB トランザクション — `GetTxQuery(ctx)` パターン
+### 2. DB トランザクション — `TxOrDefault(ctx, q)` パターン
 
 書き込みを行う全リポジトリメソッドでトランザクションを引き継ぐ:
 
 ```go
 func (r *MyRepositoryImpl) Write(ctx context.Context, ...) error {
-    tx, ok := GetTxQuery(ctx)
-    if !ok {
-        tx = r.query
-    }
+    tx := TxOrDefault(ctx, r.query)
     // r.query ではなく tx を使用する
 }
 ```
+
+`TxOrDefault` は `GetTxQuery(ctx)` のフォールバック定型（`infrastructure/database/transaction.go`）を集約したヘルパー。
 
 トランザクションの開始は **usecase 層のみ**（`tx.DoInTx`）。repository や infrastructure では開始しない。
 

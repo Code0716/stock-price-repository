@@ -23,10 +23,7 @@ func NewAppliedStockConsolidationsHistoryRepositoryImpl(db *gorm.DB) repositorie
 }
 
 func (r *AppliedStockConsolidationsHistoryRepositoryImpl) Exists(ctx context.Context, symbol string, consolidationDate time.Time) (bool, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = r.query
-	}
+	tx := TxOrDefault(ctx, r.query)
 
 	count, err := tx.AppliedStockConsolidationsHistory.WithContext(ctx).
 		Where(tx.AppliedStockConsolidationsHistory.Symbol.Eq(symbol)).
@@ -36,10 +33,7 @@ func (r *AppliedStockConsolidationsHistoryRepositoryImpl) Exists(ctx context.Con
 }
 
 func (r *AppliedStockConsolidationsHistoryRepositoryImpl) Create(ctx context.Context, history *models.AppliedStockConsolidationHistory) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = r.query
-	}
+	tx := TxOrDefault(ctx, r.query)
 
 	ratioVal, _ := history.Ratio.Float64()
 

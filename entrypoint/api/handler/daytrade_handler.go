@@ -51,9 +51,9 @@ func (h *DaytradeHandler) ImportSBICsv(w http.ResponseWriter, r *http.Request) {
 }
 
 type daytradeSummaryResponse struct {
-	Granularity string                       `json:"granularity"`
-	From        *string                      `json:"from"`
-	To          *string                      `json:"to"`
+	Granularity string                          `json:"granularity"`
+	From        *string                         `json:"from"`
+	To          *string                         `json:"to"`
 	Buckets     []*models.DaytradeSummaryBucket `json:"buckets"`
 }
 
@@ -68,18 +68,9 @@ func (h *DaytradeHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	if from != nil && to != nil && from.After(*to) {
-		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		writeError(w, h.logger, "daytrade summary date range invalid", err)
 		return
 	}
 
@@ -105,7 +96,7 @@ func (h *DaytradeHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 }
 
 type daytradeExecutionsResponse struct {
-	Date       string                    `json:"date"`
+	Date       string                      `json:"date"`
 	Executions []*models.DaytradeExecution `json:"executions"`
 }
 
@@ -134,24 +125,15 @@ func (h *DaytradeHandler) GetExecutionsByDate(w http.ResponseWriter, r *http.Req
 }
 
 type daytradeSymbolSummaryResponse struct {
-	From  *string                        `json:"from"`
-	To    *string                        `json:"to"`
+	From  *string                         `json:"from"`
+	To    *string                         `json:"to"`
 	Items []*models.DaytradeSymbolSummary `json:"items"`
 }
 
 func (h *DaytradeHandler) GetSummaryByTickerSymbol(w http.ResponseWriter, r *http.Request) {
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	if from != nil && to != nil && from.After(*to) {
-		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		writeError(w, h.logger, "daytrade summary by ticker symbol date range invalid", err)
 		return
 	}
 
@@ -174,18 +156,9 @@ func (h *DaytradeHandler) GetSummaryByTickerSymbol(w http.ResponseWriter, r *htt
 }
 
 func (h *DaytradeHandler) GetStats(w http.ResponseWriter, r *http.Request) {
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	if from != nil && to != nil && from.After(*to) {
-		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		writeError(w, h.logger, "daytrade stats date range invalid", err)
 		return
 	}
 
@@ -198,18 +171,9 @@ func (h *DaytradeHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DaytradeHandler) GetInsights(w http.ResponseWriter, r *http.Request) {
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	if from != nil && to != nil && from.After(*to) {
-		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		writeError(w, h.logger, "daytrade insights date range invalid", err)
 		return
 	}
 
@@ -246,18 +210,9 @@ func (h *DaytradeHandler) GetCoveredRange(w http.ResponseWriter, r *http.Request
 }
 
 func (h *DaytradeHandler) GetTrades(w http.ResponseWriter, r *http.Request) {
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	if from != nil && to != nil && from.After(*to) {
-		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		writeError(w, h.logger, "daytrade trades date range invalid", err)
 		return
 	}
 
@@ -319,18 +274,9 @@ func (h *DaytradeHandler) UpsertTradeNote(w http.ResponseWriter, r *http.Request
 }
 
 func (h *DaytradeHandler) GetTagStats(w http.ResponseWriter, r *http.Request) {
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		http.Error(w, "fromの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		http.Error(w, "toの日付形式が不正です (YYYY-MM-DD)", http.StatusBadRequest)
-		return
-	}
-	if from != nil && to != nil && from.After(*to) {
-		http.Error(w, "fromはto以前の日付である必要があります", http.StatusBadRequest)
+		writeError(w, h.logger, "daytrade tag stats date range invalid", err)
 		return
 	}
 

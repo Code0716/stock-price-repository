@@ -6,7 +6,6 @@ import (
 
 	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/usecase"
-	"github.com/Code0716/stock-price-repository/util"
 	"go.uber.org/zap"
 )
 
@@ -44,16 +43,11 @@ func (h *TechnicalIndicatorsHandler) validateGetTechnicalIndicatorsParams(r *htt
 		return nil, &validationError{message: "シンボルは英数字である必要があります"}
 	}
 
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		return nil, &validationError{message: "fromの日付形式が不正です"}
+		return nil, err
 	}
 	params.from = from
-
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		return nil, &validationError{message: "toの日付形式が不正です"}
-	}
 	params.to = to
 
 	return params, nil

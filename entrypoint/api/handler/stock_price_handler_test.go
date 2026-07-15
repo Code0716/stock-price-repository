@@ -24,7 +24,7 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 
 	// テスト用の日付
 	dateStr := "2023-10-01"
-	date, _ := time.Parse(util.DateLayout, dateStr)
+	date, _ := time.ParseInLocation(util.DateLayout, dateStr, time.Local)
 
 	type fields struct {
 		usecase    func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandsDailyPriceInteractor
@@ -64,8 +64,6 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "order").Return("") // orderパラメータはなし
 					return m
 				},
@@ -150,7 +148,6 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
@@ -158,7 +155,7 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				req: httptest.NewRequest(http.MethodGet, "/daily-prices?symbol=1234&from=invalid", nil),
 			},
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "fromの日付形式が不正です\n",
+			wantBody:       "fromの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: toの日付フォーマットが不正",
@@ -169,8 +166,6 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
@@ -178,7 +173,7 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				req: httptest.NewRequest(http.MethodGet, "/daily-prices?symbol=1234&from=2023-10-01&to=invalid", nil),
 			},
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "toの日付形式が不正です\n",
+			wantBody:       "toの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: UseCaseがエラーを返す",
@@ -193,8 +188,6 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "order").Return("") // orderパラメータはなし
 					return m
 				},
@@ -226,8 +219,6 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "order").Return("desc")
 					return m
 				},
@@ -254,8 +245,6 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "order").Return("invalid")
 					return m
 				},
@@ -297,7 +286,7 @@ func TestStockPriceHandler_GetDailyPrices(t *testing.T) {
 func TestStockPriceHandler_GetDailyPriceChart(t *testing.T) {
 	// テスト用の日付
 	dateStr := "2023-10-01"
-	date, _ := time.Parse(util.DateLayout, dateStr)
+	date, _ := time.ParseInLocation(util.DateLayout, dateStr, time.Local)
 
 	type fields struct {
 		usecase    func(ctrl *gomock.Controller) *mock_usecase.MockStockBrandsDailyPriceInteractor
@@ -340,8 +329,6 @@ func TestStockPriceHandler_GetDailyPriceChart(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					return m
 				},
 			},
@@ -428,7 +415,6 @@ func TestStockPriceHandler_GetDailyPriceChart(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
@@ -436,7 +422,7 @@ func TestStockPriceHandler_GetDailyPriceChart(t *testing.T) {
 				req: httptest.NewRequest(http.MethodGet, "/daily-prices/chart?symbol=1234&from=invalid", nil),
 			},
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "fromの日付形式が不正です\n",
+			wantBody:       "fromの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: toの日付フォーマットが不正",
@@ -447,8 +433,6 @@ func TestStockPriceHandler_GetDailyPriceChart(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
@@ -456,7 +440,7 @@ func TestStockPriceHandler_GetDailyPriceChart(t *testing.T) {
 				req: httptest.NewRequest(http.MethodGet, "/daily-prices/chart?symbol=1234&from=2023-10-01&to=invalid", nil),
 			},
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "toの日付形式が不正です\n",
+			wantBody:       "toの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: UseCaseがエラーを返す",
@@ -471,8 +455,6 @@ func TestStockPriceHandler_GetDailyPriceChart(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("1234")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					return m
 				},
 			},

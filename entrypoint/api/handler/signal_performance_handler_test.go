@@ -20,7 +20,7 @@ import (
 
 func TestSignalPerformanceHandler_GetSignalPerformance(t *testing.T) {
 	// 固定日付
-	fixedDate, _ := time.Parse(util.DateLayout, "2024-03-31")
+	fixedDate, _ := time.ParseInLocation(util.DateLayout, "2024-03-31", time.Local)
 
 	// 正常系レスポンスのサンプル
 	okResult := &models.SignalPerformance{
@@ -57,8 +57,6 @@ func TestSignalPerformanceHandler_GetSignalPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedDate, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "method").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "action").Return("")
 					return m
@@ -96,8 +94,6 @@ func TestSignalPerformanceHandler_GetSignalPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "method").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "action").Return("")
 					return m
@@ -137,8 +133,6 @@ func TestSignalPerformanceHandler_GetSignalPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedDate, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "method").Return("find_macd_bullish_stock_v1")
 					m.EXPECT().GetQueryParam(gomock.Any(), "action").Return("")
 					return m
@@ -154,16 +148,12 @@ func TestSignalPerformanceHandler_GetSignalPerformance(t *testing.T) {
 					return mock_usecase.NewMockSignalPerformanceInteractor(ctrl)
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
-					m := mock_driver.NewMockHTTPServer(ctrl)
-					from := fixedDate.AddDate(0, 0, 10) // to より後
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedDate, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&from, nil)
-					return m
+					return mock_driver.NewMockHTTPServer(ctrl)
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/signal-performance?from=2024-04-10&to=2024-03-31", nil),
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "fromはtoより前の日付を指定してください\n",
+			wantBody:       "fromはto以前の日付である必要があります\n",
 		},
 		{
 			name: "異常系: 期間 366 日超 → 400",
@@ -172,11 +162,7 @@ func TestSignalPerformanceHandler_GetSignalPerformance(t *testing.T) {
 					return mock_usecase.NewMockSignalPerformanceInteractor(ctrl)
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
-					m := mock_driver.NewMockHTTPServer(ctrl)
-					from := fixedDate.AddDate(-1, 0, -2) // 367日以上前
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedDate, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&from, nil)
-					return m
+					return mock_driver.NewMockHTTPServer(ctrl)
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/signal-performance?from=2023-01-01&to=2024-03-31", nil),
@@ -191,13 +177,12 @@ func TestSignalPerformanceHandler_GetSignalPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/signal-performance?to=invalid", nil),
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "toの日付形式が不正です（YYYY-MM-DD）\n",
+			wantBody:       "toの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: from の日付形式が不正 → 400",
@@ -207,14 +192,12 @@ func TestSignalPerformanceHandler_GetSignalPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedDate, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/signal-performance?from=invalid", nil),
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "fromの日付形式が不正です（YYYY-MM-DD）\n",
+			wantBody:       "fromの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: usecase がエラーを返す → 500",
@@ -226,8 +209,6 @@ func TestSignalPerformanceHandler_GetSignalPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedDate, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "method").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "action").Return("")
 					return m

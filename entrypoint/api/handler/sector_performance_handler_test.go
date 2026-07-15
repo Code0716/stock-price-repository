@@ -19,7 +19,7 @@ import (
 )
 
 func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
-	fixedTo, _ := time.Parse(util.DateLayout, "2024-03-31")
+	fixedTo, _ := time.ParseInLocation(util.DateLayout, "2024-03-31", time.Local)
 	fixedFrom := fixedTo.AddDate(0, 0, -90)
 
 	pr := decimal.NewFromFloat(0.05)
@@ -74,8 +74,6 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&fixedFrom, nil)
 					return m
 				},
 			},
@@ -93,8 +91,6 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&fixedFrom, nil)
 					return m
 				},
 			},
@@ -117,8 +113,6 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&fixedFrom, nil)
 					return m
 				},
 			},
@@ -133,8 +127,6 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&fixedFrom, nil)
 					return m
 				},
 			},
@@ -166,8 +158,6 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
 					return m
 				},
 			},
@@ -181,16 +171,12 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 					return mock_usecase.NewMockSectorPerformanceInteractor(ctrl)
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
-					m := mock_driver.NewMockHTTPServer(ctrl)
-					from := fixedTo.AddDate(0, 0, 10)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&from, nil)
-					return m
+					return mock_driver.NewMockHTTPServer(ctrl)
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/sector-performance?from=2024-04-10&to=2024-03-31", nil),
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "fromはtoより前の日付を指定してください\n",
+			wantBody:       "fromはto以前の日付である必要があります\n",
 		},
 		{
 			name: "異常系: 期間 366 日超 → 400",
@@ -199,11 +185,7 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 					return mock_usecase.NewMockSectorPerformanceInteractor(ctrl)
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
-					m := mock_driver.NewMockHTTPServer(ctrl)
-					from := fixedTo.AddDate(-1, 0, -2)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&from, nil)
-					return m
+					return mock_driver.NewMockHTTPServer(ctrl)
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/sector-performance?from=2023-01-01&to=2024-03-31", nil),
@@ -218,13 +200,12 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/sector-performance?to=invalid", nil),
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "toの日付形式が不正です（YYYY-MM-DD）\n",
+			wantBody:       "toの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: from の日付形式が不正 → 400",
@@ -234,14 +215,12 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/sector-performance?from=invalid", nil),
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "fromの日付形式が不正です（YYYY-MM-DD）\n",
+			wantBody:       "fromの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: usecase がエラーを返す → 500",
@@ -253,8 +232,6 @@ func TestSectorPerformanceHandler_GetSectorPerformance(t *testing.T) {
 				},
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&fixedTo, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
 					return m
 				},
 			},

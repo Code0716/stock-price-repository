@@ -125,6 +125,63 @@ func (di *DailyStockPickRepositoryImpl) MarkNotified(ctx context.Context, pickDa
 	return nil
 }
 
+func (di *DailyStockPickRepositoryImpl) FindLatestPickDate(ctx context.Context) (*time.Time, error) {
+	tx := TxOrDefault(ctx, di.query)
+
+	row, err := tx.DailyStockPick.WithContext(ctx).
+		Order(tx.DailyStockPick.PickDate.Desc()).
+		First()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "DailyStockPickRepositoryImpl.FindLatestPickDate error")
+	}
+
+	return &row.PickDate, nil
+}
+
+func (di *DailyStockPickRepositoryImpl) ListPickDates(ctx context.Context, limit int) ([]time.Time, error) {
+	tx := TxOrDefault(ctx, di.query)
+
+	q := tx.DailyStockPick.WithContext(ctx).
+		Distinct(tx.DailyStockPick.PickDate).
+		Order(tx.DailyStockPick.PickDate.Desc())
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+
+	var dates []time.Time
+	if err := q.Pluck(tx.DailyStockPick.PickDate, &dates); err != nil {
+		return nil, errors.Wrap(err, "DailyStockPickRepositoryImpl.ListPickDates error")
+	}
+	return dates, nil
+}
+
+func (di *DailyStockPickRepositoryImpl) ListByDateRange(ctx context.Context, from, to *time.Time, scoreVersion string) ([]*models.DailyStockPick, error) {
+	tx := TxOrDefault(ctx, di.query)
+
+	q := tx.DailyStockPick.WithContext(ctx).
+		Where(tx.DailyStockPick.ScoreVersion.Eq(scoreVersion))
+	if from != nil {
+		q = q.Where(tx.DailyStockPick.PickDate.Gte(dateOnlyOf(*from)))
+	}
+	if to != nil {
+		q = q.Where(tx.DailyStockPick.PickDate.Lte(dateOnlyOf(*to)))
+	}
+
+	rows, err := q.Order(tx.DailyStockPick.PickDate, tx.DailyStockPick.PickRank).Find()
+	if err != nil {
+		return nil, errors.Wrap(err, "DailyStockPickRepositoryImpl.ListByDateRange error")
+	}
+
+	picks := make([]*models.DailyStockPick, 0, len(rows))
+	for _, r := range rows {
+		picks = append(picks, di.convertToDomainModel(r))
+	}
+	return picks, nil
+}
+
 func (di *DailyStockPickRepositoryImpl) convertToDomainModel(m *genModel.DailyStockPick) *models.DailyStockPick {
 	p := &models.DailyStockPick{
 		PickDate:          m.PickDate,

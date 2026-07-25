@@ -24,4 +24,11 @@ type DailyStockPickRepository interface {
 	UpdateEvaluations(ctx context.Context, picks []*models.DailyStockPick) error
 	// MarkNotified 指定日の推奨に Slack 通知日時を記録する。
 	MarkNotified(ctx context.Context, pickDate time.Time, notifiedAt time.Time) error
+	// FindLatestPickDate 最新の pick_date を取得する（1件も無ければ nil を返す）。
+	FindLatestPickDate(ctx context.Context) (*time.Time, error)
+	// ListPickDates pick_date を降順に最大 limit 件取得する（日付セレクタ用）。limit<=0 なら無制限。
+	ListPickDates(ctx context.Context, limit int) ([]time.Time, error)
+	// ListByDateRange from/to（いずれも nil 可）と score_version で絞り、pick_date・pick_rank 昇順で取得する。
+	// scoreVersion は必須。スコア定義の異なる行を集計に混ぜないため常に WHERE で絞る。
+	ListByDateRange(ctx context.Context, from, to *time.Time, scoreVersion string) ([]*models.DailyStockPick, error)
 }

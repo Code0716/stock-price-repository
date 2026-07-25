@@ -38,6 +38,7 @@ var usecaseSet = wire.NewSet(
 	usecase.NewQuizInteractor,
 	usecase.NewCreateDailyStockPicksInteractor,
 	usecase.NewEvaluateDailyStockPicksInteractor,
+	usecase.NewDailyStockPickInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -123,6 +124,7 @@ var apiSet = wire.NewSet(
 	handler.NewSignalPerformanceHandler,
 	handler.NewSectorPerformanceHandler,
 	handler.NewQuizHandler,
+	handler.NewDailyStockPickHandler,
 	router.NewRouter,
 )
 

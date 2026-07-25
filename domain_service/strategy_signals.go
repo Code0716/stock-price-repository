@@ -22,7 +22,7 @@ const (
 var StrategyLabels = map[string]string{
 	StrategyMACDBullish:        "MACD強気",
 	StrategyBollingerBreakout:  "ボリンジャーブレイク",
-	StrategyTriangleFormation:  "三角持ち合い",
+	StrategyTriangleFormation:  "三角持ち合いブレイク",
 	StrategyMovingAverageCross: "移動平均(5/25/75)上抜け",
 	StrategyMultipleSignals:    "複数シグナル(2つ以上)",
 }
@@ -245,22 +245,102 @@ func BollingerBreakoutEntrySignals(prices []*models.StockBrandDailyPrice) []bool
 	return signals
 }
 
-// TriangleFormationEntrySignals 直近窓で高値が下降・安値が上昇（三角持ち合い）+ 出来高>10万。
+// TriangleFormationParams 三角持ち合いブレイクの判定パラメータ。全銘柄共通でパッケージ変数に集約し、
+// チューニングを一箇所に閉じる。
+type TriangleFormationParams struct {
+	Window                int             // 収縮を測る窓（当日を含まない）
+	ExtremaStrength       int             // 局所極値の左右本数（fractal強度）
+	MinExtremaPoints      int             // 傾き回帰に必要な極値点数
+	MinSlopeRatio         decimal.Decimal // 傾きの最小絶対値（当日終値比・1日あたり）
+	RangeContractionRatio decimal.Decimal // 窓後半1/3の平均日中レンジ ÷ 前半1/3 の上限
+	BreakLookback         int             // ブレイク判定に使う直近高値の日数
+	VolumeWindow          int             // 出来高平均の窓
+	VolumeMultiplier      decimal.Decimal // 出来高倍率
+}
+
+// DefaultTriangleFormationParams 標準パラメータ。
+func DefaultTriangleFormationParams() TriangleFormationParams {
+	return TriangleFormationParams{
+		Window:                60,
+		ExtremaStrength:       2,
+		MinExtremaPoints:      3,
+		MinSlopeRatio:         decimal.RequireFromString("0.0005"),
+		RangeContractionRatio: decimal.RequireFromString("0.80"),
+		BreakLookback:         20,
+		VolumeWindow:          20,
+		VolumeMultiplier:      decimal.RequireFromString("1.5"),
+	}
+}
+
+// TriangleFormationEntrySignals 直近60営業日で高値切り下げ・安値切り上げのレンジ収縮が続いた後、
+// 直近20日高値を当日ブレイクし出来高が伴った瞬間を検出する（DefaultTriangleFormationParams を使用）。
 func TriangleFormationEntrySignals(prices []*models.StockBrandDailyPrice) []bool {
-	const window = 60
+	return TriangleFormationEntrySignalsWithParams(prices, DefaultTriangleFormationParams())
+}
+
+// TriangleFormationEntrySignalsWithParams パラメータを指定して三角持ち合いブレイクを検出する。
+// 判定は「前日までの窓(Window本)で収縮していた」かつ「当日ブレイクした」の AND。
+// 収縮判定とブレイク判定の窓を分けることで、ブレイク当日のレンジ拡大が収縮判定を汚さないようにしている。
+func TriangleFormationEntrySignalsWithParams(prices []*models.StockBrandDailyPrice, p TriangleFormationParams) []bool {
 	n := len(prices)
 	signals := make([]bool, n)
+	if n == 0 {
+		return signals
+	}
+	closes := ExtractClosePrices(prices)
 
-	for i := window - 1; i < n; i++ {
-		start := i - window + 1
-		highSlope, okH := localExtremaSlope(prices[start:i+1], true)
-		lowSlope, okL := localExtremaSlope(prices[start:i+1], false)
+	for i := p.Window; i < n; i++ {
+		if i-1-p.BreakLookback < 0 {
+			continue
+		}
+
+		// 1. 収縮窓（当日を含まない直近 Window 本）で高値切り下げ・安値切り上げを検証する。
+		contractionWindow := prices[i-p.Window : i]
+		highSlope, okH := localExtremaSlope(contractionWindow, true, p.ExtremaStrength, p.MinExtremaPoints)
+		lowSlope, okL := localExtremaSlope(contractionWindow, false, p.ExtremaStrength, p.MinExtremaPoints)
 		if !okH || !okL {
 			continue
 		}
-		if highSlope.IsNegative() && lowSlope.IsPositive() && prices[i].Volume > 100000 {
-			signals[i] = true
+		if closes[i].IsZero() {
+			continue
 		}
+		highSlopeRatio := highSlope.Div(closes[i])
+		lowSlopeRatio := lowSlope.Div(closes[i])
+		if highSlopeRatio.GreaterThan(p.MinSlopeRatio.Neg()) {
+			continue // 高値切り下げが十分でない
+		}
+		if lowSlopeRatio.LessThan(p.MinSlopeRatio) {
+			continue // 安値切り上げが十分でない
+		}
+
+		// 2. レンジ収縮を直接検証する（極値の傾きだけでは日中レンジが縮んでいるとは限らないため）。
+		third := p.Window / 3
+		if third == 0 {
+			continue
+		}
+		firstAvgRange := avgPriceRange(contractionWindow[:third])
+		lastAvgRange := avgPriceRange(contractionWindow[len(contractionWindow)-third:])
+		if firstAvgRange.IsZero() {
+			continue
+		}
+		if lastAvgRange.Div(firstAvgRange).GreaterThan(p.RangeContractionRatio) {
+			continue // レンジが収縮していない
+		}
+
+		// 3. 当日ブレイク（瞬間判定）: 当日終値が直近安値高値を上抜け、前日は未上抜け。
+		prevHigh := maxHighInLookback(prices, i, p.BreakLookback)
+		prevPrevHigh := maxHighInLookback(prices, i-1, p.BreakLookback)
+		breakout := closes[i].GreaterThan(prevHigh) && !closes[i-1].GreaterThan(prevPrevHigh)
+		if !breakout {
+			continue
+		}
+
+		// 4. 出来高が直近平均を一定倍率以上上回っていること。
+		if decimal.NewFromInt(prices[i].Volume).LessThanOrEqual(avgVolume(prices, i, p.VolumeWindow).Mul(p.VolumeMultiplier)) {
+			continue
+		}
+
+		signals[i] = true
 	}
 	return signals
 }
@@ -380,28 +460,46 @@ func smaSeries(prices []decimal.Decimal, period int) []decimal.Decimal {
 }
 
 // localExtremaSlope 窓内の局所極値（high=true なら High の極大、false なら Low の極小）に
-// 最小二乗回帰を当てて傾きを返す。極値が2点未満なら ok=false。
-func localExtremaSlope(window []*models.StockBrandDailyPrice, high bool) (decimal.Decimal, bool) {
+// 最小二乗回帰を当てて傾きを返す。極値は左右 strength 本より厳密に大小である点のみを採用する
+// （fractal強度。同値は極値としない）。極値が minPoints 点未満なら ok=false。
+func localExtremaSlope(window []*models.StockBrandDailyPrice, high bool, strength, minPoints int) (decimal.Decimal, bool) {
 	type point struct {
 		x int
 		y decimal.Decimal
 	}
-	var pts []point
-	for j := 1; j < len(window)-1; j++ {
-		var v, prev, next decimal.Decimal
+	valueAt := func(idx int) decimal.Decimal {
 		if high {
-			v, prev, next = window[j].High, window[j-1].High, window[j+1].High
-			if v.GreaterThanOrEqual(prev) && v.GreaterThanOrEqual(next) {
-				pts = append(pts, point{j, v})
+			return window[idx].High
+		}
+		return window[idx].Low
+	}
+
+	var pts []point
+	for j := strength; j < len(window)-strength; j++ {
+		v := valueAt(j)
+		isExtreme := true
+		for k := j - strength; k <= j+strength; k++ {
+			if k == j {
+				continue
 			}
-		} else {
-			v, prev, next = window[j].Low, window[j-1].Low, window[j+1].Low
-			if v.LessThanOrEqual(prev) && v.LessThanOrEqual(next) {
-				pts = append(pts, point{j, v})
+			nv := valueAt(k)
+			if high {
+				if nv.GreaterThanOrEqual(v) {
+					isExtreme = false
+					break
+				}
+			} else {
+				if nv.LessThanOrEqual(v) {
+					isExtreme = false
+					break
+				}
 			}
 		}
+		if isExtreme {
+			pts = append(pts, point{j, v})
+		}
 	}
-	if len(pts) < 2 {
+	if len(pts) < minPoints {
 		return decimal.Zero, false
 	}
 
@@ -421,4 +519,34 @@ func localExtremaSlope(window []*models.StockBrandDailyPrice, high bool) (decima
 	// slope = (n*Σxy - Σx*Σy) / (n*Σx² - (Σx)²)
 	slope := nn.Mul(sumXY).Sub(sumX.Mul(sumY)).Div(denom)
 	return slope, true
+}
+
+// avgPriceRange 区間の平均日中レンジ (High-Low)。
+func avgPriceRange(prices []*models.StockBrandDailyPrice) decimal.Decimal {
+	if len(prices) == 0 {
+		return decimal.Zero
+	}
+	sum := decimal.Zero
+	for _, p := range prices {
+		sum = sum.Add(p.High.Sub(p.Low))
+	}
+	return sum.Div(decimal.NewFromInt(int64(len(prices))))
+}
+
+// maxHighInLookback idx 直前 lookback 日（idx は含まない）の最大高値。範囲が空なら decimal.Zero。
+func maxHighInLookback(prices []*models.StockBrandDailyPrice, idx, lookback int) decimal.Decimal {
+	start := idx - lookback
+	if start < 0 {
+		start = 0
+	}
+	if start >= idx {
+		return decimal.Zero
+	}
+	m := prices[start].High
+	for j := start + 1; j < idx; j++ {
+		if prices[j].High.GreaterThan(m) {
+			m = prices[j].High
+		}
+	}
+	return m
 }

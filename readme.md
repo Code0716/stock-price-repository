@@ -665,6 +665,48 @@ curl "http://localhost:8080/quiz/results?date=2026-07-03"
 curl "http://localhost:8080/quiz/stats"
 ```
 
+#### 買い候補取得
+
+指定日（`create_daily_stock_picks_v1` の選定基準日）の推奨銘柄一覧とサマリを取得します。`date` を省略すると最新の選定日にフォールバックします。該当日にデータが無い場合も 200 を返し、`pickDate` が `null`・`items` が空配列になります。
+
+- **URL**: `/daily-stock-picks`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `date` (任意): 選定基準日 (YYYY-MM-DD)。省略時は最新の選定日
+
+```bash
+curl "http://localhost:8080/daily-stock-picks"
+curl "http://localhost:8080/daily-stock-picks?date=2026-07-24"
+```
+
+#### 買い候補の選定日一覧取得
+
+日付セレクタ用に、推奨が存在する選定日を新しい順で取得します。
+
+- **URL**: `/daily-stock-picks/dates`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `limit` (任意): 取得件数（既定 90、上限 400）
+
+```bash
+curl "http://localhost:8080/daily-stock-picks/dates?limit=30"
+```
+
+#### 買い候補の累計成績取得
+
+勝率・平均リターンの合計、日次推移、スコア帯別（10点刻み）の的中率を取得します。スコア定義の異なる推奨を混ぜて集計しないよう、`score_version` で常に絞り込みます（省略時は現行バージョン）。
+
+- **URL**: `/daily-stock-picks/stats`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `from` / `to` (任意): 集計期間 (YYYY-MM-DD)
+  - `score_version` (任意): スコア定義バージョン。省略時は現行バージョン（`v1`）
+
+```bash
+curl "http://localhost:8080/daily-stock-picks/stats"
+curl "http://localhost:8080/daily-stock-picks/stats?from=2026-07-01&to=2026-07-31"
+```
+
 ## Box セットアップ
 
 データエクスポートコマンド（`export_yearly_data`, `export_master_data`）は、SQL ファイル生成後に **rclone** 経由で Box へ自動アップロードします。Individual（個人）アカウントで動作します。

@@ -85,6 +85,36 @@ func (mr *MockDailyStockPickRepositoryMockRecorder) ExistsByPickDate(ctx, pickDa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistsByPickDate", reflect.TypeOf((*MockDailyStockPickRepository)(nil).ExistsByPickDate), ctx, pickDate)
 }
 
+// FindLatestPickDate mocks base method.
+func (m *MockDailyStockPickRepository) FindLatestPickDate(ctx context.Context) (*time.Time, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindLatestPickDate", ctx)
+	ret0, _ := ret[0].(*time.Time)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindLatestPickDate indicates an expected call of FindLatestPickDate.
+func (mr *MockDailyStockPickRepositoryMockRecorder) FindLatestPickDate(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindLatestPickDate", reflect.TypeOf((*MockDailyStockPickRepository)(nil).FindLatestPickDate), ctx)
+}
+
+// ListByDateRange mocks base method.
+func (m *MockDailyStockPickRepository) ListByDateRange(ctx context.Context, from, to *time.Time, scoreVersion string) ([]*models.DailyStockPick, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByDateRange", ctx, from, to, scoreVersion)
+	ret0, _ := ret[0].([]*models.DailyStockPick)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByDateRange indicates an expected call of ListByDateRange.
+func (mr *MockDailyStockPickRepositoryMockRecorder) ListByDateRange(ctx, from, to, scoreVersion any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByDateRange", reflect.TypeOf((*MockDailyStockPickRepository)(nil).ListByDateRange), ctx, from, to, scoreVersion)
+}
+
 // ListByPickDate mocks base method.
 func (m *MockDailyStockPickRepository) ListByPickDate(ctx context.Context, pickDate time.Time) ([]*models.DailyStockPick, error) {
 	m.ctrl.T.Helper()
@@ -113,6 +143,21 @@ func (m *MockDailyStockPickRepository) ListPendingEvaluation(ctx context.Context
 func (mr *MockDailyStockPickRepositoryMockRecorder) ListPendingEvaluation(ctx, onOrAfter any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPendingEvaluation", reflect.TypeOf((*MockDailyStockPickRepository)(nil).ListPendingEvaluation), ctx, onOrAfter)
+}
+
+// ListPickDates mocks base method.
+func (m *MockDailyStockPickRepository) ListPickDates(ctx context.Context, limit int) ([]time.Time, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPickDates", ctx, limit)
+	ret0, _ := ret[0].([]time.Time)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPickDates indicates an expected call of ListPickDates.
+func (mr *MockDailyStockPickRepositoryMockRecorder) ListPickDates(ctx, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPickDates", reflect.TypeOf((*MockDailyStockPickRepository)(nil).ListPickDates), ctx, limit)
 }
 
 // MarkNotified mocks base method.

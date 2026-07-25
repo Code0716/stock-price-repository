@@ -36,6 +36,8 @@ var usecaseSet = wire.NewSet(
 	usecase.NewCreateQuizDailyUniverseInteractor,
 	usecase.NewGradeQuizAnswersInteractor,
 	usecase.NewQuizInteractor,
+	usecase.NewCreateDailyStockPicksInteractor,
+	usecase.NewEvaluateDailyStockPicksInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -68,6 +70,8 @@ var cliSet = wire.NewSet(
 	commands.NewSyncFinStatementsAllStocksCommand,
 	commands.NewGradeQuizAnswersV1Command,
 	commands.NewCreateQuizDailyUniverseV1Command,
+	commands.NewCreateDailyStockPicksV1Command,
+	commands.NewEvaluateDailyStockPicksV1Command,
 )
 
 var databaseSet = wire.NewSet(
@@ -90,6 +94,7 @@ var databaseSet = wire.NewSet(
 	database.NewSector17AverageDailyPriceRepositoryImpl,
 	database.NewQuizDailyUniverseRepositoryImpl,
 	database.NewQuizAnswerRepositoryImpl,
+	database.NewDailyStockPickRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {

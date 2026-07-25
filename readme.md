@@ -178,6 +178,32 @@ make cli command=create_quiz_daily_universe_v1
 make cli command=grade_quiz_answers_v1
 ```
 
+### 翌営業日の買い候補スクリーニング＋Slack通知
+
+最新営業日の引け値で、既存4戦略（MACD強気・ボリンジャーブレイク・三角持ち合いブレイク・移動平均5/25/75上抜け）のいずれかが点灯した主要市場銘柄を対象に、点灯戦略数・出来高急増度・ADX・ATR・流動性・RSI を合成した複合スコア（0〜100）で順位付けし、上位N件（既定25件）を Slack（`gateway.SlackChannelNameExchangeStockInfo`）へ通知します。結果は `daily_stock_pick` テーブルに保存し、後日の答え合わせ（下記）に使います。
+
+`create_daily_stock_price_v1` の後、当日終値取得後に実行してください。既に当日分が作成済み・全件通知済みの場合は何もしません（冪等）。
+
+```bash
+make cli command=create_daily_stock_picks_v1
+
+# フラグ例
+make cli command="create_daily_stock_picks_v1 --top-n=25 --max-per-sector=4 --concurrency=0 --force"
+```
+
+- `--top-n`: 通知する銘柄数（既定 25）
+- `--max-per-sector`: 同一33業種からの最大採用数、0で無制限（既定 4）
+- `--concurrency`: ワーカー数、0でCPUコア数（既定 0）
+- `--force`: 当日分が既にあっても作り直して再通知する
+
+### 買い候補の答え合わせ
+
+`create_daily_stock_picks_v1` で保存した推奨のうち未確定のものについて、1/3/5営業日後リターンと勝敗（win/lose/draw/void）を確定させます。`create_daily_stock_price_v1` の後、`create_daily_stock_picks_v1` より先に実行してください（その日の答え合わせを早く確定させる）。
+
+```bash
+make cli command=evaluate_daily_stock_picks_v1
+```
+
 ### データエクスポート
 
 DB のデータを SQL ファイルとして mysqldump し、Box (box.com) へ自動アップロードします。

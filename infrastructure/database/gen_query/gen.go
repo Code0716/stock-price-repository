@@ -20,6 +20,7 @@ var (
 	AnalyzeStockBrandPriceHistory     *analyzeStockBrandPriceHistory
 	AppliedStockConsolidationsHistory *appliedStockConsolidationsHistory
 	AppliedStockSplitsHistory         *appliedStockSplitsHistory
+	DailyStockPick                    *dailyStockPick
 	DaytradeExecution                 *daytradeExecution
 	DaytradeTradeNote                 *daytradeTradeNote
 	DjiStockAverageDailyStockPrice    *djiStockAverageDailyStockPrice
@@ -43,6 +44,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	AnalyzeStockBrandPriceHistory = &Q.AnalyzeStockBrandPriceHistory
 	AppliedStockConsolidationsHistory = &Q.AppliedStockConsolidationsHistory
 	AppliedStockSplitsHistory = &Q.AppliedStockSplitsHistory
+	DailyStockPick = &Q.DailyStockPick
 	DaytradeExecution = &Q.DaytradeExecution
 	DaytradeTradeNote = &Q.DaytradeTradeNote
 	DjiStockAverageDailyStockPrice = &Q.DjiStockAverageDailyStockPrice
@@ -67,6 +69,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		AnalyzeStockBrandPriceHistory:     newAnalyzeStockBrandPriceHistory(db, opts...),
 		AppliedStockConsolidationsHistory: newAppliedStockConsolidationsHistory(db, opts...),
 		AppliedStockSplitsHistory:         newAppliedStockSplitsHistory(db, opts...),
+		DailyStockPick:                    newDailyStockPick(db, opts...),
 		DaytradeExecution:                 newDaytradeExecution(db, opts...),
 		DaytradeTradeNote:                 newDaytradeTradeNote(db, opts...),
 		DjiStockAverageDailyStockPrice:    newDjiStockAverageDailyStockPrice(db, opts...),
@@ -92,6 +95,7 @@ type Query struct {
 	AnalyzeStockBrandPriceHistory     analyzeStockBrandPriceHistory
 	AppliedStockConsolidationsHistory appliedStockConsolidationsHistory
 	AppliedStockSplitsHistory         appliedStockSplitsHistory
+	DailyStockPick                    dailyStockPick
 	DaytradeExecution                 daytradeExecution
 	DaytradeTradeNote                 daytradeTradeNote
 	DjiStockAverageDailyStockPrice    djiStockAverageDailyStockPrice
@@ -120,6 +124,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		AnalyzeStockBrandPriceHistory:     q.AnalyzeStockBrandPriceHistory.clone(db),
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.clone(db),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.clone(db),
+		DailyStockPick:                    q.DailyStockPick.clone(db),
 		DaytradeExecution:                 q.DaytradeExecution.clone(db),
 		DaytradeTradeNote:                 q.DaytradeTradeNote.clone(db),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.clone(db),
@@ -153,6 +158,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		AnalyzeStockBrandPriceHistory:     q.AnalyzeStockBrandPriceHistory.replaceDB(db),
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.replaceDB(db),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.replaceDB(db),
+		DailyStockPick:                    q.DailyStockPick.replaceDB(db),
 		DaytradeExecution:                 q.DaytradeExecution.replaceDB(db),
 		DaytradeTradeNote:                 q.DaytradeTradeNote.replaceDB(db),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.replaceDB(db),
@@ -176,6 +182,7 @@ type queryCtx struct {
 	AnalyzeStockBrandPriceHistory     IAnalyzeStockBrandPriceHistoryDo
 	AppliedStockConsolidationsHistory IAppliedStockConsolidationsHistoryDo
 	AppliedStockSplitsHistory         IAppliedStockSplitsHistoryDo
+	DailyStockPick                    IDailyStockPickDo
 	DaytradeExecution                 IDaytradeExecutionDo
 	DaytradeTradeNote                 IDaytradeTradeNoteDo
 	DjiStockAverageDailyStockPrice    IDjiStockAverageDailyStockPriceDo
@@ -199,6 +206,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		AnalyzeStockBrandPriceHistory:     q.AnalyzeStockBrandPriceHistory.WithContext(ctx),
 		AppliedStockConsolidationsHistory: q.AppliedStockConsolidationsHistory.WithContext(ctx),
 		AppliedStockSplitsHistory:         q.AppliedStockSplitsHistory.WithContext(ctx),
+		DailyStockPick:                    q.DailyStockPick.WithContext(ctx),
 		DaytradeExecution:                 q.DaytradeExecution.WithContext(ctx),
 		DaytradeTradeNote:                 q.DaytradeTradeNote.WithContext(ctx),
 		DjiStockAverageDailyStockPrice:    q.DjiStockAverageDailyStockPrice.WithContext(ctx),

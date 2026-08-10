@@ -68,7 +68,22 @@ func (qi *quizInteractorImpl) resolveQuizDate(ctx context.Context, date *time.Ti
 	if date != nil {
 		return date, nil
 	}
-	return qi.quizDailyUniverseRepository.FindLatestQuizDate(ctx)
+	latest, err := qi.quizDailyUniverseRepository.FindLatestQuizDate(ctx)
+	if err != nil {
+		return nil, pkgerrors.Wrap(err, "FindLatestQuizDate error")
+	}
+	if latest == nil {
+		return nil, nil
+	}
+	// 翌営業日の日足が既に存在する場合、採点基準となる終値が確定済みの過去問なので出題しない。
+	next, err := qi.stockBrandsDailyStockPriceRepository.FindNextTradingDate(ctx, *latest)
+	if err != nil {
+		return nil, pkgerrors.Wrap(err, "FindNextTradingDate error")
+	}
+	if next != nil {
+		return nil, nil
+	}
+	return latest, nil
 }
 
 func (qi *quizInteractorImpl) GetQuestions(ctx context.Context, date *time.Time) (*models.QuizQuestionSet, error) {

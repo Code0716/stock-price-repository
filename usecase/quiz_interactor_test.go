@@ -110,35 +110,113 @@ func TestQuizInteractorImpl_SubmitAnswer(t *testing.T) {
 func TestQuizInteractorImpl_GetQuestions(t *testing.T) {
 	quizDate := time.Date(2026, 7, 3, 0, 0, 0, 0, time.UTC)
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Run("日付を明示指定した場合はFindNextTradingDateを呼ばずそのまま返す", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 
-	universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
-	universeRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizUniverseEntry{
-		{StockBrandID: "brand-a", QuestionOrder: 1},
-		{StockBrandID: "brand-b", QuestionOrder: 2},
-	}, nil)
+		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
+		universeRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizUniverseEntry{
+			{StockBrandID: "brand-a", QuestionOrder: 1},
+			{StockBrandID: "brand-b", QuestionOrder: 2},
+		}, nil)
 
-	answerRepo := mock_repositories.NewMockQuizAnswerRepository(ctrl)
-	answerRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizAnswer{
-		{StockBrandID: "brand-a", Prediction: models.QuizPredictionUp},
-	}, nil)
+		answerRepo := mock_repositories.NewMockQuizAnswerRepository(ctrl)
+		answerRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizAnswer{
+			{StockBrandID: "brand-a", Prediction: models.QuizPredictionUp},
+		}, nil)
 
-	interactor := NewQuizInteractor(
-		universeRepo,
-		answerRepo,
-		mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
-		mock_repositories.NewMockStockBrandRepository(ctrl),
-	)
+		interactor := NewQuizInteractor(
+			universeRepo,
+			answerRepo,
+			// 日付指定時はFindNextTradingDateを呼ばないため、EXPECTを設定しないモックで
+			// 呼ばれたら即エラーになることを保証する。
+			mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
+			mock_repositories.NewMockStockBrandRepository(ctrl),
+		)
 
-	got, err := interactor.GetQuestions(context.Background(), &quizDate)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, got.TotalCount)
-	assert.Equal(t, 1, got.AnsweredCount)
-	assert.True(t, got.Questions[0].Answered)
-	assert.Equal(t, "up", *got.Questions[0].Prediction)
-	assert.False(t, got.Questions[1].Answered)
-	assert.Nil(t, got.Questions[1].Prediction)
+		got, err := interactor.GetQuestions(context.Background(), &quizDate)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, got.TotalCount)
+		assert.Equal(t, 1, got.AnsweredCount)
+		assert.True(t, got.Questions[0].Answered)
+		assert.Equal(t, "up", *got.Questions[0].Prediction)
+		assert.False(t, got.Questions[1].Answered)
+		assert.Nil(t, got.Questions[1].Prediction)
+	})
+
+	t.Run("日付未指定+翌営業日の日足が未到来なら最新のquiz_dateを出題する", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
+		universeRepo.EXPECT().FindLatestQuizDate(gomock.Any()).Return(&quizDate, nil)
+		universeRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizUniverseEntry{
+			{StockBrandID: "brand-a", QuestionOrder: 1},
+		}, nil)
+
+		priceRepo := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+		priceRepo.EXPECT().FindNextTradingDate(gomock.Any(), quizDate).Return(nil, nil)
+
+		answerRepo := mock_repositories.NewMockQuizAnswerRepository(ctrl)
+		answerRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizAnswer{}, nil)
+
+		interactor := NewQuizInteractor(
+			universeRepo,
+			answerRepo,
+			priceRepo,
+			mock_repositories.NewMockStockBrandRepository(ctrl),
+		)
+
+		got, err := interactor.GetQuestions(context.Background(), nil)
+		assert.NoError(t, err)
+		assert.Equal(t, "2026-07-03", got.QuizDate)
+		assert.Equal(t, 1, got.TotalCount)
+	})
+
+	t.Run("日付未指定+翌営業日の日足が既に存在するなら答えが確定済みの過去問なので空を返す（回帰テスト）", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		nextDate := quizDate.AddDate(0, 0, 3)
+
+		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
+		universeRepo.EXPECT().FindLatestQuizDate(gomock.Any()).Return(&quizDate, nil)
+
+		priceRepo := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+		priceRepo.EXPECT().FindNextTradingDate(gomock.Any(), quizDate).Return(&nextDate, nil)
+
+		interactor := NewQuizInteractor(
+			universeRepo,
+			mock_repositories.NewMockQuizAnswerRepository(ctrl),
+			priceRepo,
+			mock_repositories.NewMockStockBrandRepository(ctrl),
+		)
+
+		got, err := interactor.GetQuestions(context.Background(), nil)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, got.TotalCount)
+		assert.Empty(t, got.Questions)
+	})
+
+	t.Run("日付未指定+universeが0件なら空を返す", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
+		universeRepo.EXPECT().FindLatestQuizDate(gomock.Any()).Return(nil, nil)
+
+		interactor := NewQuizInteractor(
+			universeRepo,
+			mock_repositories.NewMockQuizAnswerRepository(ctrl),
+			mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
+			mock_repositories.NewMockStockBrandRepository(ctrl),
+		)
+
+		got, err := interactor.GetQuestions(context.Background(), nil)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, got.TotalCount)
+		assert.Empty(t, got.Questions)
+	})
 }
 
 func TestQuizInteractorImpl_GetResults_SortedByQuestionOrder(t *testing.T) {

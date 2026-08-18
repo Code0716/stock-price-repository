@@ -116,8 +116,8 @@ func TestQuizInteractorImpl_GetQuestions(t *testing.T) {
 
 		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
 		universeRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizUniverseEntry{
-			{StockBrandID: "brand-a", QuestionOrder: 1},
-			{StockBrandID: "brand-b", QuestionOrder: 2},
+			{StockBrandID: "brand-a", TickerSymbol: "A001", QuestionOrder: 1},
+			{StockBrandID: "brand-b", TickerSymbol: "B002", QuestionOrder: 2},
 		}, nil)
 
 		answerRepo := mock_repositories.NewMockQuizAnswerRepository(ctrl)
@@ -125,21 +125,29 @@ func TestQuizInteractorImpl_GetQuestions(t *testing.T) {
 			{StockBrandID: "brand-a", Prediction: models.QuizPredictionUp},
 		}, nil)
 
+		stockBrandRepo := mock_repositories.NewMockStockBrandRepository(ctrl)
+		stockBrandRepo.EXPECT().FindByIDs(gomock.Any(), []string{"brand-a", "brand-b"}).Return(
+			[]*models.StockBrand{{ID: "brand-a", Name: "銘柄A"}, {ID: "brand-b", Name: "銘柄B"}}, nil)
+
 		interactor := NewQuizInteractor(
 			universeRepo,
 			answerRepo,
 			// 日付指定時はFindNextTradingDateを呼ばないため、EXPECTを設定しないモックで
 			// 呼ばれたら即エラーになることを保証する。
 			mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl),
-			mock_repositories.NewMockStockBrandRepository(ctrl),
+			stockBrandRepo,
 		)
 
 		got, err := interactor.GetQuestions(context.Background(), &quizDate)
 		assert.NoError(t, err)
 		assert.Equal(t, 2, got.TotalCount)
 		assert.Equal(t, 1, got.AnsweredCount)
+		assert.Equal(t, "A001", got.Questions[0].TickerSymbol)
+		assert.Equal(t, "銘柄A", got.Questions[0].Name)
 		assert.True(t, got.Questions[0].Answered)
 		assert.Equal(t, "up", *got.Questions[0].Prediction)
+		assert.Equal(t, "B002", got.Questions[1].TickerSymbol)
+		assert.Equal(t, "銘柄B", got.Questions[1].Name)
 		assert.False(t, got.Questions[1].Answered)
 		assert.Nil(t, got.Questions[1].Prediction)
 	})
@@ -151,7 +159,7 @@ func TestQuizInteractorImpl_GetQuestions(t *testing.T) {
 		universeRepo := mock_repositories.NewMockQuizDailyUniverseRepository(ctrl)
 		universeRepo.EXPECT().FindLatestQuizDate(gomock.Any()).Return(&quizDate, nil)
 		universeRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizUniverseEntry{
-			{StockBrandID: "brand-a", QuestionOrder: 1},
+			{StockBrandID: "brand-a", TickerSymbol: "A001", QuestionOrder: 1},
 		}, nil)
 
 		priceRepo := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
@@ -160,11 +168,15 @@ func TestQuizInteractorImpl_GetQuestions(t *testing.T) {
 		answerRepo := mock_repositories.NewMockQuizAnswerRepository(ctrl)
 		answerRepo.EXPECT().ListByQuizDate(gomock.Any(), quizDate).Return([]*models.QuizAnswer{}, nil)
 
+		stockBrandRepo := mock_repositories.NewMockStockBrandRepository(ctrl)
+		stockBrandRepo.EXPECT().FindByIDs(gomock.Any(), []string{"brand-a"}).Return(
+			[]*models.StockBrand{{ID: "brand-a", Name: "銘柄A"}}, nil)
+
 		interactor := NewQuizInteractor(
 			universeRepo,
 			answerRepo,
 			priceRepo,
-			mock_repositories.NewMockStockBrandRepository(ctrl),
+			stockBrandRepo,
 		)
 
 		got, err := interactor.GetQuestions(context.Background(), nil)

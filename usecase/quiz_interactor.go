@@ -36,7 +36,7 @@ type quizInteractorImpl struct {
 }
 
 type QuizInteractor interface {
-	// GetQuestions 出題日の設問一覧と回答状況を返す（銘柄名は含まない）。dateがnilの場合は最新の出題日を使う。
+	// GetQuestions 出題日の設問一覧と回答状況を返す（銘柄コード・名称を含む）。dateがnilの場合は最新の出題日を使う。
 	GetQuestions(ctx context.Context, date *time.Time) (*models.QuizQuestionSet, error)
 	// GetChart 指定設問の匿名チャート（ローソク足+MA5/25/75+出来高）を返す。
 	// reveal=true の場合は答え合わせ用に出題基準日より後のローソク足も含める。
@@ -109,10 +109,25 @@ func (qi *quizInteractorImpl) GetQuestions(ctx context.Context, date *time.Time)
 		answerByBrand[a.StockBrandID] = a
 	}
 
+	brandIDs := make([]string, 0, len(universe))
+	for _, u := range universe {
+		brandIDs = append(brandIDs, u.StockBrandID)
+	}
+	brands, err := qi.stockBrandRepository.FindByIDs(ctx, brandIDs)
+	if err != nil {
+		return nil, pkgerrors.Wrap(err, "FindByIDs error")
+	}
+	nameByBrand := make(map[string]string, len(brands))
+	for _, b := range brands {
+		nameByBrand[b.ID] = b.Name
+	}
+
 	questions := make([]*models.QuizQuestion, 0, len(universe))
 	for _, u := range universe {
 		q := &models.QuizQuestion{
 			StockBrandID:  u.StockBrandID,
+			TickerSymbol:  u.TickerSymbol,
+			Name:          nameByBrand[u.StockBrandID],
 			QuestionOrder: u.QuestionOrder,
 		}
 		if a, ok := answerByBrand[u.StockBrandID]; ok {

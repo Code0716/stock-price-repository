@@ -82,9 +82,11 @@ func (a *QuizAnswer) Graded() bool {
 
 // --- API レスポンス用の構造体 ---
 
-// QuizQuestion 1銘柄分の設問（銘柄名・コードは含まない＝非公開）。
+// QuizQuestion 1銘柄分の設問（出題時から銘柄コード・名称を公開する）。
 type QuizQuestion struct {
 	StockBrandID  string  `json:"stockBrandId"`
+	TickerSymbol  string  `json:"tickerSymbol"`
+	Name          string  `json:"name"`
 	QuestionOrder int     `json:"questionOrder"`
 	Answered      bool    `json:"answered"`
 	Prediction    *string `json:"prediction,omitempty"`

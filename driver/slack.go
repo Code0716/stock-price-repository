@@ -28,7 +28,7 @@ type SlackAPIClient struct {
 func NewSlackAPIClient(
 	request HTTPRequest,
 	redisClient *redis.Client,
-) gateway.SlackAPIClient {
+) gateway.SlackAPIClientRaw {
 	return &SlackAPIClient{
 		request,
 		redisClient,

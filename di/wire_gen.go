@@ -15,6 +15,7 @@ import (
 	"github.com/Code0716/stock-price-repository/infrastructure/cli"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/database"
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/usecase"
 	"github.com/google/wire"
 	"go.uber.org/zap"
@@ -26,8 +27,7 @@ import (
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	httpRequest := driver.NewHTTPRequest()
 	client := driver.OpenRedis()
-	slackAPIClient := driver.NewSlackAPIClient(httpRequest, client)
-	healthCheckCommand := commands.NewHealthCheckCommand(slackAPIClient)
+	slackAPIClientRaw := driver.NewSlackAPIClient(httpRequest, client)
 	db, cleanup, err := driver.NewDBConn()
 	if err != nil {
 		return nil, nil, err
@@ -37,6 +37,14 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
+	notificationHistoryRepository := database.NewNotificationHistoryRepositoryImpl(gormDB)
+	logger, err := driver.NewLogger()
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	slackAPIClient := gateway.NewRecordingSlackAPIClient(slackAPIClientRaw, notificationHistoryRepository, logger)
+	healthCheckCommand := commands.NewHealthCheckCommand(slackAPIClient)
 	transaction := database.NewTransaction(gormDB)
 	stockBrandRepository := database.NewStockBrandRepositoryImpl(gormDB)
 	stockBrandsDailyPriceRepository := database.NewStockBrandsDailyPriceRepositoryImpl(gormDB)
@@ -104,14 +112,16 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	httpRequest := driver.NewHTTPRequest()
 	client := driver.OpenRedis()
 	stockAPIClient := driver.NewStockAPIClient(httpRequest, client)
-	slackAPIClient := driver.NewSlackAPIClient(httpRequest, client)
-	stockBrandsDailyPriceInteractor := usecase.NewStockBrandsDailyPriceInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client, slackAPIClient)
-	httpServer := driver.NewHTTPServer()
+	slackAPIClientRaw := driver.NewSlackAPIClient(httpRequest, client)
+	notificationHistoryRepository := database.NewNotificationHistoryRepositoryImpl(gormDB)
 	logger, err := driver.NewLogger()
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
+	slackAPIClient := gateway.NewRecordingSlackAPIClient(slackAPIClientRaw, notificationHistoryRepository, logger)
+	stockBrandsDailyPriceInteractor := usecase.NewStockBrandsDailyPriceInteractor(transaction, stockBrandRepository, stockBrandsDailyPriceRepository, stockBrandsDailyPriceForAnalyzeRepository, stockAPIClient, client, slackAPIClient)
+	httpServer := driver.NewHTTPServer()
 	stockPriceHandler := handler.NewStockPriceHandler(stockBrandsDailyPriceInteractor, httpServer, logger)
 	analyzeStockBrandPriceHistoryRepository := database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl(gormDB)
 	finAnnouncementRepository := database.NewFinAnnouncementRepositoryImpl(gormDB)
@@ -151,7 +161,9 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	dailyStockPickRepository := database.NewDailyStockPickRepositoryImpl(gormDB)
 	dailyStockPickInteractor := usecase.NewDailyStockPickInteractor(dailyStockPickRepository, stockBrandRepository)
 	dailyStockPickHandler := handler.NewDailyStockPickHandler(dailyStockPickInteractor, httpServer, logger)
-	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler, daytradeHandler, returnAnalysisHandler, backtestHandler, strategyRankingHandler, valuationHandler, technicalIndicatorsHandler, signalPerformanceHandler, sectorPerformanceHandler, quizHandler, dailyStockPickHandler)
+	notificationHistoryInteractor := usecase.NewNotificationHistoryInteractor(notificationHistoryRepository)
+	notificationHandler := handler.NewNotificationHandler(notificationHistoryInteractor, httpServer, logger)
+	serveMux := router.NewRouter(stockPriceHandler, stockBrandHandler, analyzeStockBrandPriceHistoryHandler, multipleSignalStocksHandler, finAnnouncementHandler, finStatementHandler, daytradeHandler, returnAnalysisHandler, backtestHandler, strategyRankingHandler, valuationHandler, technicalIndicatorsHandler, signalPerformanceHandler, sectorPerformanceHandler, quizHandler, dailyStockPickHandler, notificationHandler)
 	return serveMux, func() {
 		cleanup()
 	}, nil
@@ -186,15 +198,15 @@ func InitializeStockServiceServer(ctx context.Context) (*GrpcServerComponents, f
 
 // wire.go:
 
-var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation, usecase.NewDaytradeInteractor, usecase.NewReturnAnalysisInteractor, usecase.NewBacktestInteractor, usecase.NewStrategyRankingInteractor, usecase.NewValuationInteractor, usecase.NewTechnicalIndicatorsInteractor, usecase.NewSignalPerformanceInteractor, usecase.NewSectorPerformanceInteractor, usecase.NewCreateQuizDailyUniverseInteractor, usecase.NewGradeQuizAnswersInteractor, usecase.NewQuizInteractor, usecase.NewCreateDailyStockPicksInteractor, usecase.NewEvaluateDailyStockPicksInteractor, usecase.NewDailyStockPickInteractor)
+var usecaseSet = wire.NewSet(usecase.NewStockBrandInteractor, usecase.NewIndexInteractor, usecase.NewStockBrandsDailyPriceInteractor, usecase.NewAdjustHistoricalDataForStockSplit, usecase.NewAdjustHistoricalDataForStockConsolidation, usecase.NewDaytradeInteractor, usecase.NewReturnAnalysisInteractor, usecase.NewBacktestInteractor, usecase.NewStrategyRankingInteractor, usecase.NewValuationInteractor, usecase.NewTechnicalIndicatorsInteractor, usecase.NewSignalPerformanceInteractor, usecase.NewSectorPerformanceInteractor, usecase.NewCreateQuizDailyUniverseInteractor, usecase.NewGradeQuizAnswersInteractor, usecase.NewQuizInteractor, usecase.NewCreateDailyStockPicksInteractor, usecase.NewEvaluateDailyStockPicksInteractor, usecase.NewDailyStockPickInteractor, usecase.NewNotificationHistoryInteractor)
 
-var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewBoxAPIClient, driver.NewLogger)
+var driverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, gateway.NewRecordingSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewBoxAPIClient, driver.NewLogger)
 
 var cliSet = wire.NewSet(cli.NewRunner, commands.NewHealthCheckCommand, commands.NewUpdateStockBrandsV1Command, commands.NewCreateHistoricalDailyStockPricesV1Command, commands.NewCreateDailyStockPriceV1Command, commands.NewCreateNikkeiAndDjiHistoricalDataV1Command, commands.NewAdjustHistoricalDataForStockSplitCommand, commands.NewAdjustHistoricalDataForStockConsolidationCommand, commands.NewExportYearlyDataCommand, commands.NewExportMasterDataCommand, commands.NewSyncFinAnnouncementsCommand, commands.NewSyncFinStatementsCommand, commands.NewBacktestAllStocksCommand, commands.NewSyncFinStatementsAllStocksCommand, commands.NewGradeQuizAnswersV1Command, commands.NewCreateQuizDailyUniverseV1Command, commands.NewCreateDailyStockPicksV1Command, commands.NewEvaluateDailyStockPicksV1Command)
 
-var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewTopixRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl, database.NewDaytradeTradeNoteRepositoryImpl, database.NewSector33AverageDailyPriceRepositoryImpl, database.NewSector17AverageDailyPriceRepositoryImpl, database.NewQuizDailyUniverseRepositoryImpl, database.NewQuizAnswerRepositoryImpl, database.NewDailyStockPickRepositoryImpl)
+var databaseSet = wire.NewSet(database.NewTransaction, database.NewStockBrandRepositoryImpl, database.NewNikkeiRepositoryImpl, database.NewDjiRepositoryImpl, database.NewTopixRepositoryImpl, database.NewStockBrandsDailyPriceRepositoryImpl, database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl, database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl, database.NewHighVolumeStockBrandRepositoryImpl, database.NewAppliedStockSplitsHistoryRepositoryImpl, database.NewAppliedStockConsolidationsHistoryRepositoryImpl, database.NewFinAnnouncementRepositoryImpl, database.NewFinStatementRepositoryImpl, database.NewDaytradeExecutionRepositoryImpl, database.NewDaytradeTradeNoteRepositoryImpl, database.NewSector33AverageDailyPriceRepositoryImpl, database.NewSector17AverageDailyPriceRepositoryImpl, database.NewQuizDailyUniverseRepositoryImpl, database.NewQuizAnswerRepositoryImpl, database.NewDailyStockPickRepositoryImpl, database.NewNotificationHistoryRepositoryImpl)
 
-var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, handler.NewReturnAnalysisHandler, handler.NewBacktestHandler, handler.NewStrategyRankingHandler, handler.NewValuationHandler, handler.NewTechnicalIndicatorsHandler, handler.NewSignalPerformanceHandler, handler.NewSectorPerformanceHandler, handler.NewQuizHandler, handler.NewDailyStockPickHandler, router.NewRouter)
+var apiSet = wire.NewSet(handler.NewStockPriceHandler, handler.NewStockBrandHandler, handler.NewAnalyzeStockBrandPriceHistoryHandler, handler.NewMultipleSignalStocksHandler, handler.NewFinAnnouncementHandler, handler.NewFinStatementHandler, handler.NewDaytradeHandler, handler.NewReturnAnalysisHandler, handler.NewBacktestHandler, handler.NewStrategyRankingHandler, handler.NewValuationHandler, handler.NewTechnicalIndicatorsHandler, handler.NewSignalPerformanceHandler, handler.NewSectorPerformanceHandler, handler.NewQuizHandler, handler.NewDailyStockPickHandler, handler.NewNotificationHandler, router.NewRouter)
 
 var grpcSet = wire.NewSet(server.NewStockServiceServer, usecase.NewGetHighVolumeStockBrandsUseCase, wire.Struct(new(GrpcServerComponents), "*"))
 
@@ -203,4 +215,4 @@ type GrpcServerComponents struct {
 	Logger *zap.Logger
 }
 
-var grpcDriverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewLogger)
+var grpcDriverSet = wire.NewSet(driver.NewGorm, driver.NewDBConn, driver.NewHTTPRequest, driver.NewHTTPServer, driver.NewSlackAPIClient, gateway.NewRecordingSlackAPIClient, driver.OpenRedis, driver.NewStockAPIClient, driver.NewMySQLDumpClient, driver.NewLogger)

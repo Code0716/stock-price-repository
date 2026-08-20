@@ -23,6 +23,7 @@ func NewRouter(
 	sectorPerformanceHandler *handler.SectorPerformanceHandler,
 	quizHandler *handler.QuizHandler,
 	dailyStockPickHandler *handler.DailyStockPickHandler,
+	notificationHandler *handler.NotificationHandler,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
@@ -66,6 +67,9 @@ func NewRouter(
 	}
 	if sectorPerformanceHandler != nil {
 		mux.HandleFunc("/sector-performance", sectorPerformanceHandler.GetSectorPerformance)
+	}
+	if notificationHandler != nil {
+		mux.HandleFunc("/notifications", notificationHandler.GetNotificationHistories)
 	}
 	registerQuizRoutes(mux, quizHandler)
 	registerDaytradeRoutes(mux, daytradeHandler)

@@ -28,6 +28,7 @@ var (
 	FinStatement                      *finStatement
 	HighVolumeStockBrand              *highVolumeStockBrand
 	NikkeiStockAverageDailyPrice      *nikkeiStockAverageDailyPrice
+	NotificationHistory               *notificationHistory
 	QuizAnswer                        *quizAnswer
 	QuizDailyUniverse                 *quizDailyUniverse
 	SchemaMigration                   *schemaMigration
@@ -52,6 +53,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	FinStatement = &Q.FinStatement
 	HighVolumeStockBrand = &Q.HighVolumeStockBrand
 	NikkeiStockAverageDailyPrice = &Q.NikkeiStockAverageDailyPrice
+	NotificationHistory = &Q.NotificationHistory
 	QuizAnswer = &Q.QuizAnswer
 	QuizDailyUniverse = &Q.QuizDailyUniverse
 	SchemaMigration = &Q.SchemaMigration
@@ -77,6 +79,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		FinStatement:                      newFinStatement(db, opts...),
 		HighVolumeStockBrand:              newHighVolumeStockBrand(db, opts...),
 		NikkeiStockAverageDailyPrice:      newNikkeiStockAverageDailyPrice(db, opts...),
+		NotificationHistory:               newNotificationHistory(db, opts...),
 		QuizAnswer:                        newQuizAnswer(db, opts...),
 		QuizDailyUniverse:                 newQuizDailyUniverse(db, opts...),
 		SchemaMigration:                   newSchemaMigration(db, opts...),
@@ -103,6 +106,7 @@ type Query struct {
 	FinStatement                      finStatement
 	HighVolumeStockBrand              highVolumeStockBrand
 	NikkeiStockAverageDailyPrice      nikkeiStockAverageDailyPrice
+	NotificationHistory               notificationHistory
 	QuizAnswer                        quizAnswer
 	QuizDailyUniverse                 quizDailyUniverse
 	SchemaMigration                   schemaMigration
@@ -132,6 +136,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		FinStatement:                      q.FinStatement.clone(db),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.clone(db),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.clone(db),
+		NotificationHistory:               q.NotificationHistory.clone(db),
 		QuizAnswer:                        q.QuizAnswer.clone(db),
 		QuizDailyUniverse:                 q.QuizDailyUniverse.clone(db),
 		SchemaMigration:                   q.SchemaMigration.clone(db),
@@ -166,6 +171,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		FinStatement:                      q.FinStatement.replaceDB(db),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.replaceDB(db),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.replaceDB(db),
+		NotificationHistory:               q.NotificationHistory.replaceDB(db),
 		QuizAnswer:                        q.QuizAnswer.replaceDB(db),
 		QuizDailyUniverse:                 q.QuizDailyUniverse.replaceDB(db),
 		SchemaMigration:                   q.SchemaMigration.replaceDB(db),
@@ -190,6 +196,7 @@ type queryCtx struct {
 	FinStatement                      IFinStatementDo
 	HighVolumeStockBrand              IHighVolumeStockBrandDo
 	NikkeiStockAverageDailyPrice      INikkeiStockAverageDailyPriceDo
+	NotificationHistory               INotificationHistoryDo
 	QuizAnswer                        IQuizAnswerDo
 	QuizDailyUniverse                 IQuizDailyUniverseDo
 	SchemaMigration                   ISchemaMigrationDo
@@ -214,6 +221,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		FinStatement:                      q.FinStatement.WithContext(ctx),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.WithContext(ctx),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.WithContext(ctx),
+		NotificationHistory:               q.NotificationHistory.WithContext(ctx),
 		QuizAnswer:                        q.QuizAnswer.WithContext(ctx),
 		QuizDailyUniverse:                 q.QuizDailyUniverse.WithContext(ctx),
 		SchemaMigration:                   q.SchemaMigration.WithContext(ctx),

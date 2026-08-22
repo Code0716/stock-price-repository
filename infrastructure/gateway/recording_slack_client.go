@@ -28,8 +28,8 @@ func NewRecordingSlackAPIClient(inner SlackAPIClientRaw, repo repositories.Notif
 	}
 }
 
-// channelLabel Slack チャンネル定数から front 表示用のラベルへ変換する
-func channelLabel(channelName SlackChannelName) string {
+// ChannelLabel Slack チャンネル定数から front 表示用のラベルへ変換する
+func ChannelLabel(channelName SlackChannelName) string {
 	switch channelName {
 	case SlackChannelNameExchangeStockInfo:
 		return "株の情報交換"
@@ -75,7 +75,7 @@ func (c *recordingSlackAPIClient) record(ctx context.Context, channelName SlackC
 		"",
 		models.NotificationHistorySourceSpr,
 		channelName.String(),
-		channelLabel(channelName),
+		ChannelLabel(channelName),
 		title,
 		body,
 		time.Now(),

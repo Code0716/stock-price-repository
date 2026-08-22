@@ -13,6 +13,7 @@ import (
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	genModel "github.com/Code0716/stock-price-repository/infrastructure/database/gen_model"
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	mock_gateway "github.com/Code0716/stock-price-repository/mock/gateway"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/test/helper"
@@ -85,13 +86,14 @@ func TestE2E_DailyStockPicks(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockSlackAPI := mock_gateway.NewMockSlackAPIClient(ctrl)
+	mockSlackAPI := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
 	mockSlackAPI.EXPECT().
 		SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("1234.5678", nil).
 		AnyTimes()
+	notificationHistoryRepo := database.NewNotificationHistoryRepositoryImpl(db)
 
-	createInteractor := usecase.NewCreateDailyStockPicksInteractor(tx, priceRepo, stockBrandRepo, pickRepo, mockSlackAPI)
+	createInteractor := usecase.NewCreateDailyStockPicksInteractor(tx, priceRepo, stockBrandRepo, pickRepo, mockSlackAPI, notificationHistoryRepo)
 	createCmd := commands.NewCreateDailyStockPicksV1Command(createInteractor)
 	evaluateInteractor := usecase.NewEvaluateDailyStockPicksInteractor(tx, pickRepo, priceRepo, splitRepo, consolidationRepo)
 	evaluateCmd := commands.NewEvaluateDailyStockPicksV1Command(evaluateInteractor)
@@ -113,6 +115,12 @@ func TestE2E_DailyStockPicks(t *testing.T) {
 			assert.NotNil(t, rows[0].NotifiedAt)
 			assert.Contains(t, rows[0].Strategies, "ma_cross")
 		}
+
+		var notificationCount int64
+		assert.NoError(t, db.Table("notification_history").
+			Where("channel_id = ?", gateway.SlackChannelNameExchangeStockInfo.String()).
+			Count(&notificationCount).Error)
+		assert.Equal(t, int64(1), notificationCount, "分割送信していても notification_history には1件だけ記録される")
 	})
 
 	t.Run("再実行しても行が増えない（冪等）", func(t *testing.T) {

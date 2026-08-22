@@ -5,6 +5,7 @@ import (
 	"context"
 	"log"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -40,7 +41,8 @@ type createDailyStockPicksInteractorImpl struct {
 	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
 	stockBrandRepository                 repositories.StockBrandRepository
 	dailyStockPickRepository             repositories.DailyStockPickRepository
-	slackAPIClient                       gateway.SlackAPIClient
+	slackAPIClientRaw                    gateway.SlackAPIClientRaw
+	notificationHistoryRepository        repositories.NotificationHistoryRepository
 }
 
 func NewCreateDailyStockPicksInteractor(
@@ -48,14 +50,16 @@ func NewCreateDailyStockPicksInteractor(
 	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
 	stockBrandRepository repositories.StockBrandRepository,
 	dailyStockPickRepository repositories.DailyStockPickRepository,
-	slackAPIClient gateway.SlackAPIClient,
+	slackAPIClientRaw gateway.SlackAPIClientRaw,
+	notificationHistoryRepository repositories.NotificationHistoryRepository,
 ) CreateDailyStockPicksInteractor {
 	return &createDailyStockPicksInteractorImpl{
 		tx:                                   tx,
 		stockBrandsDailyStockPriceRepository: stockBrandsDailyStockPriceRepository,
 		stockBrandRepository:                 stockBrandRepository,
 		dailyStockPickRepository:             dailyStockPickRepository,
-		slackAPIClient:                       slackAPIClient,
+		slackAPIClientRaw:                    slackAPIClientRaw,
+		notificationHistoryRepository:        notificationHistoryRepository,
 	}
 }
 
@@ -214,13 +218,28 @@ func (ci *createDailyStockPicksInteractorImpl) notify(ctx context.Context, pickD
 
 	var ts *string
 	for i := range bodies {
-		sentTS, err := ci.slackAPIClient.SendMessageByStrings(ctx, gateway.SlackChannelNameExchangeStockInfo, title, &bodies[i], ts)
+		sentTS, err := ci.slackAPIClientRaw.SendMessageByStrings(ctx, gateway.SlackChannelNameExchangeStockInfo, title, &bodies[i], ts)
 		if err != nil {
 			return errors.Wrapf(err, "SendMessageByStrings error index=%d", i)
 		}
 		if ts == nil {
 			ts = &sentTS
 		}
+	}
+
+	// Slack へはチャンクごとに分割送信するが、notification_history へは結合した全文で1件だけ記録する。
+	fullBody := strings.Join(bodies, "\n\n")
+	notification := models.NewNotificationHistory(
+		"",
+		models.NotificationHistorySourceSpr,
+		gateway.SlackChannelNameExchangeStockInfo.String(),
+		gateway.ChannelLabel(gateway.SlackChannelNameExchangeStockInfo),
+		title,
+		&fullBody,
+		time.Now(),
+	)
+	if err := ci.notificationHistoryRepository.Create(ctx, notification); err != nil {
+		log.Printf("createDailyStockPicksInteractorImpl.notify: failed to record notification history. error=%s", err.Error())
 	}
 
 	if err := ci.dailyStockPickRepository.MarkNotified(ctx, pickDate, time.Now()); err != nil {

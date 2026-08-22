@@ -87,7 +87,7 @@ func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
 	dailyStockPickRepository := database.NewDailyStockPickRepositoryImpl(gormDB)
 	evaluateDailyStockPicksInteractor := usecase.NewEvaluateDailyStockPicksInteractor(transaction, dailyStockPickRepository, stockBrandsDailyPriceRepository, appliedStockSplitsHistoryRepository, appliedStockConsolidationsHistoryRepository)
 	evaluateDailyStockPicksV1Command := commands.NewEvaluateDailyStockPicksV1Command(evaluateDailyStockPicksInteractor)
-	createDailyStockPicksInteractor := usecase.NewCreateDailyStockPicksInteractor(transaction, stockBrandsDailyPriceRepository, stockBrandRepository, dailyStockPickRepository, slackAPIClient)
+	createDailyStockPicksInteractor := usecase.NewCreateDailyStockPicksInteractor(transaction, stockBrandsDailyPriceRepository, stockBrandRepository, dailyStockPickRepository, slackAPIClientRaw, notificationHistoryRepository)
 	createDailyStockPicksV1Command := commands.NewCreateDailyStockPicksV1Command(createDailyStockPicksInteractor)
 	runner := cli.NewRunner(healthCheckCommand, updateStockBrandsV1Command, createHistoricalDailyStockPricesV1Command, createDailyStockPriceV1Command, createNikkeiAndDjiHistoricalDataV1Command, adjustHistoricalDataForStockSplitCommand, adjustHistoricalDataForStockConsolidationCommand, exportYearlyDataCommand, exportMasterDataCommand, syncFinAnnouncementsCommand, syncFinStatementsCommand, backtestAllStocksCommand, syncFinStatementsAllStocksCommand, gradeQuizAnswersV1Command, createQuizDailyUniverseV1Command, evaluateDailyStockPicksV1Command, createDailyStockPicksV1Command, indexInteractor, slackAPIClient)
 	return runner, func() {

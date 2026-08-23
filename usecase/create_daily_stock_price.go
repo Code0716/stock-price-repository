@@ -24,6 +24,9 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) CreateDailyStockPrice(ctx co
 
 // createDailyStockPrice - 日足を作成する
 func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx context.Context, now time.Time) error {
+	// applyCorporateActionsForAnalyze で使うため、DoInTxの外からも参照できるようにしておく
+	var gatewayPrices []*gateway.StockPrice
+
 	err := si.tx.DoInTx(ctx, func(ctx context.Context) error {
 		// 銘柄を取得
 		currentBrands, err := si.stockBrandRepository.FindAll(ctx)
@@ -37,9 +40,10 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 		}
 
 		// J-Quantsから当日分の日足を1回だけ取得し、raw用・分析用の両方の変換に使う
-		gatewayPrices, err := si.stockAPIClient.GetAllBrandDailyPricesByDate(ctx, now)
-		if err != nil {
-			return errors.Wrap(err, "stockAPIClient.GetAllBrandDailyPricesByDate error")
+		var apiErr error
+		gatewayPrices, apiErr = si.stockAPIClient.GetAllBrandDailyPricesByDate(ctx, now)
+		if apiErr != nil {
+			return errors.Wrap(apiErr, "stockAPIClient.GetAllBrandDailyPricesByDate error")
 		}
 
 		// 全銘柄の日足を作成（素値。これまで通り保持する）
@@ -62,6 +66,12 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 	})
 	if err != nil {
 		return errors.Wrap(err, "DoInTx error")
+	}
+
+	// 権利落ち(分割・併合)が発生した銘柄はfor_analyzeの当該銘柄の全期間を
+	// J-Quantsの調整済みOHLCVで再取得・上書きする。外部APIを呼ぶためトランザクションの外で行う。
+	if err := si.applyCorporateActionsForAnalyze(ctx, gatewayPrices, now); err != nil {
+		return errors.Wrap(err, "applyCorporateActionsForAnalyze error")
 	}
 
 	return nil

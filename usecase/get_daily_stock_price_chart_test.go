@@ -130,7 +130,7 @@ func TestStockBrandsDailyStockPriceInteractorImpl_GetDailyStockPriceChart(t *tes
 			defer ctrl.Finish()
 
 			r := tt.fields.stockBrandsDailyStockPriceRepository(ctrl)
-			u := NewStockBrandsDailyPriceInteractor(nil, nil, r, nil, nil, nil, nil)
+			u := NewStockBrandsDailyPriceInteractor(nil, nil, r, nil, nil, nil, nil, nil, nil)
 
 			got, err := u.GetDailyStockPriceChart(tt.args.ctx, tt.args.symbol, tt.args.from, tt.args.to)
 			if (err != nil) != tt.wantErr {

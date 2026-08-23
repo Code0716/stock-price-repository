@@ -106,7 +106,7 @@ func TestStockBrandsDailyStockPriceInteractorImpl_GetDailyStockPrices(t *testing
 			r := tt.fields.stockBrandsDailyStockPriceRepository(ctrl)
 
 			// 他の依存関係はnilでよい（GetDailyStockPricesでは使われないため）
-			u := NewStockBrandsDailyPriceInteractor(nil, nil, r, nil, nil, nil, nil)
+			u := NewStockBrandsDailyPriceInteractor(nil, nil, r, nil, nil, nil, nil, nil, nil)
 
 			got, err := u.GetDailyStockPrices(tt.args.ctx, tt.args.symbol, tt.args.from, tt.args.to)
 			if (err != nil) != tt.wantErr {
@@ -282,7 +282,7 @@ func TestStockBrandsDailyStockPriceInteractorImpl_GetDailyStockPricesWithOrder(t
 
 			r := tt.fields.stockBrandsDailyStockPriceRepository(ctrl)
 
-			u := NewStockBrandsDailyPriceInteractor(nil, nil, r, nil, nil, nil, nil)
+			u := NewStockBrandsDailyPriceInteractor(nil, nil, r, nil, nil, nil, nil, nil, nil)
 
 			got, err := u.GetDailyStockPricesWithOrder(tt.args.ctx, tt.args.symbol, tt.args.from, tt.args.to, tt.args.order)
 			if (err != nil) != tt.wantErr {

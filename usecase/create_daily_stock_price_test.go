@@ -63,7 +63,6 @@ func Test_stockBrandsDailyStockPriceInteractorImpl_CreateDailyStockPrice(t *test
 				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
 					mock := mock_repositories.NewMockStockBrandsDailyPriceForAnalyzeRepository(ctrl)
 					mock.EXPECT().CreateStockBrandDailyPriceForAnalyze(gomock.Any(), gomock.Any()).Return(nil).Times(5)
-					mock.EXPECT().DeleteBeforeDate(gomock.Any(), gomock.Any()).Return(nil).Times(5)
 					return mock
 				},
 				stockAPIClient: func(ctrl *gomock.Controller) gateway.StockAPIClient {

@@ -36,24 +36,26 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 			currentBrandsMap[v.TickerSymbol] = v
 		}
 
-		// 全銘柄の日足を作成
-		stockPricesWithBrand := si.newStockBrandDailyPrices(ctx, currentBrandsMap, now)
-		if err := si.stockBrandsDailyStockPriceRepository.CreateStockBrandDailyPrice(ctx, stockPricesWithBrand); err != nil {
-			return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.CreateMany error")
+		// J-Quantsから当日分の日足を1回だけ取得し、raw用・分析用の両方の変換に使う
+		gatewayPrices, err := si.stockAPIClient.GetAllBrandDailyPricesByDate(ctx, now)
+		if err != nil {
+			return errors.Wrap(err, "stockAPIClient.GetAllBrandDailyPricesByDate error")
 		}
 
+		// 全銘柄の日足を作成（素値。これまで通り保持する）
+		stockPricesWithBrand := si.newStockBrandDailyPricesFromGateway(currentBrandsMap, gatewayPrices, now)
+		if err := si.stockBrandsDailyStockPriceRepository.CreateStockBrandDailyPrice(ctx, stockPricesWithBrand); err != nil {
+			return errors.Wrap(err, "stockBrandsDailyStockPriceRepository.CreateStockBrandDailyPrice error")
+		}
+
+		// 分析用は素値ではなくJ-Quantsの分割・併合調整済みOHLCV（Adjustment*）を保存する。
+		// クイズ・分析はこちらを読む前提のテーブルのため、素値に基づく再計算はしない。
 		if err := si.stockBrandsDailyPriceForAnalyzeRepository.
 			CreateStockBrandDailyPriceForAnalyze(
 				ctx,
-				si.newStockBrandDailyPriceForAnalyzeByStockBrandsDailyPrice(stockPricesWithBrand, now),
+				newStockBrandDailyPriceForAnalyzeFromGatewayPrices(gatewayPrices, now),
 			); err != nil {
 			return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.CreateStockBrandDailyPriceForAnalyze error")
-		}
-
-		// 3年前の日付を計算
-		threeYearsAgo := now.AddDate(-3, 0, 0)
-		if err := si.stockBrandsDailyPriceForAnalyzeRepository.DeleteBeforeDate(ctx, threeYearsAgo); err != nil {
-			return errors.Wrap(err, "stockBrandsDailyPriceForAnalyzeRepository.DeleteBeforeDate error")
 		}
 
 		return nil
@@ -65,13 +67,8 @@ func (si *stockBrandsDailyStockPriceInteractorImpl) createDailyStockPrice(ctx co
 	return nil
 }
 
-// createDailyStockPrices - 全銘柄の一日の日足スライスを作成する
-func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPrices(ctx context.Context, currentBrandsMap map[string]*models.StockBrand, now time.Time) []*models.StockBrandDailyPrice {
-	stockPrices, err := si.stockAPIClient.GetAllBrandDailyPricesByDate(ctx, now)
-	if err != nil {
-		return nil
-	}
-
+// newStockBrandDailyPricesFromGateway - 全銘柄の一日の日足スライス（素値）を作成する
+func (si *stockBrandsDailyStockPriceInteractorImpl) newStockBrandDailyPricesFromGateway(currentBrandsMap map[string]*models.StockBrand, stockPrices []*gateway.StockPrice, now time.Time) []*models.StockBrandDailyPrice {
 	if stockPrices == nil {
 		return nil
 	}

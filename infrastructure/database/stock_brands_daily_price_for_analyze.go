@@ -98,17 +98,6 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx con
 	return nil
 }
 
-func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBeforeDate(ctx context.Context, date time.Time) error {
-	tx := TxOrDefault(ctx, si.query)
-
-	if _, err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).
-		Where(tx.StockBrandsDailyPriceForAnalyze.Date.Lt(date)).
-		Delete(); err != nil {
-		return errors.Wrap(err, "StockBrandsDailyPriceForAnalyze.DeleteBeforeDate error")
-	}
-	return nil
-}
-
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPriceForAnalyze, error) {
 	tx := TxOrDefault(ctx, si.query)
 

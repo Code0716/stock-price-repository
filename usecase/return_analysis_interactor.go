@@ -18,7 +18,7 @@ import (
 const minReturnAnalysisDays = 2
 
 type returnAnalysisInteractorImpl struct {
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository
 	nikkeiRepository                     repositories.NikkeiRepository
 	topixRepository                      repositories.TopixRepository
 }
@@ -30,7 +30,7 @@ type ReturnAnalysisInteractor interface {
 }
 
 func NewReturnAnalysisInteractor(
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 	nikkeiRepository repositories.NikkeiRepository,
 	topixRepository repositories.TopixRepository,
 ) ReturnAnalysisInteractor {

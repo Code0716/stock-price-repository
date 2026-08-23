@@ -33,7 +33,7 @@ const (
 var srTolerance = decimal.NewFromFloat(0.015)
 
 type technicalIndicatorsInteractorImpl struct {
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository
 }
 
 type TechnicalIndicatorsInteractor interface {
@@ -42,7 +42,7 @@ type TechnicalIndicatorsInteractor interface {
 }
 
 func NewTechnicalIndicatorsInteractor(
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 ) TechnicalIndicatorsInteractor {
 	return &technicalIndicatorsInteractorImpl{
 		stockBrandsDailyStockPriceRepository: stockBrandsDailyStockPriceRepository,

@@ -19,9 +19,13 @@ type stockBrandsDailyStockPriceInteractorImpl struct {
 	stockBrandsDailyPriceForAnalyzeRepository   repositories.StockBrandsDailyPriceForAnalyzeRepository
 	appliedStockSplitsHistoryRepository         repositories.AppliedStockSplitsHistoryRepository
 	appliedStockConsolidationsHistoryRepository repositories.AppliedStockConsolidationsHistoryRepository
-	stockAPIClient                              gateway.StockAPIClient
-	redisClient                                 *redis.Client
-	slackAPIClient                              gateway.SlackAPIClient
+	// adjustedDailyPriceRepository は分割・併合調整済み(for_analyze)の読み取り専用リポジトリ。
+	// このinteractorは取込(raw書き込み)も担うため stockBrandsDailyStockPriceRepository は残しつつ、
+	// チャートAPI(GetDailyStockPriceChart)の読み先だけをこちらに向ける。
+	adjustedDailyPriceRepository repositories.AdjustedDailyPriceRepository
+	stockAPIClient               gateway.StockAPIClient
+	redisClient                  *redis.Client
+	slackAPIClient               gateway.SlackAPIClient
 }
 
 type StockBrandsDailyPriceInteractor interface {
@@ -39,6 +43,7 @@ func NewStockBrandsDailyPriceInteractor(
 	stockBrandsDailyPriceForAnalyzeRepository repositories.StockBrandsDailyPriceForAnalyzeRepository,
 	appliedStockSplitsHistoryRepository repositories.AppliedStockSplitsHistoryRepository,
 	appliedStockConsolidationsHistoryRepository repositories.AppliedStockConsolidationsHistoryRepository,
+	adjustedDailyPriceRepository repositories.AdjustedDailyPriceRepository,
 	stockAPIClient gateway.StockAPIClient,
 	redisClient *redis.Client,
 	slackAPIClient gateway.SlackAPIClient,
@@ -50,6 +55,7 @@ func NewStockBrandsDailyPriceInteractor(
 		stockBrandsDailyPriceForAnalyzeRepository,
 		appliedStockSplitsHistoryRepository,
 		appliedStockConsolidationsHistoryRepository,
+		adjustedDailyPriceRepository,
 		stockAPIClient,
 		redisClient,
 		slackAPIClient,

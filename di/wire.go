@@ -87,6 +87,7 @@ var databaseSet = wire.NewSet(
 	database.NewStockBrandsDailyPriceRepositoryImpl,
 	database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl,
 	database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl,
+	database.NewAdjustedDailyPriceRepositoryImpl,
 	database.NewHighVolumeStockBrandRepositoryImpl,
 	database.NewAppliedStockSplitsHistoryRepositoryImpl,
 	database.NewAppliedStockConsolidationsHistoryRepositoryImpl,

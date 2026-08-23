@@ -20,7 +20,7 @@ var signalPerformanceHorizons = []int{5, 10, 20}
 
 type signalPerformanceInteractorImpl struct {
 	analyzeRepo repositories.AnalyzeStockBrandPriceHistoryRepository
-	priceRepo   repositories.StockBrandsDailyPriceRepository
+	priceRepo   repositories.AdjustedDailyPriceRepository
 }
 
 // SignalPerformanceInteractor シグナル精度評価
@@ -31,7 +31,7 @@ type SignalPerformanceInteractor interface {
 // NewSignalPerformanceInteractor コンストラクタ
 func NewSignalPerformanceInteractor(
 	analyzeRepo repositories.AnalyzeStockBrandPriceHistoryRepository,
-	priceRepo repositories.StockBrandsDailyPriceRepository,
+	priceRepo repositories.AdjustedDailyPriceRepository,
 ) SignalPerformanceInteractor {
 	return &signalPerformanceInteractorImpl{
 		analyzeRepo: analyzeRepo,

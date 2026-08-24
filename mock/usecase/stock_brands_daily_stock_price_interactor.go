@@ -114,3 +114,17 @@ func (mr *MockStockBrandsDailyPriceInteractorMockRecorder) GetDailyStockPricesWi
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDailyStockPricesWithOrder", reflect.TypeOf((*MockStockBrandsDailyPriceInteractor)(nil).GetDailyStockPricesWithOrder), ctx, symbol, from, to, order)
 }
+
+// RebuildAnalyzeDailyPrices mocks base method.
+func (m *MockStockBrandsDailyPriceInteractor) RebuildAnalyzeDailyPrices(ctx context.Context, now time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RebuildAnalyzeDailyPrices", ctx, now)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RebuildAnalyzeDailyPrices indicates an expected call of RebuildAnalyzeDailyPrices.
+func (mr *MockStockBrandsDailyPriceInteractorMockRecorder) RebuildAnalyzeDailyPrices(ctx, now any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RebuildAnalyzeDailyPrices", reflect.TypeOf((*MockStockBrandsDailyPriceInteractor)(nil).RebuildAnalyzeDailyPrices), ctx, now)
+}

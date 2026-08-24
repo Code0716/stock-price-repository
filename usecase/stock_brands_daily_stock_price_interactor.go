@@ -27,6 +27,7 @@ type stockBrandsDailyStockPriceInteractorImpl struct {
 type StockBrandsDailyPriceInteractor interface {
 	CreateDailyStockPrice(ctx context.Context, now time.Time) error
 	CreateHistoricalDailyStockPrices(ctx context.Context, now time.Time) error
+	RebuildAnalyzeDailyPrices(ctx context.Context, now time.Time) error
 	GetDailyStockPrices(ctx context.Context, symbol string, from, to *time.Time) ([]*models.StockBrandDailyPrice, error)
 	GetDailyStockPricesWithOrder(ctx context.Context, symbol string, from, to *time.Time, order *models.SortOrder) ([]*models.StockBrandDailyPrice, error)
 	GetDailyStockPriceChart(ctx context.Context, symbol string, from, to *time.Time) (*models.DailyPriceChart, error)

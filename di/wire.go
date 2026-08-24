@@ -62,6 +62,7 @@ var cliSet = wire.NewSet(
 	commands.NewHealthCheckCommand,
 	commands.NewUpdateStockBrandsV1Command,
 	commands.NewCreateHistoricalDailyStockPricesV1Command,
+	commands.NewRebuildAnalyzeDailyPricesV1Command,
 	commands.NewCreateDailyStockPriceV1Command,
 	commands.NewCreateNikkeiAndDjiHistoricalDataV1Command,
 	commands.NewAdjustHistoricalDataForStockSplitCommand,

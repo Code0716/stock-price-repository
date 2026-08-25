@@ -87,6 +87,17 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListLatestPriceBySymbol
 	return domainResult, nil
 }
 
+// TruncateAll 全件を物理削除する。5年再構築バッチ専用の破壊的操作。
+func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) TruncateAll(ctx context.Context) error {
+	tx := TxOrDefault(ctx, si.query)
+
+	if err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).UnderlyingDB().
+		Exec("TRUNCATE TABLE stock_brands_daily_price_for_analyze").Error; err != nil {
+		return errors.Wrap(err, "StockBrandsDailyPriceForAnalyze.TruncateAll error")
+	}
+	return nil
+}
+
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx context.Context, deleteSymbols []string) error {
 	tx := TxOrDefault(ctx, si.query)
 

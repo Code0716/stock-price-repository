@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
 	"github.com/Code0716/stock-price-repository/infrastructure/database/gen_model"
@@ -30,6 +31,17 @@ func (r *AppliedStockConsolidationsHistoryRepositoryImpl) Exists(ctx context.Con
 		Where(tx.AppliedStockConsolidationsHistory.ConsolidationDate.Eq(consolidationDate)).
 		Count()
 	return count > 0, err
+}
+
+// TruncateAll 全件を物理削除する。5年再構築バッチ専用の破壊的操作。
+func (r *AppliedStockConsolidationsHistoryRepositoryImpl) TruncateAll(ctx context.Context) error {
+	tx := TxOrDefault(ctx, r.query)
+
+	if err := tx.AppliedStockConsolidationsHistory.WithContext(ctx).UnderlyingDB().
+		Exec("TRUNCATE TABLE applied_stock_consolidations_history").Error; err != nil {
+		return errors.Wrap(err, "AppliedStockConsolidationsHistory.TruncateAll error")
+	}
+	return nil
 }
 
 func (r *AppliedStockConsolidationsHistoryRepositoryImpl) Create(ctx context.Context, history *models.AppliedStockConsolidationHistory) error {

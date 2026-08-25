@@ -18,4 +18,6 @@ type StockBrandsDailyPriceForAnalyzeRepository interface {
 	ListLatestPriceBySymbols(ctx context.Context, symbols []*string) ([]*models.StockBrandDailyPriceForAnalyze, error)
 	ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPriceForAnalyze, error)
 	DeleteBySymbols(ctx context.Context, deleteSymbols []string) error
+	// TruncateAll 全件を物理削除する。5年再構築バッチ(RebuildAnalyzeDailyPrices)専用の破壊的操作。
+	TruncateAll(ctx context.Context) error
 }

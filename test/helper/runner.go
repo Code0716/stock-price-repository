@@ -12,6 +12,7 @@ type TestRunnerOptions struct {
 	UpdateStockBrandsV1Command                       *commands.UpdateStockBrandsV1Command
 	CreateHistoricalDailyStockPricesV1Command        *commands.CreateHistoricalDailyStockPricesV1Command
 	CreateDailyStockPriceV1Command                   *commands.CreateDailyStockPriceV1Command
+	RebuildAnalyzeDailyPricesV1Command               *commands.RebuildAnalyzeDailyPricesV1Command
 	CreateNikkeiAndDjiHistoricalDataV1Command        *commands.CreateNikkeiAndDjiHistoricalDataV1Command
 	AdjustHistoricalDataForStockSplitCommand         *commands.AdjustHistoricalDataForStockSplitCommand
 	AdjustHistoricalDataForStockConsolidationCommand *commands.AdjustHistoricalDataForStockConsolidationCommand
@@ -43,6 +44,9 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 	}
 	if opts.CreateDailyStockPriceV1Command == nil {
 		opts.CreateDailyStockPriceV1Command = commands.NewCreateDailyStockPriceV1Command(nil)
+	}
+	if opts.RebuildAnalyzeDailyPricesV1Command == nil {
+		opts.RebuildAnalyzeDailyPricesV1Command = commands.NewRebuildAnalyzeDailyPricesV1Command(nil)
 	}
 	if opts.CreateNikkeiAndDjiHistoricalDataV1Command == nil {
 		opts.CreateNikkeiAndDjiHistoricalDataV1Command = commands.NewCreateNikkeiAndDjiHistoricalDataV1Command(nil)
@@ -78,6 +82,7 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.UpdateStockBrandsV1Command,
 		opts.CreateHistoricalDailyStockPricesV1Command,
 		opts.CreateDailyStockPriceV1Command,
+		opts.RebuildAnalyzeDailyPricesV1Command,
 		opts.CreateNikkeiAndDjiHistoricalDataV1Command,
 		opts.AdjustHistoricalDataForStockSplitCommand,
 		opts.AdjustHistoricalDataForStockConsolidationCommand,

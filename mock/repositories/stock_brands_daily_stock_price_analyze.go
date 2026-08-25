@@ -98,3 +98,17 @@ func (mr *MockStockBrandsDailyPriceForAnalyzeRepositoryMockRecorder) ListLatestP
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLatestPriceBySymbols", reflect.TypeOf((*MockStockBrandsDailyPriceForAnalyzeRepository)(nil).ListLatestPriceBySymbols), ctx, symbols)
 }
+
+// TruncateAll mocks base method.
+func (m *MockStockBrandsDailyPriceForAnalyzeRepository) TruncateAll(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TruncateAll", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TruncateAll indicates an expected call of TruncateAll.
+func (mr *MockStockBrandsDailyPriceForAnalyzeRepositoryMockRecorder) TruncateAll(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TruncateAll", reflect.TypeOf((*MockStockBrandsDailyPriceForAnalyzeRepository)(nil).TruncateAll), ctx)
+}

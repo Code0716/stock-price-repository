@@ -55,6 +55,7 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 	analyzeRepo := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db)
 	splitsHistoryRepo := database.NewAppliedStockSplitsHistoryRepositoryImpl(db)
 	consolidationsHistoryRepo := database.NewAppliedStockConsolidationsHistoryRepositoryImpl(db)
+	adjustedDailyPriceRepo := database.NewAdjustedDailyPriceRepositoryImpl(db)
 	tx := database.NewTransaction(db)
 
 	interactor := usecase.NewStockBrandsDailyPriceInteractor(
@@ -64,6 +65,7 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 		analyzeRepo,
 		splitsHistoryRepo,
 		consolidationsHistoryRepo,
+		adjustedDailyPriceRepo,
 		mockStockAPI,
 		redisClient,
 		mockSlackAPI,

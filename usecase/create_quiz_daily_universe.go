@@ -16,7 +16,7 @@ import (
 const quizUniverseWindowDays = 20
 
 type createQuizDailyUniverseInteractorImpl struct {
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository
 	quizDailyUniverseRepository          repositories.QuizDailyUniverseRepository
 	stockBrandRepository                 repositories.StockBrandRepository
 }
@@ -28,7 +28,7 @@ type CreateQuizDailyUniverseInteractor interface {
 }
 
 func NewCreateQuizDailyUniverseInteractor(
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 	quizDailyUniverseRepository repositories.QuizDailyUniverseRepository,
 	stockBrandRepository repositories.StockBrandRepository,
 ) CreateQuizDailyUniverseInteractor {

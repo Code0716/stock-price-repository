@@ -38,7 +38,7 @@ type CreateDailyStockPicksInteractor interface {
 
 type createDailyStockPicksInteractorImpl struct {
 	tx                                   repositories.Transaction
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository
 	stockBrandRepository                 repositories.StockBrandRepository
 	dailyStockPickRepository             repositories.DailyStockPickRepository
 	slackAPIClientRaw                    gateway.SlackAPIClientRaw
@@ -47,7 +47,7 @@ type createDailyStockPicksInteractorImpl struct {
 
 func NewCreateDailyStockPicksInteractor(
 	tx repositories.Transaction,
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 	stockBrandRepository repositories.StockBrandRepository,
 	dailyStockPickRepository repositories.DailyStockPickRepository,
 	slackAPIClientRaw gateway.SlackAPIClientRaw,

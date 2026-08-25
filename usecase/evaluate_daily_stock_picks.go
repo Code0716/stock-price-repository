@@ -28,7 +28,7 @@ type EvaluateDailyStockPicksInteractor interface {
 type evaluateDailyStockPicksInteractorImpl struct {
 	tx                                          repositories.Transaction
 	dailyStockPickRepository                    repositories.DailyStockPickRepository
-	stockBrandsDailyStockPriceRepository        repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository        repositories.AdjustedDailyPriceRepository
 	appliedStockSplitsHistoryRepository         repositories.AppliedStockSplitsHistoryRepository
 	appliedStockConsolidationsHistoryRepository repositories.AppliedStockConsolidationsHistoryRepository
 }
@@ -36,7 +36,7 @@ type evaluateDailyStockPicksInteractorImpl struct {
 func NewEvaluateDailyStockPicksInteractor(
 	tx repositories.Transaction,
 	dailyStockPickRepository repositories.DailyStockPickRepository,
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 	appliedStockSplitsHistoryRepository repositories.AppliedStockSplitsHistoryRepository,
 	appliedStockConsolidationsHistoryRepository repositories.AppliedStockConsolidationsHistoryRepository,
 ) EvaluateDailyStockPicksInteractor {

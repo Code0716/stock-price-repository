@@ -43,7 +43,7 @@ func TestStockBrandsDailyStockPriceInteractorImpl_GetDailyStockPriceChart(t *tes
 	ascOrder := models.SortOrderAsc
 
 	type fields struct {
-		stockBrandsDailyStockPriceRepository func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceRepository
+		adjustedDailyPriceRepository func(ctrl *gomock.Controller) repositories.AdjustedDailyPriceRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -62,8 +62,8 @@ func TestStockBrandsDailyStockPriceInteractorImpl_GetDailyStockPriceChart(t *tes
 		{
 			name: "正常系: fromを指定した場合、5ヶ月前からウォームアップ取得しvisibleFrom以前は除外される",
 			fields: fields{
-				stockBrandsDailyStockPriceRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceRepository {
-					m := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+				adjustedDailyPriceRepository: func(ctrl *gomock.Controller) repositories.AdjustedDailyPriceRepository {
+					m := mock_repositories.NewMockAdjustedDailyPriceRepository(ctrl)
 					m.EXPECT().ListDailyPricesBySymbol(gomock.Any(), models.ListDailyPricesBySymbolFilter{
 						TickerSymbol: "1234",
 						DateFrom:     &expectedFetchFrom,
@@ -85,8 +85,8 @@ func TestStockBrandsDailyStockPriceInteractorImpl_GetDailyStockPriceChart(t *tes
 		{
 			name: "正常系: fromがnilの場合は全期間取得しすべての点を可視とする",
 			fields: fields{
-				stockBrandsDailyStockPriceRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceRepository {
-					m := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+				adjustedDailyPriceRepository: func(ctrl *gomock.Controller) repositories.AdjustedDailyPriceRepository {
+					m := mock_repositories.NewMockAdjustedDailyPriceRepository(ctrl)
 					m.EXPECT().ListDailyPricesBySymbol(gomock.Any(), models.ListDailyPricesBySymbolFilter{
 						TickerSymbol: "1234",
 						DateFrom:     nil,
@@ -108,8 +108,8 @@ func TestStockBrandsDailyStockPriceInteractorImpl_GetDailyStockPriceChart(t *tes
 		{
 			name: "異常系: リポジトリがエラーを返す場合はエラーを伝播する",
 			fields: fields{
-				stockBrandsDailyStockPriceRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceRepository {
-					m := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
+				adjustedDailyPriceRepository: func(ctrl *gomock.Controller) repositories.AdjustedDailyPriceRepository {
+					m := mock_repositories.NewMockAdjustedDailyPriceRepository(ctrl)
 					m.EXPECT().ListDailyPricesBySymbol(gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
 					return m
 				},
@@ -129,8 +129,8 @@ func TestStockBrandsDailyStockPriceInteractorImpl_GetDailyStockPriceChart(t *tes
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			r := tt.fields.stockBrandsDailyStockPriceRepository(ctrl)
-			u := NewStockBrandsDailyPriceInteractor(nil, nil, r, nil, nil, nil, nil, nil, nil)
+			r := tt.fields.adjustedDailyPriceRepository(ctrl)
+			u := NewStockBrandsDailyPriceInteractor(nil, nil, nil, nil, nil, nil, r, nil, nil, nil)
 
 			got, err := u.GetDailyStockPriceChart(tt.args.ctx, tt.args.symbol, tt.args.from, tt.args.to)
 			if (err != nil) != tt.wantErr {

@@ -30,9 +30,9 @@ const (
 
 // strategyAcc 1戦略の集計アキュムレータ。
 type strategyAcc struct {
-	stockCount    int
-	tradedStocks  int
-	positiveCount int
+	stockCount     int
+	tradedStocks   int
+	positiveCount  int
 	sumTotalReturn decimal.Decimal
 	sumWinRate     decimal.Decimal
 	sumPF          decimal.Decimal
@@ -119,7 +119,7 @@ func accumulateResults(brand *models.StockBrand, prices []*models.StockBrandDail
 
 type strategyRankingInteractorImpl struct {
 	stockBrandRepository                 repositories.StockBrandRepository
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository
 	redisClient                          *redis.Client
 }
 
@@ -137,7 +137,7 @@ type StrategyRankingInteractor interface {
 
 func NewStrategyRankingInteractor(
 	stockBrandRepository repositories.StockBrandRepository,
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 	redisClient *redis.Client,
 ) StrategyRankingInteractor {
 	return &strategyRankingInteractorImpl{
@@ -212,12 +212,12 @@ func (r *strategyRankingInteractorImpl) ComputeAndSaveStrategyRanking(ctx contex
 	for _, s := range domain_service.StrategyOrder {
 		a := accs[s]
 		item := models.StrategyRankingItem{
-			Strategy:    s,
-			Label:       domain_service.StrategyLabels[s],
-			StockCount:  a.stockCount,
+			Strategy:     s,
+			Label:        domain_service.StrategyLabels[s],
+			StockCount:   a.stockCount,
 			TradedStocks: a.tradedStocks,
-			TotalTrades: a.totalTrades,
-			BestCount:   a.bestCount,
+			TotalTrades:  a.totalTrades,
+			BestCount:    a.bestCount,
 		}
 		if a.stockCount > 0 {
 			item.AvgTotalReturn = a.sumTotalReturn.Div(decimal.NewFromInt(int64(a.stockCount)))

@@ -142,6 +142,7 @@ func Test_stockBrandsDailyStockPriceInteractorImpl_CreateDailyStockPrice(t *test
 				tt.fields.stockBrandsDailyPriceForAnalyzeRepository(ctrl),
 				nil, // appliedStockSplitsHistoryRepository (テストフィクスチャはAdjustmentFactor未設定のため呼ばれない)
 				nil, // appliedStockConsolidationsHistoryRepository (同上)
+				nil, // adjustedDailyPriceRepository (CreateDailyStockPriceでは使わない)
 				tt.fields.stockAPIClient(ctrl),
 				nil, // redisClient (not used)
 				nil, // slackAPIClient (not used)

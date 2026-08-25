@@ -31,7 +31,7 @@ var ErrQuizQuestionNotFound = errors.New("quiz question not found")
 type quizInteractorImpl struct {
 	quizDailyUniverseRepository          repositories.QuizDailyUniverseRepository
 	quizAnswerRepository                 repositories.QuizAnswerRepository
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository
 	stockBrandRepository                 repositories.StockBrandRepository
 }
 
@@ -53,7 +53,7 @@ type QuizInteractor interface {
 func NewQuizInteractor(
 	quizDailyUniverseRepository repositories.QuizDailyUniverseRepository,
 	quizAnswerRepository repositories.QuizAnswerRepository,
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 	stockBrandRepository repositories.StockBrandRepository,
 ) QuizInteractor {
 	return &quizInteractorImpl{

@@ -72,6 +72,8 @@ func TestE2E_GetStockBrands(t *testing.T) {
 		stockBrandRepo,
 		dailyPriceRepo,
 		dailyPriceForAnalyzeRepo,
+		database.NewAppliedStockSplitsHistoryRepositoryImpl(db),
+		database.NewAppliedStockConsolidationsHistoryRepositoryImpl(db),
 		mockStockAPI,
 		redisClient,
 		mockSlackAPI,

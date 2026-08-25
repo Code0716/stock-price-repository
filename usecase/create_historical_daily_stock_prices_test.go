@@ -167,3 +167,129 @@ func Test_stockBrandsDailyStockPriceInteractorImpl_CreateHistoricalDailyStockPri
 		})
 	}
 }
+
+func Test_newStockBrandDailyPriceForAnalyzeFromGatewayPrices(t *testing.T) {
+	now := time.Date(2026, 8, 23, 0, 0, 0, 0, time.UTC)
+	date := time.Date(2026, 7, 27, 0, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name   string
+		prices []*gateway.StockPrice
+		want   []*models.StockBrandDailyPriceForAnalyze
+	}{
+		{
+			name: "Adjustment*が設定されている場合はそちらを採用する（分割調整済み値を保存する）",
+			prices: []*gateway.StockPrice{
+				{
+					Date:             date,
+					TickerSymbol:     "7678",
+					Open:             decimal.NewFromInt(6330),
+					High:             decimal.NewFromInt(6350),
+					Low:              decimal.NewFromInt(6260),
+					Close:            decimal.NewFromInt(6280),
+					Volume:           23700,
+					AdjustmentOpen:   decimal.NewFromInt(3165),
+					AdjustmentHigh:   decimal.NewFromInt(3175),
+					AdjustmentLow:    decimal.NewFromInt(3130),
+					AdjustmentClose:  decimal.NewFromInt(3140),
+					AdjustmentVolume: decimal.NewFromInt(47400),
+				},
+			},
+			want: []*models.StockBrandDailyPriceForAnalyze{
+				{
+					TickerSymbol: "7678",
+					Date:         date,
+					Open:         decimal.NewFromInt(3165),
+					High:         decimal.NewFromInt(3175),
+					Low:          decimal.NewFromInt(3130),
+					Close:        decimal.NewFromInt(3140),
+					Volume:       47400,
+					// close と adj_close は常に同値にする（二重調整を避けるため）
+					Adjclose:  decimal.NewFromInt(3140),
+					CreatedAt: now,
+					UpdatedAt: now,
+				},
+			},
+		},
+		{
+			name: "Adjustment*が未設定(ゼロ値)の場合は素値にフォールバックする",
+			prices: []*gateway.StockPrice{
+				{
+					Date:         date,
+					TickerSymbol: "1301",
+					Open:         decimal.NewFromInt(3000),
+					High:         decimal.NewFromInt(3100),
+					Low:          decimal.NewFromInt(2900),
+					Close:        decimal.NewFromInt(3050),
+					Volume:       10000,
+				},
+			},
+			want: []*models.StockBrandDailyPriceForAnalyze{
+				{
+					TickerSymbol: "1301",
+					Date:         date,
+					Open:         decimal.NewFromInt(3000),
+					High:         decimal.NewFromInt(3100),
+					Low:          decimal.NewFromInt(2900),
+					Close:        decimal.NewFromInt(3050),
+					Volume:       10000,
+					Adjclose:     decimal.NewFromInt(3050),
+					CreatedAt:    now,
+					UpdatedAt:    now,
+				},
+			},
+		},
+		{
+			name: "OHLC全てゼロの銘柄(売買なし)はスキップする",
+			prices: []*gateway.StockPrice{
+				{
+					Date:         date,
+					TickerSymbol: "9999",
+					Open:         decimal.Zero,
+					High:         decimal.Zero,
+					Low:          decimal.Zero,
+					Close:        decimal.Zero,
+					Volume:       0,
+				},
+			},
+			want: nil,
+		},
+		{
+			name:   "空スライスはnilを返す",
+			prices: nil,
+			want:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := newStockBrandDailyPriceForAnalyzeFromGatewayPrices(tt.prices, now)
+			if tt.want == nil {
+				if len(got) != 0 {
+					t.Errorf("newStockBrandDailyPriceForAnalyzeFromGatewayPrices() = %v, want empty", got)
+				}
+				return
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("newStockBrandDailyPriceForAnalyzeFromGatewayPrices() length = %d, want %d", len(got), len(tt.want))
+			}
+			for i, w := range tt.want {
+				g := got[i]
+				if g.ID == "" {
+					t.Errorf("expected non-empty ID")
+				}
+				if g.TickerSymbol != w.TickerSymbol ||
+					!g.Date.Equal(w.Date) ||
+					!g.Open.Equal(w.Open) ||
+					!g.High.Equal(w.High) ||
+					!g.Low.Equal(w.Low) ||
+					!g.Close.Equal(w.Close) ||
+					g.Volume != w.Volume ||
+					!g.Adjclose.Equal(w.Adjclose) ||
+					!g.Close.Equal(g.Adjclose) { // 不変条件: close == adj_close
+					t.Errorf("newStockBrandDailyPriceForAnalyzeFromGatewayPrices()[%d] = %+v, want %+v", i, g, w)
+				}
+			}
+		})
+	}
+}

@@ -63,7 +63,6 @@ func Test_stockBrandsDailyStockPriceInteractorImpl_CreateDailyStockPrice(t *test
 				stockBrandsDailyPriceForAnalyzeRepository: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceForAnalyzeRepository {
 					mock := mock_repositories.NewMockStockBrandsDailyPriceForAnalyzeRepository(ctrl)
 					mock.EXPECT().CreateStockBrandDailyPriceForAnalyze(gomock.Any(), gomock.Any()).Return(nil).Times(5)
-					mock.EXPECT().DeleteBeforeDate(gomock.Any(), gomock.Any()).Return(nil).Times(5)
 					return mock
 				},
 				stockAPIClient: func(ctrl *gomock.Controller) gateway.StockAPIClient {
@@ -141,6 +140,8 @@ func Test_stockBrandsDailyStockPriceInteractorImpl_CreateDailyStockPrice(t *test
 				tt.fields.stockBrandRepository(ctrl),
 				tt.fields.stockBrandsDailyStockPriceRepository(ctrl),
 				tt.fields.stockBrandsDailyPriceForAnalyzeRepository(ctrl),
+				nil, // appliedStockSplitsHistoryRepository (テストフィクスチャはAdjustmentFactor未設定のため呼ばれない)
+				nil, // appliedStockConsolidationsHistoryRepository (同上)
 				tt.fields.stockAPIClient(ctrl),
 				nil, // redisClient (not used)
 				nil, // slackAPIClient (not used)

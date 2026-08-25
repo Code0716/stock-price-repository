@@ -129,6 +129,8 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 			stockBrandRepo := database.NewStockBrandRepositoryImpl(db)
 			dailyPriceRepo := database.NewStockBrandsDailyPriceRepositoryImpl(db)
 			analyzeRepo := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db)
+			splitsHistoryRepo := database.NewAppliedStockSplitsHistoryRepositoryImpl(db)
+			consolidationsHistoryRepo := database.NewAppliedStockConsolidationsHistoryRepositoryImpl(db)
 
 			// 5. Setup Interactor
 			tx := database.NewTransaction(db)
@@ -138,6 +140,8 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 				stockBrandRepo,
 				dailyPriceRepo,
 				analyzeRepo,
+				splitsHistoryRepo,
+				consolidationsHistoryRepo,
 				mockStockAPI,
 				redisClient,
 				mockSlackAPI,

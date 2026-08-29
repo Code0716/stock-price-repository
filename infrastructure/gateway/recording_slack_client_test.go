@@ -34,14 +34,11 @@ func TestRecordingSlackAPIClient_SendMessageByStrings(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name: "正常系: 送信成功時にnotification_historyへ記録する",
+			name: "正常系: 株情報系の通知はSlackへ送らずnotification_historyへのみ記録する",
 			fields: fields{
 				inner: func(ctrl *gomock.Controller) *mock_gateway.MockSlackAPIClientRaw {
-					m := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
-					m.EXPECT().
-						SendMessageByStrings(gomock.Any(), gomock.Eq(gateway.SlackChannelNameExchangeStockInfo), gomock.Eq("三角持ち合い銘柄"), gomock.Eq(&message), gomock.Nil()).
-						Return("1234.5678", nil)
-					return m
+					// Slackへは送信しないため inner に EXPECT を張らない
+					return mock_gateway.NewMockSlackAPIClientRaw(ctrl)
 				},
 				repo: func(ctrl *gomock.Controller) *mock_repositories.MockNotificationHistoryRepository {
 					m := mock_repositories.NewMockNotificationHistoryRepository(ctrl)
@@ -61,11 +58,11 @@ func TestRecordingSlackAPIClient_SendMessageByStrings(t *testing.T) {
 			channelName: gateway.SlackChannelNameExchangeStockInfo,
 			title:       "三角持ち合い銘柄",
 			message:     &message,
-			wantTs:      "1234.5678",
+			wantTs:      "",
 			wantErr:     false,
 		},
 		{
-			name: "正常系: dev_notificationは記録しない",
+			name: "正常系: dev_notificationはSlackへ送信し記録しない",
 			fields: fields{
 				inner: func(ctrl *gomock.Controller) *mock_gateway.MockSlackAPIClientRaw {
 					m := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
@@ -86,7 +83,7 @@ func TestRecordingSlackAPIClient_SendMessageByStrings(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "異常系: Slack送信失敗時は記録しない",
+			name: "異常系: Slack送信失敗時はエラーを返す",
 			fields: fields{
 				inner: func(ctrl *gomock.Controller) *mock_gateway.MockSlackAPIClientRaw {
 					m := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
@@ -99,21 +96,18 @@ func TestRecordingSlackAPIClient_SendMessageByStrings(t *testing.T) {
 					return mock_repositories.NewMockNotificationHistoryRepository(ctrl)
 				},
 			},
-			channelName: gateway.SlackChannelNameExchangeStockInfo,
-			title:       "三角持ち合い銘柄",
+			channelName: gateway.SlackChannelNameDevNotification,
+			title:       "env: raspberrypi",
 			message:     &message,
 			wantTs:      "",
 			wantErr:     true,
 		},
 		{
-			name: "正常系: 記録に失敗してもSlack送信の成否には影響しない",
+			name: "異常系: notification_history記録失敗時はエラーを返す",
 			fields: fields{
 				inner: func(ctrl *gomock.Controller) *mock_gateway.MockSlackAPIClientRaw {
-					m := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
-					m.EXPECT().
-						SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						Return("ts", nil)
-					return m
+					// Slackへは送信しないため inner に EXPECT を張らない
+					return mock_gateway.NewMockSlackAPIClientRaw(ctrl)
 				},
 				repo: func(ctrl *gomock.Controller) *mock_repositories.MockNotificationHistoryRepository {
 					m := mock_repositories.NewMockNotificationHistoryRepository(ctrl)
@@ -124,8 +118,8 @@ func TestRecordingSlackAPIClient_SendMessageByStrings(t *testing.T) {
 			channelName: gateway.SlackChannelNameExchangeStockInfo,
 			title:       "三角持ち合い銘柄",
 			message:     &message,
-			wantTs:      "ts",
-			wantErr:     false,
+			wantTs:      "",
+			wantErr:     true,
 		},
 	}
 

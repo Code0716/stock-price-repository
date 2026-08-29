@@ -10,8 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
-	mock_gateway "github.com/Code0716/stock-price-repository/mock/gateway"
 	mock_repositories "github.com/Code0716/stock-price-repository/mock/repositories"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/repositories"
@@ -32,7 +30,6 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks(t *testing.T)
 		priceRepo  func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceRepository
 		brandRepo  func(ctrl *gomock.Controller) repositories.StockBrandRepository
 		pickRepo   func(ctrl *gomock.Controller) repositories.DailyStockPickRepository
-		slackAPI   func(ctrl *gomock.Controller) gateway.SlackAPIClientRaw
 		notifyRepo func(ctrl *gomock.Controller) repositories.NotificationHistoryRepository
 		tx         func(ctrl *gomock.Controller) repositories.Transaction
 	}
@@ -55,9 +52,6 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks(t *testing.T)
 				},
 				pickRepo: func(ctrl *gomock.Controller) repositories.DailyStockPickRepository {
 					return mock_repositories.NewMockDailyStockPickRepository(ctrl)
-				},
-				slackAPI: func(ctrl *gomock.Controller) gateway.SlackAPIClientRaw {
-					return mock_gateway.NewMockSlackAPIClientRaw(ctrl)
 				},
 				notifyRepo: func(ctrl *gomock.Controller) repositories.NotificationHistoryRepository {
 					return mock_repositories.NewMockNotificationHistoryRepository(ctrl)
@@ -86,9 +80,6 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks(t *testing.T)
 						{TickerSymbol: "1000", NotifiedAt: &notifiedAt},
 					}, nil)
 					return mock
-				},
-				slackAPI: func(ctrl *gomock.Controller) gateway.SlackAPIClientRaw {
-					return mock_gateway.NewMockSlackAPIClientRaw(ctrl)
 				},
 				notifyRepo: func(ctrl *gomock.Controller) repositories.NotificationHistoryRepository {
 					return mock_repositories.NewMockNotificationHistoryRepository(ctrl)
@@ -119,13 +110,6 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks(t *testing.T)
 					mock.EXPECT().MarkNotified(gomock.Any(), now, gomock.Any()).Return(nil)
 					return mock
 				},
-				slackAPI: func(ctrl *gomock.Controller) gateway.SlackAPIClientRaw {
-					mock := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
-					mock.EXPECT().
-						SendMessageByStrings(gomock.Any(), gateway.SlackChannelNameExchangeStockInfo, gomock.Any(), gomock.Any(), (*string)(nil)).
-						Return("1234.5678", nil)
-					return mock
-				},
 				notifyRepo: func(ctrl *gomock.Controller) repositories.NotificationHistoryRepository {
 					mock := mock_repositories.NewMockNotificationHistoryRepository(ctrl)
 					mock.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
@@ -137,7 +121,7 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks(t *testing.T)
 			},
 		},
 		{
-			name: "正常系: スクリーニング→保存→Slack通知→MarkNotifiedの順で実行される",
+			name: "正常系: スクリーニング→保存→notification_history記録→MarkNotifiedの順で実行される",
 			fields: fields{
 				priceRepo: func(ctrl *gomock.Controller) repositories.StockBrandsDailyPriceRepository {
 					mock := mock_repositories.NewMockStockBrandsDailyPriceRepository(ctrl)
@@ -155,9 +139,6 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks(t *testing.T)
 					mock := mock_repositories.NewMockDailyStockPickRepository(ctrl)
 					mock.EXPECT().ListByPickDate(gomock.Any(), now).Return(nil, nil)
 					return mock
-				},
-				slackAPI: func(ctrl *gomock.Controller) gateway.SlackAPIClientRaw {
-					return mock_gateway.NewMockSlackAPIClientRaw(ctrl)
 				},
 				notifyRepo: func(ctrl *gomock.Controller) repositories.NotificationHistoryRepository {
 					return mock_repositories.NewMockNotificationHistoryRepository(ctrl)
@@ -179,7 +160,6 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks(t *testing.T)
 				tt.fields.priceRepo(ctrl),
 				tt.fields.brandRepo(ctrl),
 				tt.fields.pickRepo(ctrl),
-				tt.fields.slackAPI(ctrl),
 				tt.fields.notifyRepo(ctrl),
 			)
 			err := interactor.CreateDailyStockPicks(context.Background(), now, 0, -1, 1, false)
@@ -229,11 +209,6 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks_SaveAndNotify
 			}),
 	)
 
-	slackAPI := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
-	slackAPI.EXPECT().
-		SendMessageByStrings(gomock.Any(), gateway.SlackChannelNameExchangeStockInfo, gomock.Any(), gomock.Any(), (*string)(nil)).
-		Return("1234.5678", nil)
-
 	notifyRepo := mock_repositories.NewMockNotificationHistoryRepository(ctrl)
 	notifyRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
@@ -244,13 +219,14 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks_SaveAndNotify
 		return fn(ctx)
 	})
 
-	interactor := NewCreateDailyStockPicksInteractor(tx, priceRepo, brandRepo, pickRepo, slackAPI, notifyRepo)
+	interactor := NewCreateDailyStockPicksInteractor(tx, priceRepo, brandRepo, pickRepo, notifyRepo)
 	err := interactor.CreateDailyStockPicks(context.Background(), now, 25, 4, 1, false)
 	assert.NoError(t, err)
 }
 
 // TestCreateDailyStockPicksInteractorImpl_notify_RecordsOnceAcrossChunks
-// 本文が複数チャンクに分割送信されても notification_history へは結合済み全文で1件だけ記録されることを確認する。
+// Slack向けに複数チャンクへ分割整形される本文（FormatDailyStockPickMessages）でも
+// notification_history へは結合済み全文で1件だけ記録されることを確認する。
 func TestCreateDailyStockPicksInteractorImpl_notify_RecordsOnceAcrossChunks(t *testing.T) {
 	now := time.Date(2026, 7, 24, 0, 0, 0, 0, time.UTC)
 	dates := dailyPickTestDates(now)
@@ -279,17 +255,6 @@ func TestCreateDailyStockPicksInteractorImpl_notify_RecordsOnceAcrossChunks(t *t
 	pickRepo.EXPECT().BulkCreate(gomock.Any(), gomock.Any()).Return(nil)
 	pickRepo.EXPECT().MarkNotified(gomock.Any(), pickDate, gomock.Any()).Return(nil)
 
-	// 3500 rune の DailyPickSlackMaxRunes を超える本文になるよう、十分な銘柄数で複数チャンク送信を強制する。
-	slackAPI := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
-	var chunkCount int
-	slackAPI.EXPECT().
-		SendMessageByStrings(gomock.Any(), gateway.SlackChannelNameExchangeStockInfo, gomock.Any(), gomock.Any(), gomock.Any()).
-		DoAndReturn(func(_ context.Context, _ gateway.SlackChannelName, _ string, _, _ *string) (string, error) {
-			chunkCount++
-			return "1234.5678", nil
-		}).
-		MinTimes(2)
-
 	notifyRepo := mock_repositories.NewMockNotificationHistoryRepository(ctrl)
 	notifyRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
@@ -298,13 +263,12 @@ func TestCreateDailyStockPicksInteractorImpl_notify_RecordsOnceAcrossChunks(t *t
 		return fn(ctx)
 	})
 
-	interactor := NewCreateDailyStockPicksInteractor(tx, priceRepo, brandRepo, pickRepo, slackAPI, notifyRepo)
+	interactor := NewCreateDailyStockPicksInteractor(tx, priceRepo, brandRepo, pickRepo, notifyRepo)
 	err := interactor.CreateDailyStockPicks(context.Background(), now, dailyStockPickDefaultTopN, -1, 1, false)
 	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, chunkCount, 2, "本文が複数チャンクに分割送信されていることの前提")
 }
 
-func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks_SlackFailureDoesNotMarkNotified(t *testing.T) {
+func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks_NotificationHistoryFailureDoesNotMarkNotified(t *testing.T) {
 	now := time.Date(2026, 7, 24, 0, 0, 0, 0, time.UTC)
 	dates := dailyPickTestDates(now)
 	pickDate := dates[0]
@@ -324,17 +288,13 @@ func TestCreateDailyStockPicksInteractorImpl_CreateDailyStockPicks_SlackFailureD
 	}, nil)
 	// MarkNotified は呼ばれない
 
-	slackAPI := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
-	slackAPI.EXPECT().
-		SendMessageByStrings(gomock.Any(), gateway.SlackChannelNameExchangeStockInfo, gomock.Any(), gomock.Any(), (*string)(nil)).
-		Return("", assert.AnError)
-
-	// Slack送信が失敗するため notification_history への記録は行われない
+	// notification_history への記録が失敗するため MarkNotified まで到達しない
 	notifyRepo := mock_repositories.NewMockNotificationHistoryRepository(ctrl)
+	notifyRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(assert.AnError)
 
 	tx := mock_repositories.NewMockTransaction(ctrl)
 
-	interactor := NewCreateDailyStockPicksInteractor(tx, priceRepo, brandRepo, pickRepo, slackAPI, notifyRepo)
+	interactor := NewCreateDailyStockPicksInteractor(tx, priceRepo, brandRepo, pickRepo, notifyRepo)
 	err := interactor.CreateDailyStockPicks(context.Background(), now, 25, 4, 1, false)
 	assert.Error(t, err)
 }

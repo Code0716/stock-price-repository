@@ -25,7 +25,7 @@ import (
 )
 
 // TestE2E_RecordingSlackAPIClient_RecordsNotificationHistory
-// デコレータが実DBに記録し、Slack送信の成否がその記録に左右されないことを確認する。
+// デコレータが実DBに記録することと、Slack送信を行う通知/行わない通知の振り分けを確認する。
 func TestE2E_RecordingSlackAPIClient_RecordsNotificationHistory(t *testing.T) {
 	db, cleanup := helper.SetupTestDB(t)
 	defer cleanup()
@@ -37,13 +37,11 @@ func TestE2E_RecordingSlackAPIClient_RecordsNotificationHistory(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	t.Run("株情報系チャンネルは記録される", func(t *testing.T) {
+	t.Run("株情報系チャンネルはSlackへ送らず記録される", func(t *testing.T) {
 		helper.TruncateAllTables(t, db)
 
+		// 株情報系はSlackへ送信しないため rawClient に EXPECT を張らない
 		rawClient := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
-		rawClient.EXPECT().
-			SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Return("1234.5678", nil)
 
 		client := gateway.NewRecordingSlackAPIClient(rawClient, repo, zap.NewNop())
 		body := "7203,トヨタ自動車,,現物買,100,2747.5,,2026-08-20"

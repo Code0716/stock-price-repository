@@ -86,14 +86,15 @@ func TestE2E_DailyStockPicks(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	// 買い候補はSlackへ送信しなくなったため、mockSlackAPIはrunner経由のdev_notification（実行時間通知）用としてのみ使う。
 	mockSlackAPI := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
 	mockSlackAPI.EXPECT().
-		SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-		Return("1234.5678", nil).
+		SendMessageByStrings(gomock.Any(), gateway.SlackChannelNameDevNotification, gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("ts", nil).
 		AnyTimes()
 	notificationHistoryRepo := database.NewNotificationHistoryRepositoryImpl(db)
 
-	createInteractor := usecase.NewCreateDailyStockPicksInteractor(tx, priceRepo, stockBrandRepo, pickRepo, mockSlackAPI, notificationHistoryRepo)
+	createInteractor := usecase.NewCreateDailyStockPicksInteractor(tx, priceRepo, stockBrandRepo, pickRepo, notificationHistoryRepo)
 	createCmd := commands.NewCreateDailyStockPicksV1Command(createInteractor)
 	evaluateInteractor := usecase.NewEvaluateDailyStockPicksInteractor(tx, pickRepo, priceRepo, splitRepo, consolidationRepo)
 	evaluateCmd := commands.NewEvaluateDailyStockPicksV1Command(evaluateInteractor)

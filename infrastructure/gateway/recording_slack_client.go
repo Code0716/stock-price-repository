@@ -11,15 +11,17 @@ import (
 	"github.com/Code0716/stock-price-repository/repositories"
 )
 
-// recordingSlackAPIClient SlackAPIClient をラップし、送信成功時に notification_history へ記録するデコレータ。
-// #dev_notification（エラー・実行時間通知）宛は記録対象外。記録に失敗しても Slack 送信の成否には影響させない。
+// recordingSlackAPIClient SlackAPIClient をラップし、送信先を振り分けるデコレータ。
+// #dev_notification（エラー・実行時間通知）宛は従来通り Slack へ送信し notification_history には記録しない。
+// それ以外の株情報系通知は Slack へ送信せず、notification_history への記録のみ行う
+// （front の /notifications で確認する）。
 type recordingSlackAPIClient struct {
 	inner  SlackAPIClientRaw
 	repo   repositories.NotificationHistoryRepository
 	logger *zap.Logger
 }
 
-// NewRecordingSlackAPIClient inner をラップして通知履歴を記録する SlackAPIClient を返す
+// NewRecordingSlackAPIClient inner をラップして通知の送信先振り分けを行う SlackAPIClient を返す
 func NewRecordingSlackAPIClient(inner SlackAPIClientRaw, repo repositories.NotificationHistoryRepository, logger *zap.Logger) SlackAPIClient {
 	return &recordingSlackAPIClient{
 		inner:  inner,
@@ -45,32 +47,30 @@ func ChannelLabel(channelName SlackChannelName) string {
 }
 
 func (c *recordingSlackAPIClient) SendMessage(ctx context.Context, channelName SlackChannelName, message resource.SlackMessage) error {
-	if err := c.inner.SendMessage(ctx, channelName, message); err != nil {
-		return err
+	if channelName == SlackChannelNameDevNotification {
+		return c.inner.SendMessage(ctx, channelName, message)
 	}
-	c.record(ctx, channelName, message.GetMessage(), nil)
-	return nil
+	return c.record(ctx, channelName, message.GetMessage(), nil)
 }
 
 func (c *recordingSlackAPIClient) SendMessageByStrings(ctx context.Context, channelName SlackChannelName, title string, message, ts *string) (string, error) {
-	resultTs, err := c.inner.SendMessageByStrings(ctx, channelName, title, message, ts)
-	if err != nil {
-		return resultTs, err
+	if channelName == SlackChannelNameDevNotification {
+		return c.inner.SendMessageByStrings(ctx, channelName, title, message, ts)
 	}
-	c.record(ctx, channelName, title, message)
-	return resultTs, nil
+	if err := c.record(ctx, channelName, title, message); err != nil {
+		return "", err
+	}
+	return "", nil
 }
 
 func (c *recordingSlackAPIClient) SendErrMessageNotification(ctx context.Context, err error) error {
-	// dev_notification 宛のため記録しない
+	// dev_notification 宛のため常に Slack へ送信し、記録しない
 	return c.inner.SendErrMessageNotification(ctx, err)
 }
 
-func (c *recordingSlackAPIClient) record(ctx context.Context, channelName SlackChannelName, title string, body *string) {
-	if channelName == SlackChannelNameDevNotification {
-		return
-	}
-
+// record notification_history へ記録する。Slack 送信を行わない通知はこの記録が
+// 唯一の記録手段になるため、書き込み失敗時は呼び出し元へエラーを返す。
+func (c *recordingSlackAPIClient) record(ctx context.Context, channelName SlackChannelName, title string, body *string) error {
 	notification := models.NewNotificationHistory(
 		"",
 		models.NotificationHistorySourceSpr,
@@ -82,5 +82,7 @@ func (c *recordingSlackAPIClient) record(ctx context.Context, channelName SlackC
 	)
 	if err := c.repo.Create(ctx, notification); err != nil {
 		c.logger.Error("recordingSlackAPIClient: failed to record notification history", zap.Error(err))
+		return err
 	}
+	return nil
 }

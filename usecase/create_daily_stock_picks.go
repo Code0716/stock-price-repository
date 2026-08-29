@@ -41,7 +41,6 @@ type createDailyStockPicksInteractorImpl struct {
 	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository
 	stockBrandRepository                 repositories.StockBrandRepository
 	dailyStockPickRepository             repositories.DailyStockPickRepository
-	slackAPIClientRaw                    gateway.SlackAPIClientRaw
 	notificationHistoryRepository        repositories.NotificationHistoryRepository
 }
 
@@ -50,7 +49,6 @@ func NewCreateDailyStockPicksInteractor(
 	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 	stockBrandRepository repositories.StockBrandRepository,
 	dailyStockPickRepository repositories.DailyStockPickRepository,
-	slackAPIClientRaw gateway.SlackAPIClientRaw,
 	notificationHistoryRepository repositories.NotificationHistoryRepository,
 ) CreateDailyStockPicksInteractor {
 	return &createDailyStockPicksInteractorImpl{
@@ -58,7 +56,6 @@ func NewCreateDailyStockPicksInteractor(
 		stockBrandsDailyStockPriceRepository: stockBrandsDailyStockPriceRepository,
 		stockBrandRepository:                 stockBrandRepository,
 		dailyStockPickRepository:             dailyStockPickRepository,
-		slackAPIClientRaw:                    slackAPIClientRaw,
 		notificationHistoryRepository:        notificationHistoryRepository,
 	}
 }
@@ -209,25 +206,15 @@ func (ci *createDailyStockPicksInteractorImpl) runScreeningWorkers(
 	return candidates, nil
 }
 
-// notify 推奨銘柄を Slack に通知し、成功したら通知日時を記録する。
+// notify 推奨銘柄を notification_history に記録し、成功したら通知日時を記録する。
+// 株情報系の通知のため Slack へは送信せず、front の /notifications 経由で確認する。
 func (ci *createDailyStockPicksInteractorImpl) notify(ctx context.Context, pickDate time.Time, picks []*models.DailyStockPick) error {
 	title, bodies := domain_service.FormatDailyStockPickMessages(picks, domain_service.DailyPickSlackMaxRunes)
 	if title == "" {
 		return nil
 	}
 
-	var ts *string
-	for i := range bodies {
-		sentTS, err := ci.slackAPIClientRaw.SendMessageByStrings(ctx, gateway.SlackChannelNameExchangeStockInfo, title, &bodies[i], ts)
-		if err != nil {
-			return errors.Wrapf(err, "SendMessageByStrings error index=%d", i)
-		}
-		if ts == nil {
-			ts = &sentTS
-		}
-	}
-
-	// Slack へはチャンクごとに分割送信するが、notification_history へは結合した全文で1件だけ記録する。
+	// Slack へはチャンクごとに分割送信していた名残りで、notification_history へは結合した全文で1件だけ記録する。
 	fullBody := strings.Join(bodies, "\n\n")
 	notification := models.NewNotificationHistory(
 		"",
@@ -239,7 +226,7 @@ func (ci *createDailyStockPicksInteractorImpl) notify(ctx context.Context, pickD
 		time.Now(),
 	)
 	if err := ci.notificationHistoryRepository.Create(ctx, notification); err != nil {
-		log.Printf("createDailyStockPicksInteractorImpl.notify: failed to record notification history. error=%s", err.Error())
+		return errors.Wrap(err, "notificationHistoryRepository.Create error")
 	}
 
 	if err := ci.dailyStockPickRepository.MarkNotified(ctx, pickDate, time.Now()); err != nil {

@@ -92,6 +92,10 @@ func TestE2E_DailyStockPicks(t *testing.T) {
 		SendMessageByStrings(gomock.Any(), gateway.SlackChannelNameDevNotification, gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("ts", nil).
 		AnyTimes()
+	mockSlackAPI.EXPECT().
+		SendBlockMessage(gomock.Any(), gateway.SlackChannelNameDevNotification, gomock.Any()).
+		Return(nil).
+		AnyTimes()
 	notificationHistoryRepo := database.NewNotificationHistoryRepositoryImpl(db)
 
 	createInteractor := usecase.NewCreateDailyStockPicksInteractor(tx, priceRepo, stockBrandRepo, pickRepo, notificationHistoryRepo)

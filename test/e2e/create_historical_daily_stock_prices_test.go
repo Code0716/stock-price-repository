@@ -72,6 +72,7 @@ func TestE2E_CreateHistoricalDailyStockPrices(t *testing.T) {
 				mr.Set("create_historical_daily_stock_prices_date_checkpoint", checkpoint)
 
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
+				mockSlackAPI.EXPECT().SendBlockMessage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 				// 日付ループで呼ばれる: 各平日について全銘柄の価格を返す
 				mockStockAPI.EXPECT().GetAllBrandDailyPricesByDate(

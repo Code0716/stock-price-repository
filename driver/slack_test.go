@@ -3,13 +3,16 @@ package driver
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
 	"github.com/Code0716/stock-price-repository/config"
@@ -385,6 +388,161 @@ func TestSlackAPIClient_SendMessageByStrings(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("SlackAPIClient.SendMessageByStrings() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSlackAPIClient_SendBlockMessage(t *testing.T) {
+	s, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis.Run() error = %v", err)
+	}
+	defer s.Close()
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: s.Addr(),
+	})
+
+	config.GetSlack().SlackBotBaseURL = "https://slack.com/api/chat.postMessage"
+	config.GetSlack().SlackNotificationBotToken = "test-token"
+
+	type fields struct {
+		request     func(ctrl *gomock.Controller) HTTPRequest
+		redisClient *redis.Client
+	}
+	type args struct {
+		ctx         context.Context
+		channelName gateway.SlackChannelName
+		message     resource.SlackBlockMessage
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		args       args
+		wantErr    bool
+		wantValues func(t *testing.T, values url.Values)
+	}{
+		{
+			name: "正常系: blocks と attachments が有効な JSON として送信される",
+			fields: fields{
+				request: func(ctrl *gomock.Controller) HTTPRequest {
+					mock := mock_driver.NewMockHTTPRequest(ctrl)
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
+						Transport: &MockRoundTripper{
+							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+								body, readErr := io.ReadAll(req.Body)
+								assert.NoError(t, readErr)
+								values, parseErr := url.ParseQuery(string(body))
+								assert.NoError(t, parseErr)
+								assert.NotEmpty(t, values.Get("text"))
+								assert.True(t, json.Valid([]byte(values.Get("blocks"))))
+								assert.True(t, json.Valid([]byte(values.Get("attachments"))))
+								return &http.Response{
+									StatusCode: http.StatusOK,
+									Body: io.NopCloser(bytes.NewBufferString(`{
+										"ok": true,
+										"ts": "1503435956.000247"
+									}`)),
+								}, nil
+							},
+						},
+					})
+					return mock
+				},
+				redisClient: redisClient,
+			},
+			args: args{
+				ctx:         context.Background(),
+				channelName: gateway.SlackChannelNameDevNotification,
+				message: resource.SlackBlockMessage{
+					Text:        "fallback text",
+					Blocks:      []resource.SlackBlock{resource.NewSlackHeaderBlock("header")},
+					Attachments: []resource.SlackAttachment{{Color: "#2eb886", Blocks: []resource.SlackBlock{resource.NewSlackSectionBlock("body")}}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "正常系: blocks/attachments が空なら values にキーが現れない",
+			fields: fields{
+				request: func(ctrl *gomock.Controller) HTTPRequest {
+					mock := mock_driver.NewMockHTTPRequest(ctrl)
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
+						Transport: &MockRoundTripper{
+							RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+								body, readErr := io.ReadAll(req.Body)
+								assert.NoError(t, readErr)
+								values, parseErr := url.ParseQuery(string(body))
+								assert.NoError(t, parseErr)
+								assert.False(t, values.Has("blocks"))
+								assert.False(t, values.Has("attachments"))
+								return &http.Response{
+									StatusCode: http.StatusOK,
+									Body: io.NopCloser(bytes.NewBufferString(`{
+										"ok": true,
+										"ts": "1503435956.000247"
+									}`)),
+								}, nil
+							},
+						},
+					})
+					return mock
+				},
+				redisClient: redisClient,
+			},
+			args: args{
+				ctx:         context.Background(),
+				channelName: gateway.SlackChannelNameDevNotification,
+				message:     resource.SlackBlockMessage{Text: "fallback text only"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "異常系: Slack API エラー",
+			fields: fields{
+				request: func(ctrl *gomock.Controller) HTTPRequest {
+					mock := mock_driver.NewMockHTTPRequest(ctrl)
+					mock.EXPECT().GetHTTPClient().Return(&http.Client{
+						Transport: &MockRoundTripper{
+							RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
+								return &http.Response{
+									StatusCode: http.StatusOK,
+									Body: io.NopCloser(bytes.NewBufferString(`{
+										"ok": false,
+										"error": "invalid_blocks"
+									}`)),
+								}, nil
+							},
+						},
+					})
+					return mock
+				},
+				redisClient: redisClient,
+			},
+			args: args{
+				ctx:         context.Background(),
+				channelName: gateway.SlackChannelNameDevNotification,
+				message: resource.SlackBlockMessage{
+					Text:   "fallback text",
+					Blocks: []resource.SlackBlock{resource.NewSlackHeaderBlock("header")},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			c := &SlackAPIClient{
+				request:     tt.fields.request(ctrl),
+				redisClient: tt.fields.redisClient,
+			}
+			err := c.SendBlockMessage(tt.args.ctx, tt.args.channelName, tt.args.message)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SlackAPIClient.SendBlockMessage() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

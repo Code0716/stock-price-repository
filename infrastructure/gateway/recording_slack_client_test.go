@@ -158,6 +158,51 @@ func TestRecordingSlackAPIClient_SendMessage(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRecordingSlackAPIClient_SendBlockMessage(t *testing.T) {
+	blockMessage := resource.SlackBlockMessage{
+		Text:   "fallback text",
+		Blocks: []resource.SlackBlock{resource.NewSlackHeaderBlock("header")},
+	}
+
+	t.Run("正常系: dev_notificationはSlackへ送信し記録しない", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		inner := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
+		inner.EXPECT().
+			SendBlockMessage(gomock.Any(), gomock.Eq(gateway.SlackChannelNameDevNotification), gomock.Eq(blockMessage)).
+			Return(nil)
+
+		// dev_notification 宛のため Create は呼ばれない
+		repo := mock_repositories.NewMockNotificationHistoryRepository(ctrl)
+
+		c := gateway.NewRecordingSlackAPIClient(inner, repo, zap.NewNop())
+		err := c.SendBlockMessage(context.Background(), gateway.SlackChannelNameDevNotification, blockMessage)
+		assert.NoError(t, err)
+	})
+
+	t.Run("正常系: 株情報系はSlackへ送らずfallback textのみnotification_historyへ記録する", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// Slackへは送信しないため inner に EXPECT を張らない
+		inner := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
+
+		repo := mock_repositories.NewMockNotificationHistoryRepository(ctrl)
+		repo.EXPECT().
+			Create(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, n *models.NotificationHistory) error {
+				assert.Equal(t, blockMessage.Text, n.Title)
+				assert.Nil(t, n.Body)
+				return nil
+			})
+
+		c := gateway.NewRecordingSlackAPIClient(inner, repo, zap.NewNop())
+		err := c.SendBlockMessage(context.Background(), gateway.SlackChannelNameExchangeStockInfo, blockMessage)
+		assert.NoError(t, err)
+	})
+}
+
 func TestRecordingSlackAPIClient_SendErrMessageNotification(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

@@ -51,6 +51,10 @@ func TestE2E_AdjustHistoricalDataForStockConsolidation(t *testing.T) {
 					SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return("", nil).
 					AnyTimes()
+				mockSlackAPI.EXPECT().
+					SendBlockMessage(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).
+					AnyTimes()
 
 				brand := &models.StockBrand{
 					ID:           "uuid-1001",

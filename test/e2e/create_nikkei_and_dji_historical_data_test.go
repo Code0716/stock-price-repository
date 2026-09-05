@@ -53,6 +53,7 @@ func TestE2E_CreateNikkeiAndDjiHistoricalData(t *testing.T) {
 			setup: func(_ *testing.T, mockStockAPI *mock_gateway.MockStockAPIClient, mockSlackAPI *mock_gateway.MockSlackAPIClient) {
 				// Setup Expectations
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
+				mockSlackAPI.EXPECT().SendBlockMessage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 				// Nikkei
 				mockStockAPI.EXPECT().GetIndexPriceChart(

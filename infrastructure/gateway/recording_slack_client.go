@@ -68,6 +68,15 @@ func (c *recordingSlackAPIClient) SendErrMessageNotification(ctx context.Context
 	return c.inner.SendErrMessageNotification(ctx, err)
 }
 
+func (c *recordingSlackAPIClient) SendBlockMessage(ctx context.Context, channelName SlackChannelName, message resource.SlackBlockMessage) error {
+	if channelName == SlackChannelNameDevNotification {
+		return c.inner.SendBlockMessage(ctx, channelName, message)
+	}
+	// 現状 dev_notification 以外から呼ばれる想定はないが、将来の誤用で通知が消えないよう
+	// フォールバックテキストを notification_history へ記録する（Block Kit の JSON は記録しない）。
+	return c.record(ctx, channelName, message.Text, nil)
+}
+
 // record notification_history へ記録する。Slack 送信を行わない通知はこの記録が
 // 唯一の記録手段になるため、書き込み失敗時は呼び出し元へエラーを返す。
 func (c *recordingSlackAPIClient) record(ctx context.Context, channelName SlackChannelName, title string, body *string) error {

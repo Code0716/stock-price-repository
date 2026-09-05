@@ -69,6 +69,7 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 				assert.NoError(t, err)
 
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
+				mockSlackAPI.EXPECT().SendBlockMessage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 				mockStockAPI.EXPECT().GetAllBrandDailyPricesByDate(
 					gomock.Any(),

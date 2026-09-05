@@ -109,16 +109,59 @@ func (c *SlackAPIClient) SendMessageByStrings(ctx context.Context, channelName g
 }
 
 func (c *SlackAPIClient) sendMessage(ctx context.Context, channelName gateway.SlackChannelName, message string, replytimestamp *string) (*slackResponse, error) {
+	return c.post(ctx, slackPostParams{
+		channelName: channelName,
+		text:        message,
+		threadTS:    replytimestamp,
+	})
+}
+
+// SendBlockMessage Block Kit 形式でメッセージを送信する。message.Text はフォールバックとして必須。
+func (c *SlackAPIClient) SendBlockMessage(ctx context.Context, channelName gateway.SlackChannelName, message resource.SlackBlockMessage) error {
+	_, err := c.post(ctx, slackPostParams{
+		channelName: channelName,
+		text:        message.Text,
+		blocks:      message.Blocks,
+		attachments: message.Attachments,
+		threadTS:    message.ThreadTS,
+	})
+	return errors.Wrap(err, "SlackAPIClient.SendBlockMessage error")
+}
+
+// slackPostParams は chat.postMessage への1リクエスト分のパラメータ。
+type slackPostParams struct {
+	channelName gateway.SlackChannelName
+	text        string // 必須。blocks 指定時は通知バナー/検索用フォールバックになる
+	blocks      []resource.SlackBlock
+	attachments []resource.SlackAttachment
+	threadTS    *string
+}
+
+func (c *SlackAPIClient) post(ctx context.Context, p slackPostParams) (*slackResponse, error) {
 	u, err := url.Parse(config.GetSlack().SlackBotBaseURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
 	values := url.Values{}
 	values.Set("token", config.GetSlack().SlackNotificationBotToken)
-	values.Set("channel", channelName.String())
-	values.Set("text", message)
-	if replytimestamp != nil {
-		values.Set("thread_ts", *replytimestamp)
+	values.Set("channel", p.channelName.String())
+	values.Set("text", p.text)
+	if len(p.blocks) > 0 {
+		b, err := json.Marshal(p.blocks)
+		if err != nil {
+			return nil, errors.Wrap(err, "slack blocks marshal error")
+		}
+		values.Set("blocks", string(b))
+	}
+	if len(p.attachments) > 0 {
+		a, err := json.Marshal(p.attachments)
+		if err != nil {
+			return nil, errors.Wrap(err, "slack attachments marshal error")
+		}
+		values.Set("attachments", string(a))
+	}
+	if p.threadTS != nil {
+		values.Set("thread_ts", *p.threadTS)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), strings.NewReader(values.Encode()))
@@ -140,7 +183,7 @@ func (c *SlackAPIClient) sendMessage(ctx context.Context, channelName gateway.Sl
 	}
 
 	if res.StatusCode != http.StatusOK {
-		log.Printf("slack.sendMessage error. statusCode:%d respBody=%q", res.StatusCode, string(resBody))
+		log.Printf("slack.sendMessage error. statusCode:%d respBody=%q blocks=%q", res.StatusCode, string(resBody), TruncateForLog(values.Get("blocks")))
 		return nil, errors.New("slack.sendMessage error")
 	}
 
@@ -150,7 +193,7 @@ func (c *SlackAPIClient) sendMessage(ctx context.Context, channelName gateway.Sl
 	}
 
 	if !response.Ok {
-		log.Printf("slack.sendMessage error. statusCode:%d errorMessage=%s", res.StatusCode, response.Error)
+		log.Printf("slack.sendMessage error. statusCode:%d errorMessage=%s blocks=%q", res.StatusCode, response.Error, TruncateForLog(values.Get("blocks")))
 		return nil, errors.New("slack.sendMessage error")
 	}
 
@@ -163,6 +206,16 @@ func (c *SlackAPIClient) sendMessage(ctx context.Context, channelName gateway.Sl
 	}
 
 	return &response, nil
+}
+
+// TruncateForLog はデバッグログ出力用に文字列を先頭300文字までに切り詰める。
+func TruncateForLog(s string) string {
+	const logPreviewMaxLen = 300
+	r := []rune(s)
+	if len(r) <= logPreviewMaxLen {
+		return s
+	}
+	return string(r[:logPreviewMaxLen])
 }
 
 // 以下Redisの部分はusecaseでやるべき。

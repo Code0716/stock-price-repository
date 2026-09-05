@@ -42,6 +42,20 @@ func (m *MockSlackAPIClient) EXPECT() *MockSlackAPIClientMockRecorder {
 	return m.recorder
 }
 
+// SendBlockMessage mocks base method.
+func (m *MockSlackAPIClient) SendBlockMessage(ctx context.Context, channelName gateway.SlackChannelName, message resource.SlackBlockMessage) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendBlockMessage", ctx, channelName, message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendBlockMessage indicates an expected call of SendBlockMessage.
+func (mr *MockSlackAPIClientMockRecorder) SendBlockMessage(ctx, channelName, message any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendBlockMessage", reflect.TypeOf((*MockSlackAPIClient)(nil).SendBlockMessage), ctx, channelName, message)
+}
+
 // SendErrMessageNotification mocks base method.
 func (m *MockSlackAPIClient) SendErrMessageNotification(ctx context.Context, err error) error {
 	m.ctrl.T.Helper()
@@ -107,6 +121,20 @@ func NewMockSlackAPIClientRaw(ctrl *gomock.Controller) *MockSlackAPIClientRaw {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockSlackAPIClientRaw) EXPECT() *MockSlackAPIClientRawMockRecorder {
 	return m.recorder
+}
+
+// SendBlockMessage mocks base method.
+func (m *MockSlackAPIClientRaw) SendBlockMessage(ctx context.Context, channelName gateway.SlackChannelName, message resource.SlackBlockMessage) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendBlockMessage", ctx, channelName, message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendBlockMessage indicates an expected call of SendBlockMessage.
+func (mr *MockSlackAPIClientRawMockRecorder) SendBlockMessage(ctx, channelName, message any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendBlockMessage", reflect.TypeOf((*MockSlackAPIClientRaw)(nil).SendBlockMessage), ctx, channelName, message)
 }
 
 // SendErrMessageNotification mocks base method.

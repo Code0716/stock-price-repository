@@ -3,8 +3,8 @@ module github.com/Code0716/stock-price-repository
 go 1.26.6
 
 require (
-	github.com/alicebob/miniredis/v2 v2.38.0
-	github.com/go-sql-driver/mysql v1.10.0
+	github.com/alicebob/miniredis/v2 v2.39.0
+	github.com/go-sql-driver/mysql v1.10.1
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.7.0
 	github.com/holiday-jp/holiday_jp-go v0.0.0-20220125203534-53124b4cc19c

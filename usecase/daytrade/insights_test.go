@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Code0716/stock-price-repository/models"
@@ -96,6 +97,53 @@ func TestBuildTradeApprox(t *testing.T) {
 	}
 }
 
+func TestBuildTradeApprox_QuantityWeightedAvgAcquisitionPrice(t *testing.T) {
+	tests := []struct {
+		name           string
+		executions     []*models.DaytradeExecution
+		wantQuantity   uint64
+		wantAvgAcqCost string // decimal文字列。空なら比較スキップ
+	}{
+		{
+			name: "分割決済2行は数量加重平均になる",
+			executions: []*models.DaytradeExecution{
+				{TickerSymbol: "9984", ExecutedOn: baseDate, MarginKind: "返済売", Quantity: 100, AverageCost: decimal.NewFromInt(100), ProfitLoss: 1000, TradeAmount: 500000},
+				{TickerSymbol: "9984", ExecutedOn: baseDate, MarginKind: "返済売", Quantity: 300, AverageCost: decimal.NewFromInt(200), ProfitLoss: 500, TradeAmount: 300000},
+			},
+			wantQuantity:   400,
+			wantAvgAcqCost: "175", // (100*100 + 300*200) / 400
+		},
+		{
+			name: "数量0の行は加重平均に寄与しない",
+			executions: []*models.DaytradeExecution{
+				{TickerSymbol: "9984", ExecutedOn: baseDate, MarginKind: "返済売", Quantity: 0, AverageCost: decimal.NewFromInt(999), ProfitLoss: 0, TradeAmount: 0},
+				{TickerSymbol: "9984", ExecutedOn: baseDate, MarginKind: "返済売", Quantity: 100, AverageCost: decimal.NewFromInt(100), ProfitLoss: 1000, TradeAmount: 500000},
+			},
+			wantQuantity:   100,
+			wantAvgAcqCost: "100",
+		},
+		{
+			name: "数量が全て0ならQuantity=0・AvgAcquisitionPrice=Zero",
+			executions: []*models.DaytradeExecution{
+				{TickerSymbol: "9984", ExecutedOn: baseDate, MarginKind: "返済売", Quantity: 0, ProfitLoss: 0, TradeAmount: 0},
+			},
+			wantQuantity:   0,
+			wantAvgAcqCost: "0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := BuildTradeApprox(tt.executions)
+			assert.Len(t, got, 1)
+			assert.Equal(t, tt.wantQuantity, got[0].Quantity)
+			want, err := decimal.NewFromString(tt.wantAvgAcqCost)
+			assert.NoError(t, err)
+			assert.True(t, want.Equal(got[0].AvgAcquisitionPrice), "want %s got %s", want, got[0].AvgAcquisitionPrice)
+		})
+	}
+}
+
 func TestComputeLossConcentration(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -177,7 +225,7 @@ func TestComputeFavoriteTraps(t *testing.T) {
 	tests := []struct {
 		name      string
 		trades    []*models.DaytradeTradeApprox
-		wantSyms  []string  // 期待される ticker の順序（回数降順）
+		wantSyms  []string // 期待される ticker の順序（回数降順）
 		wantCount []int
 	}{
 		{

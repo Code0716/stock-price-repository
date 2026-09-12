@@ -22,7 +22,10 @@ jobs:
         run: go mod download
 
       - name: Install buf
-        run: go install github.com/bufbuild/buf/cmd/buf@latest
+        # buf@latest は不定期に上流の最小go要求を引き上げる（例: v1.73.0はgo1.26.7以上を要求）。
+        # CIのgo-versionは1.26.6に固定しているため、@latestだと上流リリースだけでCI全体が壊れる。
+        # go1.26.6で動作確認済みのバージョンに固定する。
+        run: go install github.com/bufbuild/buf/cmd/buf@v1.72.0
 
       - name: Clone proto definitions
         run: make proto-setup
@@ -95,7 +98,10 @@ jobs:
         run: go mod download
 
       - name: Install buf
-        run: go install github.com/bufbuild/buf/cmd/buf@latest
+        # buf@latest は不定期に上流の最小go要求を引き上げる（例: v1.73.0はgo1.26.7以上を要求）。
+        # CIのgo-versionは1.26.6に固定しているため、@latestだと上流リリースだけでCI全体が壊れる。
+        # go1.26.6で動作確認済みのバージョンに固定する。
+        run: go install github.com/bufbuild/buf/cmd/buf@v1.72.0
 
       - name: Clone proto definitions
         run: make proto-setup

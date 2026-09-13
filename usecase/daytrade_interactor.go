@@ -30,25 +30,17 @@ type DaytradeInteractor interface {
 	UpsertTradeNote(ctx context.Context, rec *models.DaytradeTradeNoteRecord) error
 	// GetTagStats はタグ別損益集計を返す。from / to は nil 可。
 	GetTagStats(ctx context.Context, from, to *time.Time) ([]models.DaytradeTagStat, error)
-	// GetStopCompliance は宣言済み損切りラインと当日の値動きを突き合わせ、遵守/違反を判定する。from / to は nil 可。
-	GetStopCompliance(ctx context.Context, from, to *time.Time) (*models.DaytradeStopCompliance, error)
 }
 
 type daytradeInteractorImpl struct {
-	tx             repositories.Transaction
-	repo           repositories.DaytradeExecutionRepository
-	noteRepo       repositories.DaytradeTradeNoteRepository
-	dailyPriceRepo repositories.StockBrandsDailyPriceRepository
-	now            func() time.Time
+	tx       repositories.Transaction
+	repo     repositories.DaytradeExecutionRepository
+	noteRepo repositories.DaytradeTradeNoteRepository
+	now      func() time.Time
 }
 
-func NewDaytradeInteractor(
-	tx repositories.Transaction,
-	repo repositories.DaytradeExecutionRepository,
-	noteRepo repositories.DaytradeTradeNoteRepository,
-	dailyPriceRepo repositories.StockBrandsDailyPriceRepository,
-) DaytradeInteractor {
-	return &daytradeInteractorImpl{tx: tx, repo: repo, noteRepo: noteRepo, dailyPriceRepo: dailyPriceRepo, now: time.Now}
+func NewDaytradeInteractor(tx repositories.Transaction, repo repositories.DaytradeExecutionRepository, noteRepo repositories.DaytradeTradeNoteRepository) DaytradeInteractor {
+	return &daytradeInteractorImpl{tx: tx, repo: repo, noteRepo: noteRepo, now: time.Now}
 }
 
 func (u *daytradeInteractorImpl) ImportSBICsv(ctx context.Context, r io.Reader) (*models.DaytradeImportResult, error) {
@@ -148,59 +140,6 @@ func (u *daytradeInteractorImpl) GetTagStats(ctx context.Context, from, to *time
 		return nil, errors.Wrap(err, "GetTrades error")
 	}
 	return daytrade.ComputeTagStats(trades), nil
-}
-
-func (u *daytradeInteractorImpl) GetStopCompliance(ctx context.Context, from, to *time.Time) (*models.DaytradeStopCompliance, error) {
-	executions, err := u.repo.FindByDateRange(ctx, from, to)
-	if err != nil {
-		return nil, errors.Wrap(err, "FindByDateRange error")
-	}
-	trades := daytrade.BuildTradeApprox(executions)
-
-	notes, err := u.noteRepo.FindByDateRange(ctx, from, to)
-	if err != nil {
-		return nil, errors.Wrap(err, "noteRepo.FindByDateRange error")
-	}
-
-	symbols := make([]string, 0)
-	seen := make(map[string]struct{})
-	var minDate, maxDate *time.Time
-	for _, n := range notes {
-		if n.DeclaredStopPrice == nil {
-			continue
-		}
-		if _, ok := seen[n.TickerSymbol]; !ok {
-			seen[n.TickerSymbol] = struct{}{}
-			symbols = append(symbols, n.TickerSymbol)
-		}
-		d := n.ExecutedOn
-		if minDate == nil || d.Before(*minDate) {
-			minDate = &d
-		}
-		if maxDate == nil || d.After(*maxDate) {
-			maxDate = &d
-		}
-	}
-	if len(symbols) == 0 {
-		return daytrade.ComputeStopCompliance(trades, notes, nil), nil
-	}
-
-	prices, err := u.dailyPriceRepo.ListRangePricesBySymbols(ctx, models.ListRangePricesBySymbolsFilter{
-		Symbols:  symbols,
-		DateFrom: minDate,
-		DateTo:   maxDate,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "ListRangePricesBySymbols error")
-	}
-
-	priceByKey := make(map[daytrade.DailyLowHighKey]daytrade.DailyLowHigh, len(prices))
-	for _, p := range prices {
-		k := daytrade.DailyLowHighKey{TickerSymbol: p.TickerSymbol, ExecutedOn: p.Date.Format("2006-01-02")}
-		priceByKey[k] = daytrade.DailyLowHigh{Low: p.Low, High: p.High}
-	}
-
-	return daytrade.ComputeStopCompliance(trades, notes, priceByKey), nil
 }
 
 func (u *daytradeInteractorImpl) GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error) {

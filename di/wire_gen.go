@@ -139,7 +139,7 @@ func InitializeApiServer(ctx context.Context) (*http.ServeMux, func(), error) {
 	finStatementHandler := handler.NewFinStatementHandler(stockBrandInteractor, httpServer, logger)
 	daytradeExecutionRepository := database.NewDaytradeExecutionRepositoryImpl(gormDB)
 	daytradeTradeNoteRepository := database.NewDaytradeTradeNoteRepositoryImpl(gormDB)
-	daytradeInteractor := usecase.NewDaytradeInteractor(transaction, daytradeExecutionRepository, daytradeTradeNoteRepository, stockBrandsDailyPriceRepository)
+	daytradeInteractor := usecase.NewDaytradeInteractor(transaction, daytradeExecutionRepository, daytradeTradeNoteRepository)
 	daytradeHandler := handler.NewDaytradeHandler(daytradeInteractor, httpServer, logger)
 	nikkeiRepository := database.NewNikkeiRepositoryImpl(gormDB)
 	topixRepository := database.NewTopixRepositoryImpl(gormDB)

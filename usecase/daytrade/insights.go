@@ -4,8 +4,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/shopspring/decimal"
-
 	"github.com/Code0716/stock-price-repository/models"
 )
 
@@ -33,10 +31,6 @@ type tradeAccum struct {
 	tradeAmount int64
 	winCount    int
 	lossCount   int
-	// quantity / costWeightedSum は数量加重平均取得単価（AvgAcquisitionPrice）の算出用。
-	// costWeightedSum = Σ(quantity_i * averageCost_i)。quantity=0 の行（averageCost未設定行）は寄与しない。
-	quantity        uint64
-	costWeightedSum decimal.Decimal
 }
 
 // BuildTradeApprox は明細を「銘柄×日×売買方向」で集約して1トレード近似を返す。
@@ -69,30 +63,20 @@ func BuildTradeApprox(executions []*models.DaytradeExecution) []*models.Daytrade
 		} else if ex.ProfitLoss < 0 {
 			a.lossCount++
 		}
-		if ex.Quantity > 0 {
-			a.quantity += uint64(ex.Quantity)
-			a.costWeightedSum = a.costWeightedSum.Add(ex.AverageCost.Mul(decimal.NewFromInt(int64(ex.Quantity))))
-		}
 	}
 
 	results := make([]*models.DaytradeTradeApprox, 0, len(keys))
 	for _, k := range keys {
 		a := acc[k]
-		avgAcquisitionPrice := decimal.Zero
-		if a.quantity > 0 {
-			avgAcquisitionPrice = a.costWeightedSum.Div(decimal.NewFromInt(int64(a.quantity)))
-		}
 		results = append(results, &models.DaytradeTradeApprox{
-			TickerSymbol:        k.tickerSymbol,
-			BrandName:           a.brandName,
-			ExecutedOn:          a.executedOn,
-			Direction:           k.direction,
-			ProfitLoss:          a.profitLoss,
-			TradeAmount:         a.tradeAmount,
-			WinCount:            a.winCount,
-			LossCount:           a.lossCount,
-			Quantity:            a.quantity,
-			AvgAcquisitionPrice: avgAcquisitionPrice,
+			TickerSymbol: k.tickerSymbol,
+			BrandName:    a.brandName,
+			ExecutedOn:   a.executedOn,
+			Direction:    k.direction,
+			ProfitLoss:   a.profitLoss,
+			TradeAmount:  a.tradeAmount,
+			WinCount:     a.winCount,
+			LossCount:    a.lossCount,
 		})
 	}
 	return results

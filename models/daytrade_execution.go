@@ -95,6 +95,10 @@ type DaytradeTradeApprox struct {
 	TradeAmount  int64
 	WinCount     int // 集約行のうち profit_loss > 0 の件数
 	LossCount    int // 集約行のうち profit_loss < 0 の件数
+	// Quantity / AvgAcquisitionPrice は損切り宣言遵守判定（ComputeStopCompliance）用。
+	// 明細行の数量加重平均。数量0の行しかない場合は Quantity=0, AvgAcquisitionPrice=Zero。
+	Quantity            uint64
+	AvgAcquisitionPrice decimal.Decimal
 }
 
 // DaytradeInsights デイトレ反省ダッシュボード（/daytrade/insights API レスポンス）
@@ -105,8 +109,8 @@ type DaytradeInsights struct {
 
 // DaytradeLossConcentration 大損寄与率（パレート分析）
 type DaytradeLossConcentration struct {
-	TotalLoss   int64                `json:"totalLoss"`   // 負けトレード損失合計（絶対値）
-	Top1Ratio   float64              `json:"top1Ratio"`   // 上位1件が総損失に占める割合
+	TotalLoss   int64                `json:"totalLoss"` // 負けトレード損失合計（絶対値）
+	Top1Ratio   float64              `json:"top1Ratio"` // 上位1件が総損失に占める割合
 	Top3Ratio   float64              `json:"top3Ratio"`
 	Top5Ratio   float64              `json:"top5Ratio"`
 	WorstTrades []DaytradeWorstTrade `json:"worstTrades"` // 損失上位5件（損失大きい順）
@@ -133,9 +137,9 @@ type DaytradeFavoriteTrap struct {
 
 // DaytradeTradeNoteRecord はリポジトリ層が扱うトレード注釈の内部モデル
 type DaytradeTradeNoteRecord struct {
-	TickerSymbol      string           // 近似キー
-	ExecutedOn        time.Time        // 近似キー
-	Direction         string           // 近似キー（正規化済み）
+	TickerSymbol      string    // 近似キー
+	ExecutedOn        time.Time // 近似キー
+	Direction         string    // 近似キー（正規化済み）
 	Memo              string
 	Tags              []string
 	DeclaredStopPrice *decimal.Decimal
@@ -181,4 +185,50 @@ type DaytradePeriodStats struct {
 	MaxDrawdown   int64 `json:"maxDrawdown"`
 	MaxRunup      int64 `json:"maxRunup"`
 	MaxLossStreak int   `json:"maxLossStreak"`
+}
+
+// DaytradeStopComplianceCategory 損切り宣言と当日の値動きを突き合わせた分類
+type DaytradeStopComplianceCategory string
+
+const (
+	// DaytradeStopComplianceNotTriggered 宣言ストップに当日到達しなかった（判定対象外）
+	DaytradeStopComplianceNotTriggered DaytradeStopComplianceCategory = "not_triggered"
+	// DaytradeStopComplianceHonored 到達し、宣言ストップ相当以下の損失で手仕舞えた（宣言を守れた）
+	DaytradeStopComplianceHonored DaytradeStopComplianceCategory = "honored"
+	// DaytradeStopComplianceBreachedRecovered 到達したが手仕舞わず持ち越し、建値/利益で終えた（切らずに逃げ切った）
+	DaytradeStopComplianceBreachedRecovered DaytradeStopComplianceCategory = "breached_recovered"
+	// DaytradeStopComplianceBreachedWorse 到達したが手仕舞わず持ち越し、宣言ストップ相当より悪い損失で終えた
+	DaytradeStopComplianceBreachedWorse DaytradeStopComplianceCategory = "breached_worse"
+	// DaytradeStopComplianceUnknown 数量0・宣言価格が平均取得単価と一致・当日の日足が無い等で方向判定不能
+	DaytradeStopComplianceUnknown DaytradeStopComplianceCategory = "unknown"
+)
+
+// DaytradeStopComplianceTrade は損切り宣言のあるトレード1件の判定明細
+type DaytradeStopComplianceTrade struct {
+	TickerSymbol        string                         `json:"tickerSymbol"`
+	BrandName           string                         `json:"brandName"`
+	ExecutedOn          string                         `json:"executedOn"` // YYYY-MM-DD
+	Direction           string                         `json:"direction"`
+	DeclaredStopPrice   decimal.Decimal                `json:"declaredStopPrice"`
+	AvgAcquisitionPrice decimal.Decimal                `json:"avgAcquisitionPrice"` // 数量加重平均取得単価
+	Quantity            uint64                         `json:"quantity"`
+	DayLow              *decimal.Decimal               `json:"dayLow"` // unknown/not_triggered時もnot_triggeredなら値あり
+	DayHigh             *decimal.Decimal               `json:"dayHigh"`
+	ProfitLoss          int64                          `json:"profitLoss"`
+	ExpectedLossAtStop  *int64                         `json:"expectedLossAtStop"` // 宣言通り切っていた場合の想定損失（円）。到達時のみ
+	Overshoot           *int64                         `json:"overshoot"`          // 実損失 - 想定損失（円）。breached_worse のみ
+	Category            DaytradeStopComplianceCategory `json:"category"`
+}
+
+// DaytradeStopCompliance 損切り宣言遵守判定（GET /daytrade/stop-compliance API レスポンス）
+type DaytradeStopCompliance struct {
+	DeclaredCount          int                           `json:"declaredCount"` // 宣言ありトレード数
+	NotTriggeredCount      int                           `json:"notTriggeredCount"`
+	HonoredCount           int                           `json:"honoredCount"`
+	BreachedRecoveredCount int                           `json:"breachedRecoveredCount"`
+	BreachedWorseCount     int                           `json:"breachedWorseCount"`
+	UnknownCount           int                           `json:"unknownCount"`
+	TotalOvershoot         int64                         `json:"totalOvershoot"` // breached_worse の上振れ額合計（円）
+	AvgOvershoot           float64                       `json:"avgOvershoot"`   // TotalOvershoot / BreachedWorseCount。0件ならゼロ
+	Trades                 []DaytradeStopComplianceTrade `json:"trades"`
 }

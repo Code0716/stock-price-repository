@@ -29,10 +29,7 @@ func NewSector33AverageDailyPriceRepositoryImpl(db *gorm.DB) repositories.Sector
 }
 
 func (r *Sector33AverageDailyPriceRepositoryImpl) ListRangeAll(ctx context.Context, from, to time.Time) ([]*models.Sector33AverageDailyPrice, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = r.query
-	}
+	tx := TxOrDefault(ctx, r.query)
 
 	q := tx.Sector33AverageDailyPrice.WithContext(ctx)
 
@@ -89,10 +86,7 @@ func NewSector17AverageDailyPriceRepositoryImpl(db *gorm.DB) repositories.Sector
 }
 
 func (r *Sector17AverageDailyPriceRepositoryImpl) ListRangeAll(ctx context.Context, from, to time.Time) ([]*models.Sector17AverageDailyPrice, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = r.query
-	}
+	tx := TxOrDefault(ctx, r.query)
 
 	q := tx.Sector17AverageDailyPrice.WithContext(ctx)
 

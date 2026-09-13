@@ -11,6 +11,7 @@ import (
 
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway/resource"
 	mock_gateway "github.com/Code0716/stock-price-repository/mock/gateway"
 	"github.com/Code0716/stock-price-repository/test/helper"
 )
@@ -71,15 +72,13 @@ func TestE2E_ExportData(t *testing.T) {
 				// ExportTableAllが呼ばれることを期待
 				mockMySQLDump.EXPECT().ExportTableAll(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-				mockSlackAPI.EXPECT().SendMessageByStrings(
+				mockSlackAPI.EXPECT().SendBlockMessage(
 					gomock.Any(),
 					gateway.SlackChannelNameDevNotification,
 					gomock.Any(),
-					nil,
-					nil,
-				).DoAndReturn(func(_ context.Context, _ gateway.SlackChannelName, title string, _, _ *string) (string, error) {
-					assert.Contains(t, title, "command name: export_master_data")
-					return "", nil
+				).DoAndReturn(func(_ context.Context, _ gateway.SlackChannelName, msg resource.SlackBlockMessage) error {
+					assert.Contains(t, msg.Text, "command name: export_master_data")
+					return nil
 				})
 			},
 			wantErr: false,
@@ -93,15 +92,13 @@ func TestE2E_ExportData(t *testing.T) {
 				// ExportTableByYearが呼ばれることを期待
 				mockMySQLDump.EXPECT().ExportTableByYear(gomock.Any(), gomock.Any(), 2024).Return(nil).AnyTimes()
 
-				mockSlackAPI.EXPECT().SendMessageByStrings(
+				mockSlackAPI.EXPECT().SendBlockMessage(
 					gomock.Any(),
 					gateway.SlackChannelNameDevNotification,
 					gomock.Any(),
-					nil,
-					nil,
-				).DoAndReturn(func(_ context.Context, _ gateway.SlackChannelName, title string, _, _ *string) (string, error) {
-					assert.Contains(t, title, "command name: export_yearly_data")
-					return "", nil
+				).DoAndReturn(func(_ context.Context, _ gateway.SlackChannelName, msg resource.SlackBlockMessage) error {
+					assert.Contains(t, msg.Text, "command name: export_yearly_data")
+					return nil
 				})
 			},
 			wantErr: false,

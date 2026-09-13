@@ -1,13 +1,16 @@
 package commands
 
 import (
+	"context"
 	"flag"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway/resource"
 	mock_gateway "github.com/Code0716/stock-price-repository/mock/gateway"
 )
 
@@ -29,7 +32,12 @@ func TestHealthCheckCommand_Action(t *testing.T) {
 			fields: fields{
 				slackAPIClient: func(ctrl *gomock.Controller) gateway.SlackAPIClient {
 					mock := mock_gateway.NewMockSlackAPIClient(ctrl)
-					mock.EXPECT().SendMessage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+					mock.EXPECT().
+						SendBlockMessage(gomock.Any(), gomock.Eq(gateway.SlackChannelNameDevNotification), gomock.Any()).
+						DoAndReturn(func(_ context.Context, _ gateway.SlackChannelName, msg resource.SlackBlockMessage) error {
+							assert.NotEmpty(t, msg.Text)
+							return nil
+						})
 					return mock
 				},
 			},

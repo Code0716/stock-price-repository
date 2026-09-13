@@ -53,6 +53,10 @@ func TestE2E_AdjustHistoricalDataForStockSplit(t *testing.T) {
 					SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return("", nil).
 					AnyTimes()
+				mockSlackAPI.EXPECT().
+					SendBlockMessage(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).
+					AnyTimes()
 
 				// 銘柄の作成
 				brand := &models.StockBrand{
@@ -81,7 +85,7 @@ func TestE2E_AdjustHistoricalDataForStockSplit(t *testing.T) {
 						Open:         decimal.NewFromInt(200),
 						Close:        decimal.NewFromInt(200),
 						High:         decimal.NewFromInt(200),
-						Low:         decimal.NewFromInt(200),
+						Low:          decimal.NewFromInt(200),
 						Adjclose:     decimal.NewFromInt(200),
 						Volume:       100,
 						CreatedAt:    time.Now(),
@@ -94,7 +98,7 @@ func TestE2E_AdjustHistoricalDataForStockSplit(t *testing.T) {
 						Open:         decimal.NewFromInt(200),
 						Close:        decimal.NewFromInt(200),
 						High:         decimal.NewFromInt(200),
-						Low:         decimal.NewFromInt(200),
+						Low:          decimal.NewFromInt(200),
 						Adjclose:     decimal.NewFromInt(200),
 						Volume:       100,
 						CreatedAt:    time.Now(),
@@ -127,7 +131,7 @@ func TestE2E_AdjustHistoricalDataForStockSplit(t *testing.T) {
 				err = db.Where("symbol = ?", "1001").First(&history).Error
 				require.NoError(t, err)
 				assert.Equal(t, "1001", history.Symbol)
-				
+
 				// 日付の比較（時刻部分は無視されることを期待、またはDBから取得した値がDATE型なら文字列比較などが安全かも）
 				// genModelのSplitDateがtime.Time型の場合、DB保存時に時刻が0になっているはず
 				expectedDate := time.Date(2023, 10, 3, 0, 0, 0, 0, time.Local)
@@ -136,7 +140,7 @@ func TestE2E_AdjustHistoricalDataForStockSplit(t *testing.T) {
 				// setupTestDBの設定による。通常はUTCで扱うのがベストプラクティス。
 				// ここでは YYYY-MM-DD 文字列で比較してみる。
 				assert.Equal(t, expectedDate.Format("2006-01-02"), history.SplitDate.Format("2006-01-02"))
-				
+
 				assert.Equal(t, 2.0, history.Ratio)
 			},
 		},

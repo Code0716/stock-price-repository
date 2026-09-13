@@ -14,6 +14,7 @@ import (
 	"github.com/Code0716/stock-price-repository/infrastructure/database"
 	genModel "github.com/Code0716/stock-price-repository/infrastructure/database/gen_model"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway/resource"
 	mock_gateway "github.com/Code0716/stock-price-repository/mock/gateway"
 	"github.com/Code0716/stock-price-repository/test/helper"
 	"github.com/Code0716/stock-price-repository/usecase"
@@ -68,15 +69,13 @@ func TestE2E_UpdateStockBrands(t *testing.T) {
 				mockStockAPI.EXPECT().GetStockBrands(gomock.Any()).Return(expectedBrands, nil)
 
 				// Slack expectations
-				mockSlackAPI.EXPECT().SendMessageByStrings(
+				mockSlackAPI.EXPECT().SendBlockMessage(
 					gomock.Any(),
 					gateway.SlackChannelNameDevNotification,
 					gomock.Any(),
-					nil,
-					nil,
-				).DoAndReturn(func(_ context.Context, _ gateway.SlackChannelName, title string, _, _ *string) (string, error) {
-					assert.Contains(t, title, "command name: update_stock_brands_v1")
-					return "", nil
+				).DoAndReturn(func(_ context.Context, _ gateway.SlackChannelName, msg resource.SlackBlockMessage) error {
+					assert.Contains(t, msg.Text, "command name: update_stock_brands_v1")
+					return nil
 				})
 			},
 			wantErr: false,

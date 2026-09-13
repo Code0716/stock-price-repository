@@ -19,7 +19,7 @@ import (
 const minBacktestDays = 80
 
 type backtestInteractorImpl struct {
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository
 }
 
 type BacktestInteractor interface {
@@ -28,7 +28,7 @@ type BacktestInteractor interface {
 }
 
 func NewBacktestInteractor(
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 ) BacktestInteractor {
 	return &backtestInteractorImpl{
 		stockBrandsDailyStockPriceRepository: stockBrandsDailyStockPriceRepository,

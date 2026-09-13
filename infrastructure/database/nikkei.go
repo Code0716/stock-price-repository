@@ -28,10 +28,7 @@ func NewNikkeiRepositoryImpl(db *gorm.DB) repositories.NikkeiRepository {
 }
 
 func (ni *NikkeiRepositoryImpl) CreateNikkeiStockAverageDailyPrices(ctx context.Context, averageDailyPrices models.IndexStockAverageDailyPrices) error {
-	query, ok := GetTxQuery(ctx)
-	if !ok {
-		query = ni.query
-	}
+	query := TxOrDefault(ctx, ni.query)
 
 	if err := query.
 		NikkeiStockAverageDailyPrice.WithContext(ctx).
@@ -54,10 +51,7 @@ func (ni *NikkeiRepositoryImpl) CreateNikkeiStockAverageDailyPrices(ctx context.
 }
 
 func (ni *NikkeiRepositoryImpl) ListNikkeiStockAverageDailyPrices(ctx context.Context, from, to *time.Time) (models.IndexStockAverageDailyPrices, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = ni.query
-	}
+	tx := TxOrDefault(ctx, ni.query)
 
 	do := tx.NikkeiStockAverageDailyPrice.WithContext(ctx)
 	if from != nil {

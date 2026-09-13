@@ -12,6 +12,7 @@ type TestRunnerOptions struct {
 	UpdateStockBrandsV1Command                       *commands.UpdateStockBrandsV1Command
 	CreateHistoricalDailyStockPricesV1Command        *commands.CreateHistoricalDailyStockPricesV1Command
 	CreateDailyStockPriceV1Command                   *commands.CreateDailyStockPriceV1Command
+	RebuildAnalyzeDailyPricesV1Command               *commands.RebuildAnalyzeDailyPricesV1Command
 	CreateNikkeiAndDjiHistoricalDataV1Command        *commands.CreateNikkeiAndDjiHistoricalDataV1Command
 	AdjustHistoricalDataForStockSplitCommand         *commands.AdjustHistoricalDataForStockSplitCommand
 	AdjustHistoricalDataForStockConsolidationCommand *commands.AdjustHistoricalDataForStockConsolidationCommand
@@ -23,6 +24,8 @@ type TestRunnerOptions struct {
 	SyncFinStatementsAllStocksCommand                *commands.SyncFinStatementsAllStocksCommand
 	GradeQuizAnswersV1Command                        *commands.GradeQuizAnswersV1Command
 	CreateQuizDailyUniverseV1Command                 *commands.CreateQuizDailyUniverseV1Command
+	EvaluateDailyStockPicksV1Command                 *commands.EvaluateDailyStockPicksV1Command
+	CreateDailyStockPicksV1Command                   *commands.CreateDailyStockPicksV1Command
 	IndexInteractor                                  usecase.IndexInteractor
 	SlackAPIClient                                   gateway.SlackAPIClient
 	MySQLDumpClient                                  gateway.MySQLDumpClient
@@ -41,6 +44,9 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 	}
 	if opts.CreateDailyStockPriceV1Command == nil {
 		opts.CreateDailyStockPriceV1Command = commands.NewCreateDailyStockPriceV1Command(nil)
+	}
+	if opts.RebuildAnalyzeDailyPricesV1Command == nil {
+		opts.RebuildAnalyzeDailyPricesV1Command = commands.NewRebuildAnalyzeDailyPricesV1Command(nil)
 	}
 	if opts.CreateNikkeiAndDjiHistoricalDataV1Command == nil {
 		opts.CreateNikkeiAndDjiHistoricalDataV1Command = commands.NewCreateNikkeiAndDjiHistoricalDataV1Command(nil)
@@ -76,6 +82,7 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.UpdateStockBrandsV1Command,
 		opts.CreateHistoricalDailyStockPricesV1Command,
 		opts.CreateDailyStockPriceV1Command,
+		opts.RebuildAnalyzeDailyPricesV1Command,
 		opts.CreateNikkeiAndDjiHistoricalDataV1Command,
 		opts.AdjustHistoricalDataForStockSplitCommand,
 		opts.AdjustHistoricalDataForStockConsolidationCommand,
@@ -87,6 +94,8 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.SyncFinStatementsAllStocksCommand,
 		opts.GradeQuizAnswersV1Command,
 		opts.CreateQuizDailyUniverseV1Command,
+		opts.EvaluateDailyStockPicksV1Command,
+		opts.CreateDailyStockPicksV1Command,
 		opts.IndexInteractor,
 		opts.SlackAPIClient,
 	)
@@ -98,5 +107,11 @@ func applyQuizCommandDefaults(opts *TestRunnerOptions) {
 	}
 	if opts.CreateQuizDailyUniverseV1Command == nil {
 		opts.CreateQuizDailyUniverseV1Command = commands.NewCreateQuizDailyUniverseV1Command(nil)
+	}
+	if opts.EvaluateDailyStockPicksV1Command == nil {
+		opts.EvaluateDailyStockPicksV1Command = commands.NewEvaluateDailyStockPicksV1Command(nil)
+	}
+	if opts.CreateDailyStockPicksV1Command == nil {
+		opts.CreateDailyStockPicksV1Command = commands.NewCreateDailyStockPicksV1Command(nil)
 	}
 }

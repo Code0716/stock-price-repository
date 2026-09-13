@@ -33,8 +33,7 @@ func NewStrategyRankingHandler(u usecase.StrategyRankingInteractor, h driver.HTT
 func (h *StrategyRankingHandler) GetStrategyRanking(w http.ResponseWriter, r *http.Request) {
 	result, err := h.usecase.GetStrategyRanking(r.Context())
 	if err != nil {
-		h.logger.Error("failed to get strategy ranking", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get strategy ranking", err)
 		return
 	}
 	respondJSON(w, h.logger, result)

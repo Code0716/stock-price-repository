@@ -100,6 +100,7 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 				assert.NoError(t, err)
 
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
+				mockSlackAPI.EXPECT().SendBlockMessage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 				// 主要市場の3銘柄についてのみAPIコールが行われることを期待
 
@@ -201,6 +202,9 @@ func TestE2E_MarketCodeFilter_CreateDailyStockPrice(t *testing.T) {
 				stockBrandRepo,
 				dailyPriceRepo,
 				analyzeRepo,
+				database.NewAppliedStockSplitsHistoryRepositoryImpl(db),
+				database.NewAppliedStockConsolidationsHistoryRepositoryImpl(db),
+				database.NewAdjustedDailyPriceRepositoryImpl(db),
 				mockStockAPI,
 				redisClient,
 				mockSlackAPI,
@@ -305,6 +309,7 @@ func TestE2E_MarketCodeFilter_CreateHistoricalDailyStockPrices(t *testing.T) {
 				mr.Set("create_historical_daily_stock_prices_date_checkpoint", checkpoint)
 
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
+				mockSlackAPI.EXPECT().SendBlockMessage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 				// 日付ループで呼ばれる: 全銘柄（主要市場 + その他）の価格を返す
 				// フィルタはusecase側のFindAllMainMarketsのマップで行われる
@@ -373,6 +378,9 @@ func TestE2E_MarketCodeFilter_CreateHistoricalDailyStockPrices(t *testing.T) {
 				stockBrandRepo,
 				dailyPriceRepo,
 				analyzeRepo,
+				database.NewAppliedStockSplitsHistoryRepositoryImpl(db),
+				database.NewAppliedStockConsolidationsHistoryRepositoryImpl(db),
+				database.NewAdjustedDailyPriceRepositoryImpl(db),
 				mockStockAPI,
 				redisClient,
 				mockSlackAPI,

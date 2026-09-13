@@ -24,4 +24,6 @@ type QuizAnswerRepository interface {
 	UpdateGrading(ctx context.Context, answers []*models.QuizAnswer) error
 	// ListAllGraded 統計算出用に採点済みの回答を全て取得する。
 	ListAllGraded(ctx context.Context) ([]*models.QuizAnswer, error)
+	// ListAll 統計算出用に未採点分を含む全ての回答を answered_at 昇順で取得する。
+	ListAll(ctx context.Context) ([]*models.QuizAnswer, error)
 }

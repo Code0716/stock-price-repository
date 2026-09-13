@@ -82,9 +82,11 @@ func (a *QuizAnswer) Graded() bool {
 
 // --- API レスポンス用の構造体 ---
 
-// QuizQuestion 1銘柄分の設問（銘柄名・コードは含まない＝非公開）。
+// QuizQuestion 1銘柄分の設問（出題時から銘柄コード・名称を公開する）。
 type QuizQuestion struct {
 	StockBrandID  string  `json:"stockBrandId"`
+	TickerSymbol  string  `json:"tickerSymbol"`
+	Name          string  `json:"name"`
 	QuestionOrder int     `json:"questionOrder"`
 	Answered      bool    `json:"answered"`
 	Prediction    *string `json:"prediction,omitempty"`
@@ -116,6 +118,7 @@ type QuizAnswerReveal struct {
 // QuizResultItem 採点済み1件の結果（銘柄名を公開）。
 type QuizResultItem struct {
 	QuestionOrder  int              `json:"questionOrder"`
+	StockBrandID   string           `json:"stockBrandId"`
 	TickerSymbol   string           `json:"tickerSymbol"`
 	Name           string           `json:"name"`
 	Prediction     QuizPrediction   `json:"prediction"`
@@ -136,7 +139,7 @@ type QuizResultsSummary struct {
 	Score     int `json:"score"`
 }
 
-// QuizResults GET /quiz/results のレスポンス。
+// QuizResults GET /quiz/results のレスポンス。QuizDate は出題基準日（quiz_date）。
 type QuizResults struct {
 	QuizDate string             `json:"quizDate"`
 	Graded   bool               `json:"graded"`
@@ -151,12 +154,14 @@ type QuizConfidenceStats struct {
 	Accuracy decimal.Decimal `json:"accuracy"`
 }
 
-// QuizDailyScore 日別スコア推移の1点。
+// QuizDailyScore 日別スコア推移の1点。QuizDate は出題基準日（quiz_date）。
 type QuizDailyScore struct {
 	QuizDate string `json:"quizDate"`
 	Answered int    `json:"answered"`
 	Correct  int    `json:"correct"`
 	Score    int    `json:"score"`
+	// Pending 当該回答日のうち未採点（Outcome未確定）の件数。Answered/Score/Correctの分母には含まない。
+	Pending int `json:"pending"`
 }
 
 // QuizStats GET /quiz/stats のレスポンス。

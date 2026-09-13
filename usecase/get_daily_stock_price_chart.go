@@ -31,7 +31,7 @@ func (u *stockBrandsDailyStockPriceInteractorImpl) GetDailyStockPriceChart(ctx c
 		DateTo:       to,
 		DateOrder:    &order,
 	}
-	prices, err := u.stockBrandsDailyStockPriceRepository.ListDailyPricesBySymbol(ctx, filter)
+	prices, err := u.adjustedDailyPriceRepository.ListDailyPricesBySymbol(ctx, filter)
 	if err != nil {
 		return nil, errors.Wrap(err, "ListDailyPricesBySymbol error")
 	}

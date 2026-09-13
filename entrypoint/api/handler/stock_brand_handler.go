@@ -126,19 +126,14 @@ func (h *StockBrandHandler) GetStockBrands(w http.ResponseWriter, r *http.Reques
 	// パラメータのバリデーション
 	params, err := h.validateGetStockBrandsParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get stock brands params", err)
 		return
 	}
 
 	// ユースケース呼び出し
 	result, err := h.usecase.GetStockBrands(r.Context(), params.keyword, params.symbolFrom, params.limit, params.onlyMainMarkets)
 	if err != nil {
-		h.logger.Error("failed to get stock brands", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get stock brands", err)
 		return
 	}
 

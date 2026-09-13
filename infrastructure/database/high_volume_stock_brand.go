@@ -46,10 +46,7 @@ func (r *HighVolumeStockBrandRepositoryImpl) FindWithPagination(
 		return nil, errors.New("limit must be non-negative")
 	}
 
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = r.query
-	}
+	tx := TxOrDefault(ctx, r.query)
 
 	// Build GORM Gen query
 	hvb := tx.HighVolumeStockBrand.As("hvb")

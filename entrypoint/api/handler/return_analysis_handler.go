@@ -7,7 +7,6 @@ import (
 	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/usecase"
-	"github.com/Code0716/stock-price-repository/util"
 	"go.uber.org/zap"
 )
 
@@ -48,16 +47,11 @@ func (h *ReturnAnalysisHandler) validateGetReturnAnalysisParams(r *http.Request)
 		return nil, &validationError{message: "シンボルは英数字である必要があります"}
 	}
 
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		return nil, &validationError{message: "fromの日付形式が不正です"}
+		return nil, err
 	}
 	params.from = from
-
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		return nil, &validationError{message: "toの日付形式が不正です"}
-	}
 	params.to = to
 
 	// benchmark クエリパラメータ: "nikkei"（デフォルト）または "topix"
@@ -76,18 +70,13 @@ func (h *ReturnAnalysisHandler) validateGetReturnAnalysisParams(r *http.Request)
 func (h *ReturnAnalysisHandler) GetReturnAnalysis(w http.ResponseWriter, r *http.Request) {
 	params, err := h.validateGetReturnAnalysisParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get return analysis params", err)
 		return
 	}
 
 	result, err := h.usecase.GetReturnAnalysis(r.Context(), params.symbol, params.from, params.to, params.benchmark)
 	if err != nil {
-		h.logger.Error("failed to get return analysis", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get return analysis", err)
 		return
 	}
 

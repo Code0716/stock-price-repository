@@ -30,4 +30,13 @@ type SlackAPIClient interface {
 	SendMessage(ctx context.Context, channelName SlackChannelName, message resource.SlackMessage) error
 	SendMessageByStrings(ctx context.Context, channelName SlackChannelName, title string, message, ts *string) (string, error)
 	SendErrMessageNotification(ctx context.Context, err error) error
+	// SendBlockMessage Block Kit 形式でメッセージを送信する。message.Text はフォールバックとして必須。
+	SendBlockMessage(ctx context.Context, channelName SlackChannelName, message resource.SlackBlockMessage) error
+}
+
+// SlackAPIClientRaw SlackAPIClient と同一のメソッドセットを持つ別名インターフェース。
+// recordingSlackAPIClient（notification_history への記録デコレータ）の inner 依存を
+// 最終的な SlackAPIClient バインディングと区別するためだけに存在する（DI のバインド解決用）。
+type SlackAPIClientRaw interface {
+	SlackAPIClient
 }

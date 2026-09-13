@@ -19,7 +19,7 @@ import (
 )
 
 func TestBacktestHandler_GetBacktest(t *testing.T) {
-	date, _ := time.Parse(util.DateLayout, "2021-01-04")
+	date, _ := time.ParseInLocation(util.DateLayout, "2021-01-04", time.Local)
 	defaultParams := models.BacktestParams{
 		TakeProfit:     decimal.NewFromFloat(0.10),
 		StopLoss:       decimal.NewFromFloat(0.05),
@@ -60,8 +60,6 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
@@ -107,8 +105,6 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("2")
 					return m
 				},
@@ -126,8 +122,6 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("0")
@@ -151,8 +145,6 @@ func TestBacktestHandler_GetBacktest(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
@@ -211,8 +203,6 @@ func TestBacktestHandler_GetBacktest_CostParams(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
@@ -233,8 +223,6 @@ func TestBacktestHandler_GetBacktest_CostParams(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
@@ -255,8 +243,6 @@ func TestBacktestHandler_GetBacktest_CostParams(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
@@ -277,8 +263,6 @@ func TestBacktestHandler_GetBacktest_CostParams(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
@@ -300,8 +284,6 @@ func TestBacktestHandler_GetBacktest_CostParams(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
@@ -333,7 +315,7 @@ func TestBacktestHandler_GetBacktest_CostParams(t *testing.T) {
 }
 
 func TestBacktestHandler_GetBacktest_ExitMode(t *testing.T) {
-	date, _ := time.Parse(util.DateLayout, "2021-01-04")
+	date, _ := time.ParseInLocation(util.DateLayout, "2021-01-04", time.Local)
 	type fields struct {
 		usecase    func(ctrl *gomock.Controller) *mock_usecase.MockBacktestInteractor
 		httpServer func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer
@@ -354,8 +336,6 @@ func TestBacktestHandler_GetBacktest_ExitMode(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
@@ -396,8 +376,6 @@ func TestBacktestHandler_GetBacktest_ExitMode(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")
@@ -436,8 +414,6 @@ func TestBacktestHandler_GetBacktest_ExitMode(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "takeProfit").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "stopLoss").Return("")
 					m.EXPECT().GetQueryParam(gomock.Any(), "maxHoldDays").Return("")

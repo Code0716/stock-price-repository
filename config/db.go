@@ -14,7 +14,7 @@ type Database struct {
 	Port             string `envconfig:"stock_price_repository_mysql_port" default:""`
 	User             string `envconfig:"stock_price_repository_mysql_user" default:""`
 	Charset          string `envconfig:"stock_price_repository_mysql_charset" default:""`
-	Timezone         string `envconfig:"stock_price_repository_mysql_timezone" default:""`
+	Timezone         string `envconfig:"stock_price_repository_mysql_timezone" default:"Asia/Tokyo"`
 	RootUser         string `envconfig:"stock_price_repository_mysql_root_user" default:""`
 	RootPassword     string `envconfig:"stock_price_repository_mysql_root_password" default:""`
 	ExportBackupPath string `envconfig:"stock_price_repository_mysql_backup_path" default:""`

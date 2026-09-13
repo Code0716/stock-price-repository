@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 
+	"github.com/Code0716/stock-price-repository/config"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway/resource"
 )
@@ -25,9 +28,13 @@ func (c *HealthCheckCommand) Command() *Command {
 }
 
 func (c *HealthCheckCommand) Action(ctx *cli.Context) error {
-	err := c.slackAPIClient.SendMessage(ctx.Context, gateway.SlackChannelNameDevNotification, resource.SlackMessageHealthCheck)
-	if err != nil {
-		return errors.Wrap(err, "")
+	msg := resource.NewHealthCheckMessage(resource.HealthCheckNotificationParams{
+		Source:    resource.BatchNotificationSourceSPR,
+		Env:       config.GetApp().AppEnv,
+		CheckedAt: time.Now(),
+	})
+	if err := c.slackAPIClient.SendBlockMessage(ctx.Context, gateway.SlackChannelNameDevNotification, msg); err != nil {
+		return errors.Wrap(err, "HealthCheckCommand.Action error")
 	}
 	return nil
 }

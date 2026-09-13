@@ -43,18 +43,18 @@ func (m *MockQuizInteractor) EXPECT() *MockQuizInteractorMockRecorder {
 }
 
 // GetChart mocks base method.
-func (m *MockQuizInteractor) GetChart(ctx context.Context, quizDate time.Time, stockBrandID string) (*models.QuizChart, error) {
+func (m *MockQuizInteractor) GetChart(ctx context.Context, quizDate time.Time, stockBrandID string, reveal bool) (*models.QuizChart, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetChart", ctx, quizDate, stockBrandID)
+	ret := m.ctrl.Call(m, "GetChart", ctx, quizDate, stockBrandID, reveal)
 	ret0, _ := ret[0].(*models.QuizChart)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetChart indicates an expected call of GetChart.
-func (mr *MockQuizInteractorMockRecorder) GetChart(ctx, quizDate, stockBrandID any) *gomock.Call {
+func (mr *MockQuizInteractorMockRecorder) GetChart(ctx, quizDate, stockBrandID, reveal any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChart", reflect.TypeOf((*MockQuizInteractor)(nil).GetChart), ctx, quizDate, stockBrandID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChart", reflect.TypeOf((*MockQuizInteractor)(nil).GetChart), ctx, quizDate, stockBrandID, reveal)
 }
 
 // GetQuestions mocks base method.

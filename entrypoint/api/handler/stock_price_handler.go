@@ -7,7 +7,6 @@ import (
 	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/usecase"
-	"github.com/Code0716/stock-price-repository/util"
 	"go.uber.org/zap"
 )
 
@@ -58,18 +57,12 @@ func (h *StockPriceHandler) validateGetDailyPricesParams(r *http.Request) (*getD
 		return nil, &validationError{message: "シンボルは英数字である必要があります"}
 	}
 
-	// from パラメータの取得とバリデーション
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	// from/to パラメータの取得とバリデーション
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		return nil, &validationError{message: "fromの日付形式が不正です"}
+		return nil, err
 	}
 	params.from = from
-
-	// to パラメータの取得とバリデーション
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		return nil, &validationError{message: "toの日付形式が不正です"}
-	}
 	params.to = to
 
 	// order パラメータの取得とバリデーション
@@ -89,19 +82,14 @@ func (h *StockPriceHandler) GetDailyPrices(w http.ResponseWriter, r *http.Reques
 	// パラメータのバリデーション
 	params, err := h.validateGetDailyPricesParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get daily prices params", err)
 		return
 	}
 
 	// ユースケース呼び出し
 	prices, err := h.usecase.GetDailyStockPricesWithOrder(r.Context(), params.symbol, params.from, params.to, params.sortOrder)
 	if err != nil {
-		h.logger.Error("failed to get daily stock prices", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get daily stock prices", err)
 		return
 	}
 
@@ -126,18 +114,12 @@ func (h *StockPriceHandler) validateGetDailyPriceChartParams(r *http.Request) (*
 		return nil, &validationError{message: "シンボルは英数字である必要があります"}
 	}
 
-	// from パラメータの取得とバリデーション
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	// from/to パラメータの取得とバリデーション
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		return nil, &validationError{message: "fromの日付形式が不正です"}
+		return nil, err
 	}
 	params.from = from
-
-	// to パラメータの取得とバリデーション
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		return nil, &validationError{message: "toの日付形式が不正です"}
-	}
 	params.to = to
 
 	return params, nil
@@ -148,19 +130,14 @@ func (h *StockPriceHandler) GetDailyPriceChart(w http.ResponseWriter, r *http.Re
 	// パラメータのバリデーション
 	params, err := h.validateGetDailyPriceChartParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get daily price chart params", err)
 		return
 	}
 
 	// ユースケース呼び出し
 	chart, err := h.usecase.GetDailyStockPriceChart(r.Context(), params.symbol, params.from, params.to)
 	if err != nil {
-		h.logger.Error("failed to get daily stock price chart", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get daily stock price chart", err)
 		return
 	}
 

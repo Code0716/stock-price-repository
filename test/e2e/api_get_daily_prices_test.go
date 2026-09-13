@@ -53,6 +53,9 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 	stockBrandRepo := database.NewStockBrandRepositoryImpl(db)
 	dailyPriceRepo := database.NewStockBrandsDailyPriceRepositoryImpl(db)
 	analyzeRepo := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db)
+	splitsHistoryRepo := database.NewAppliedStockSplitsHistoryRepositoryImpl(db)
+	consolidationsHistoryRepo := database.NewAppliedStockConsolidationsHistoryRepositoryImpl(db)
+	adjustedDailyPriceRepo := database.NewAdjustedDailyPriceRepositoryImpl(db)
 	tx := database.NewTransaction(db)
 
 	interactor := usecase.NewStockBrandsDailyPriceInteractor(
@@ -60,6 +63,9 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 		stockBrandRepo,
 		dailyPriceRepo,
 		analyzeRepo,
+		splitsHistoryRepo,
+		consolidationsHistoryRepo,
+		adjustedDailyPriceRepo,
 		mockStockAPI,
 		redisClient,
 		mockSlackAPI,
@@ -68,7 +74,7 @@ func TestE2E_GetDailyPrices(t *testing.T) {
 	httpServer := driver.NewHTTPServer()
 	stockPriceHandler := handler.NewStockPriceHandler(interactor, httpServer, zap.NewNop())
 	// StockBrandHandlerはこのテストでは使用しないためnilを渡す
-	mux := router.NewRouter(stockPriceHandler, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	mux := router.NewRouter(stockPriceHandler, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
 

@@ -12,7 +12,6 @@ package mock_repositories
 import (
 	context "context"
 	reflect "reflect"
-	time "time"
 
 	models "github.com/Code0716/stock-price-repository/models"
 	gomock "go.uber.org/mock/gomock"
@@ -54,20 +53,6 @@ func (m *MockStockBrandsDailyPriceForAnalyzeRepository) CreateStockBrandDailyPri
 func (mr *MockStockBrandsDailyPriceForAnalyzeRepositoryMockRecorder) CreateStockBrandDailyPriceForAnalyze(ctx, dailyPrice any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStockBrandDailyPriceForAnalyze", reflect.TypeOf((*MockStockBrandsDailyPriceForAnalyzeRepository)(nil).CreateStockBrandDailyPriceForAnalyze), ctx, dailyPrice)
-}
-
-// DeleteBeforeDate mocks base method.
-func (m *MockStockBrandsDailyPriceForAnalyzeRepository) DeleteBeforeDate(ctx context.Context, date time.Time) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteBeforeDate", ctx, date)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteBeforeDate indicates an expected call of DeleteBeforeDate.
-func (mr *MockStockBrandsDailyPriceForAnalyzeRepositoryMockRecorder) DeleteBeforeDate(ctx, date any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBeforeDate", reflect.TypeOf((*MockStockBrandsDailyPriceForAnalyzeRepository)(nil).DeleteBeforeDate), ctx, date)
 }
 
 // DeleteBySymbols mocks base method.
@@ -112,4 +97,18 @@ func (m *MockStockBrandsDailyPriceForAnalyzeRepository) ListLatestPriceBySymbols
 func (mr *MockStockBrandsDailyPriceForAnalyzeRepositoryMockRecorder) ListLatestPriceBySymbols(ctx, symbols any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLatestPriceBySymbols", reflect.TypeOf((*MockStockBrandsDailyPriceForAnalyzeRepository)(nil).ListLatestPriceBySymbols), ctx, symbols)
+}
+
+// TruncateAll mocks base method.
+func (m *MockStockBrandsDailyPriceForAnalyzeRepository) TruncateAll(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TruncateAll", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TruncateAll indicates an expected call of TruncateAll.
+func (mr *MockStockBrandsDailyPriceForAnalyzeRepositoryMockRecorder) TruncateAll(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TruncateAll", reflect.TypeOf((*MockStockBrandsDailyPriceForAnalyzeRepository)(nil).TruncateAll), ctx)
 }

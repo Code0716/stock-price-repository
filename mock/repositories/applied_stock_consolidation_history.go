@@ -70,3 +70,17 @@ func (mr *MockAppliedStockConsolidationsHistoryRepositoryMockRecorder) Exists(ct
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockAppliedStockConsolidationsHistoryRepository)(nil).Exists), ctx, symbol, consolidationDate)
 }
+
+// TruncateAll mocks base method.
+func (m *MockAppliedStockConsolidationsHistoryRepository) TruncateAll(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TruncateAll", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TruncateAll indicates an expected call of TruncateAll.
+func (mr *MockAppliedStockConsolidationsHistoryRepositoryMockRecorder) TruncateAll(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TruncateAll", reflect.TypeOf((*MockAppliedStockConsolidationsHistoryRepository)(nil).TruncateAll), ctx)
+}

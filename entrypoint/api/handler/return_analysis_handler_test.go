@@ -19,7 +19,7 @@ import (
 )
 
 func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
-	date, _ := time.Parse(util.DateLayout, "2024-01-04")
+	date, _ := time.ParseInLocation(util.DateLayout, "2024-01-04", time.Local)
 
 	type fields struct {
 		usecase    func(ctrl *gomock.Controller) *mock_usecase.MockReturnAnalysisInteractor
@@ -52,8 +52,6 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "benchmark").Return("")
 					return m
 				},
@@ -88,13 +86,11 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "benchmark").Return(models.BenchmarkTopix)
 					return m
 				},
 			},
-			req:            httptest.NewRequest(http.MethodGet, "/return-analysis?symbol=7203&benchmark=topix", nil),
+			req:            httptest.NewRequest(http.MethodGet, "/return-analysis?symbol=7203&from=2024-01-04&to=2024-01-04&benchmark=topix", nil),
 			wantStatusCode: http.StatusOK,
 			wantBody: &models.ReturnAnalysis{
 				Symbol:      "7203",
@@ -113,8 +109,6 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "benchmark").Return("sp500")
 					return m
 				},
@@ -180,13 +174,12 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/return-analysis?symbol=7203&from=invalid", nil),
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "fromの日付形式が不正です\n",
+			wantBody:       "fromの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: toの日付フォーマットが不正",
@@ -197,14 +190,12 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(nil, errors.New("invalid date"))
 					return m
 				},
 			},
 			req:            httptest.NewRequest(http.MethodGet, "/return-analysis?symbol=7203&from=2024-01-04&to=invalid", nil),
 			wantStatusCode: http.StatusBadRequest,
-			wantBody:       "toの日付形式が不正です\n",
+			wantBody:       "toの日付形式が不正です (YYYY-MM-DD)\n",
 		},
 		{
 			name: "異常系: UseCaseがエラーを返す",
@@ -219,8 +210,6 @@ func TestReturnAnalysisHandler_GetReturnAnalysis(t *testing.T) {
 				httpServer: func(ctrl *gomock.Controller) *mock_driver.MockHTTPServer {
 					m := mock_driver.NewMockHTTPServer(ctrl)
 					m.EXPECT().GetQueryParam(gomock.Any(), "symbol").Return("7203")
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "from", util.DateLayout).Return(&date, nil)
-					m.EXPECT().GetQueryParamDate(gomock.Any(), "to", util.DateLayout).Return(&date, nil)
 					m.EXPECT().GetQueryParam(gomock.Any(), "benchmark").Return("")
 					return m
 				},

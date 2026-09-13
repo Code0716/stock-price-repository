@@ -28,10 +28,7 @@ func NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db *gorm.DB) repositories.
 }
 
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) CreateStockBrandDailyPriceForAnalyze(ctx context.Context, dailyPrices []*models.StockBrandDailyPriceForAnalyze) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).
 		Clauses(clause.OnConflict{
@@ -54,10 +51,7 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) CreateStockBrandDailyPr
 }
 
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListLatestPriceBySymbols(ctx context.Context, symbols []*string) ([]*models.StockBrandDailyPriceForAnalyze, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	// シンボルをstring型に変換
 	var symbolStrings []string
@@ -93,11 +87,19 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListLatestPriceBySymbol
 	return domainResult, nil
 }
 
-func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx context.Context, deleteSymbols []string) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
+// TruncateAll 全件を物理削除する。5年再構築バッチ専用の破壊的操作。
+func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) TruncateAll(ctx context.Context) error {
+	tx := TxOrDefault(ctx, si.query)
+
+	if err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).UnderlyingDB().
+		Exec("TRUNCATE TABLE stock_brands_daily_price_for_analyze").Error; err != nil {
+		return errors.Wrap(err, "StockBrandsDailyPriceForAnalyze.TruncateAll error")
 	}
+	return nil
+}
+
+func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx context.Context, deleteSymbols []string) error {
+	tx := TxOrDefault(ctx, si.query)
 
 	if _, err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).
 		Where(tx.StockBrandsDailyPriceForAnalyze.TickerSymbol.In(deleteSymbols...)).
@@ -107,25 +109,8 @@ func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBySymbols(ctx con
 	return nil
 }
 
-func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) DeleteBeforeDate(ctx context.Context, date time.Time) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
-
-	if _, err := tx.StockBrandsDailyPriceForAnalyze.WithContext(ctx).
-		Where(tx.StockBrandsDailyPriceForAnalyze.Date.Lt(date)).
-		Delete(); err != nil {
-		return errors.Wrap(err, "StockBrandsDailyPriceForAnalyze.DeleteBeforeDate error")
-	}
-	return nil
-}
-
 func (si *StockBrandsDailyPriceForAnalyzeRepositoryImpl) ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPriceForAnalyze, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if filter.TickerSymbol == "" {
 		return nil, errors.New("TickerSymbol is required")

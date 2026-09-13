@@ -72,6 +72,9 @@ func TestE2E_GetStockBrands(t *testing.T) {
 		stockBrandRepo,
 		dailyPriceRepo,
 		dailyPriceForAnalyzeRepo,
+		database.NewAppliedStockSplitsHistoryRepositoryImpl(db),
+		database.NewAppliedStockConsolidationsHistoryRepositoryImpl(db),
+		database.NewAdjustedDailyPriceRepositoryImpl(db),
 		mockStockAPI,
 		redisClient,
 		mockSlackAPI,
@@ -80,7 +83,7 @@ func TestE2E_GetStockBrands(t *testing.T) {
 	httpServer := driver.NewHTTPServer()
 	stockBrandHandler := handler.NewStockBrandHandler(stockBrandInteractor, httpServer, zap.NewNop())
 	stockPriceHandler := handler.NewStockPriceHandler(dailyPriceInteractor, httpServer, zap.NewNop())
-	mux := router.NewRouter(stockPriceHandler, stockBrandHandler, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	mux := router.NewRouter(stockPriceHandler, stockBrandHandler, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
 

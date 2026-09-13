@@ -47,7 +47,7 @@ func TestAvgVolume(t *testing.T) {
 func TestLocalExtremaSlope(t *testing.T) {
 	base := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	highs := []float64{1, 5, 1, 4, 1, 3, 1} // 極大が 5,4,3 と下降
-	lows := []float64{9, 1, 9, 2, 9, 3, 9}   // 極小が 1,2,3 と上昇
+	lows := []float64{9, 1, 9, 2, 9, 3, 9}  // 極小が 1,2,3 と上昇
 	window := make([]*models.StockBrandDailyPrice, len(highs))
 	for i := range highs {
 		window[i] = &models.StockBrandDailyPrice{
@@ -56,19 +56,19 @@ func TestLocalExtremaSlope(t *testing.T) {
 			Low:  decimal.NewFromFloat(lows[i]),
 		}
 	}
-	highSlope, okH := localExtremaSlope(window, true)
-	lowSlope, okL := localExtremaSlope(window, false)
+	highSlope, okH := localExtremaSlope(window, true, 1, 2)
+	lowSlope, okL := localExtremaSlope(window, false, 1, 2)
 	assert.True(t, okH)
 	assert.True(t, okL)
 	assert.True(t, highSlope.IsNegative(), "高値の傾きは負")
 	assert.True(t, lowSlope.IsPositive(), "安値の傾きは正")
 
-	// 極値が2点未満なら ok=false
+	// 極値が minPoints 未満なら ok=false
 	flat := []*models.StockBrandDailyPrice{
 		{High: decimal.NewFromInt(1), Low: decimal.NewFromInt(1)},
 		{High: decimal.NewFromInt(1), Low: decimal.NewFromInt(1)},
 	}
-	_, ok := localExtremaSlope(flat, true)
+	_, ok := localExtremaSlope(flat, true, 1, 2)
 	assert.False(t, ok)
 }
 
@@ -89,6 +89,187 @@ func TestMovingAverageCrossEntrySignals(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 1, count)
+}
+
+// triangleTestBar 三角持ち合いテスト用の1本のOHLCVパラメータ。
+type triangleTestBar struct {
+	high, low, close float64
+	volume           int64
+}
+
+func trianglePricesFromBars(bars []triangleTestBar) []*models.StockBrandDailyPrice {
+	base := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	out := make([]*models.StockBrandDailyPrice, len(bars))
+	for i, b := range bars {
+		out[i] = &models.StockBrandDailyPrice{
+			Date:   base.AddDate(0, 0, i),
+			High:   decimal.NewFromFloat(b.high),
+			Low:    decimal.NewFromFloat(b.low),
+			Close:  decimal.NewFromFloat(b.close),
+			Volume: b.volume,
+		}
+	}
+	return out
+}
+
+// makeConvergingTriangleWindow 三角持ち合い（高値切り下げ・安値切り上げ・日中レンジ収縮）の
+// days本を生成する。ピボット高値・安値そのものが収束し、日中レンジ(High-Low)もgapに比例して縮小する。
+func makeConvergingTriangleWindow(days int, volume int64) []triangleTestBar {
+	const (
+		highStart, highEnd = 120.0, 101.0
+		lowStart, lowEnd   = 80.0, 99.0
+		period             = 4
+	)
+	bars := make([]triangleTestBar, days)
+	for j := 0; j < days; j++ {
+		progress := float64(j) / float64(days-1)
+		envHigh := highStart + (highEnd-highStart)*progress
+		envLow := lowStart + (lowEnd-lowStart)*progress
+		gap := envHigh - envLow
+		mid := (envHigh + envLow) / 2
+		switch j % period {
+		case 0: // 高値ピボット
+			bars[j] = triangleTestBar{high: envHigh, low: envHigh - 0.1*gap, close: mid, volume: volume}
+		case 2: // 安値ピボット
+			bars[j] = triangleTestBar{high: envLow + 0.1*gap, low: envLow, close: mid, volume: volume}
+		default: // 遷移日
+			bars[j] = triangleTestBar{high: mid, low: mid - 0.1*gap, close: mid, volume: volume}
+		}
+	}
+	return bars
+}
+
+// makeFlatRangeTriangleWindow ピボット高値・安値は収束するが、日中レンジ(High-Low)が縮小しない
+// days本を生成する（「収縮しているように見えて実は縮んでいない」ケースの検証用）。
+func makeFlatRangeTriangleWindow(days int, volume int64) []triangleTestBar {
+	const (
+		highStart, highEnd = 120.0, 101.0
+		lowStart, lowEnd   = 80.0, 99.0
+		period             = 4
+		dayRange           = 0.5
+	)
+	bars := make([]triangleTestBar, days)
+	for j := 0; j < days; j++ {
+		progress := float64(j) / float64(days-1)
+		envHigh := highStart + (highEnd-highStart)*progress
+		envLow := lowStart + (lowEnd-lowStart)*progress
+		mid := (envHigh + envLow) / 2
+		switch j % period {
+		case 0:
+			bars[j] = triangleTestBar{high: envHigh, low: envHigh - dayRange, close: mid, volume: volume}
+		case 2:
+			bars[j] = triangleTestBar{high: envLow + dayRange, low: envLow, close: mid, volume: volume}
+		default:
+			bars[j] = triangleTestBar{high: mid, low: mid - dayRange, close: mid, volume: volume}
+		}
+	}
+	return bars
+}
+
+// makeFlatSlopeTriangleWindow 高値・安値の包絡線がまったく収束しない（傾き0）days本を生成する。
+func makeFlatSlopeTriangleWindow(days int, volume int64) []triangleTestBar {
+	const (
+		envHigh, envLow = 105.0, 95.0
+		period          = 4
+	)
+	gap := envHigh - envLow
+	mid := (envHigh + envLow) / 2
+	bars := make([]triangleTestBar, days)
+	for j := 0; j < days; j++ {
+		switch j % period {
+		case 0:
+			bars[j] = triangleTestBar{high: envHigh, low: envHigh - 0.1*gap, close: mid, volume: volume}
+		case 2:
+			bars[j] = triangleTestBar{high: envLow + 0.1*gap, low: envLow, close: mid, volume: volume}
+		default:
+			bars[j] = triangleTestBar{high: mid, low: mid - 0.1*gap, close: mid, volume: volume}
+		}
+	}
+	return bars
+}
+
+// makeMonotonicTriangleWindow 振動のない単調な包絡線（局所極値が生じない）days本を生成する。
+func makeMonotonicTriangleWindow(days int, volume int64) []triangleTestBar {
+	const (
+		highStart, highEnd = 120.0, 101.0
+		lowStart, lowEnd   = 80.0, 99.0
+	)
+	bars := make([]triangleTestBar, days)
+	for j := 0; j < days; j++ {
+		progress := float64(j) / float64(days-1)
+		high := highStart + (highEnd-highStart)*progress
+		low := lowStart + (lowEnd-lowStart)*progress
+		bars[j] = triangleTestBar{high: high, low: low, close: (high + low) / 2, volume: volume}
+	}
+	return bars
+}
+
+// TestTriangleFormationEntrySignals 三角持ち合いブレイク（収縮+ブレイク+出来高）の検出を確認する。
+func TestTriangleFormationEntrySignals(t *testing.T) {
+	breakoutBar := triangleTestBar{high: 131, low: 129, close: 130, volume: 2000}
+	noBreakoutBar := triangleTestBar{high: 100.5, low: 99.5, close: 100, volume: 2000}
+	lowVolumeBreakoutBar := triangleTestBar{high: 131, low: 129, close: 130, volume: 1000}
+
+	t.Run("収縮+当日ブレイク+出来高十分 → true", func(t *testing.T) {
+		bars := makeConvergingTriangleWindow(60, 1000)
+		bars = append(bars, breakoutBar)
+		signals := TriangleFormationEntrySignals(trianglePricesFromBars(bars))
+		assert.Len(t, signals, 61)
+		assert.True(t, signals[60])
+	})
+
+	t.Run("収縮しているがブレイクしていない → false", func(t *testing.T) {
+		bars := makeConvergingTriangleWindow(60, 1000)
+		bars = append(bars, noBreakoutBar)
+		signals := TriangleFormationEntrySignals(trianglePricesFromBars(bars))
+		assert.False(t, signals[60])
+	})
+
+	t.Run("ブレイクしたが出来高不足 → false", func(t *testing.T) {
+		bars := makeConvergingTriangleWindow(60, 1000)
+		bars = append(bars, lowVolumeBreakoutBar)
+		signals := TriangleFormationEntrySignals(trianglePricesFromBars(bars))
+		assert.False(t, signals[60])
+	})
+
+	t.Run("ピボットは収束するが日中レンジが収縮していない ＋ 上抜け → false", func(t *testing.T) {
+		bars := makeFlatRangeTriangleWindow(60, 1000)
+		bars = append(bars, breakoutBar)
+		signals := TriangleFormationEntrySignals(trianglePricesFromBars(bars))
+		assert.False(t, signals[60])
+	})
+
+	t.Run("傾きが微小（ノイズレベル） → false", func(t *testing.T) {
+		bars := makeFlatSlopeTriangleWindow(60, 1000)
+		bars = append(bars, triangleTestBar{high: 110, low: 108, close: 109, volume: 2000})
+		signals := TriangleFormationEntrySignals(trianglePricesFromBars(bars))
+		assert.False(t, signals[60])
+	})
+
+	t.Run("連日上抜けでも2日目以降は false（瞬間判定）", func(t *testing.T) {
+		bars := makeConvergingTriangleWindow(60, 1000)
+		bars = append(bars, breakoutBar)
+		bars = append(bars, triangleTestBar{high: 136, low: 134, close: 135, volume: 2000})
+		signals := TriangleFormationEntrySignals(trianglePricesFromBars(bars))
+		assert.True(t, signals[60])
+		assert.False(t, signals[61])
+	})
+
+	t.Run("極値が3点未満（単調な包絡線） → false", func(t *testing.T) {
+		bars := makeMonotonicTriangleWindow(60, 1000)
+		bars = append(bars, breakoutBar)
+		signals := TriangleFormationEntrySignals(trianglePricesFromBars(bars))
+		assert.False(t, signals[60])
+	})
+
+	t.Run("バー数不足（Window未満） → 全 false", func(t *testing.T) {
+		bars := makeConvergingTriangleWindow(50, 1000)
+		signals := TriangleFormationEntrySignals(trianglePricesFromBars(bars))
+		assert.Len(t, signals, 50)
+		for _, v := range signals {
+			assert.False(t, v)
+		}
+	})
 }
 
 // TestExitSignalsByStrategy_LengthAndDefault ExitSignalsByStrategy の基本動作を確認。

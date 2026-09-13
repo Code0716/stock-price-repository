@@ -17,7 +17,7 @@ type gradeQuizAnswersInteractorImpl struct {
 	tx                                          repositories.Transaction
 	quizAnswerRepository                        repositories.QuizAnswerRepository
 	quizDailyUniverseRepository                 repositories.QuizDailyUniverseRepository
-	stockBrandsDailyStockPriceRepository        repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository        repositories.AdjustedDailyPriceRepository
 	appliedStockSplitsHistoryRepository         repositories.AppliedStockSplitsHistoryRepository
 	appliedStockConsolidationsHistoryRepository repositories.AppliedStockConsolidationsHistoryRepository
 }
@@ -31,7 +31,7 @@ func NewGradeQuizAnswersInteractor(
 	tx repositories.Transaction,
 	quizAnswerRepository repositories.QuizAnswerRepository,
 	quizDailyUniverseRepository repositories.QuizDailyUniverseRepository,
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 	appliedStockSplitsHistoryRepository repositories.AppliedStockSplitsHistoryRepository,
 	appliedStockConsolidationsHistoryRepository repositories.AppliedStockConsolidationsHistoryRepository,
 ) GradeQuizAnswersInteractor {

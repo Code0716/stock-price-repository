@@ -200,6 +200,32 @@ make cli command=create_quiz_daily_universe_v1
 make cli command=grade_quiz_answers_v1
 ```
 
+### 翌営業日の買い候補スクリーニング＋Slack通知
+
+最新営業日の引け値で、既存4戦略（MACD強気・ボリンジャーブレイク・三角持ち合いブレイク・移動平均5/25/75上抜け）のいずれかが点灯した主要市場銘柄を対象に、点灯戦略数・出来高急増度・ADX・ATR・流動性・RSI を合成した複合スコア（0〜100）で順位付けし、上位N件（既定25件）を Slack（`gateway.SlackChannelNameExchangeStockInfo`）へ通知します。結果は `daily_stock_pick` テーブルに保存し、後日の答え合わせ（下記）に使います。
+
+`create_daily_stock_price_v1` の後、当日終値取得後に実行してください。既に当日分が作成済み・全件通知済みの場合は何もしません（冪等）。
+
+```bash
+make cli command=create_daily_stock_picks_v1
+
+# フラグ例
+make cli command="create_daily_stock_picks_v1 --top-n=25 --max-per-sector=4 --concurrency=0 --force"
+```
+
+- `--top-n`: 通知する銘柄数（既定 25）
+- `--max-per-sector`: 同一33業種からの最大採用数、0で無制限（既定 4）
+- `--concurrency`: ワーカー数、0でCPUコア数（既定 0）
+- `--force`: 当日分が既にあっても作り直して再通知する
+
+### 買い候補の答え合わせ
+
+`create_daily_stock_picks_v1` で保存した推奨のうち未確定のものについて、1/3/5営業日後リターンと勝敗（win/lose/draw/void）を確定させます。`create_daily_stock_price_v1` の後、`create_daily_stock_picks_v1` より先に実行してください（その日の答え合わせを早く確定させる）。
+
+```bash
+make cli command=evaluate_daily_stock_picks_v1
+```
+
 ### データエクスポート
 
 DB のデータを SQL ファイルとして mysqldump し、Box (box.com) へ自動アップロードします。
@@ -595,7 +621,7 @@ curl "http://localhost:8080/fin-statements?symbol=7203&limit=8"
 
 #### クイズ設問一覧取得
 
-出題日の設問一覧（銘柄名・コードは含まない）と回答状況を取得します。`date` 省略時は最新の出題日。
+出題日の設問一覧（銘柄コード・名称を含む）と回答状況を取得します。`date` 省略時は最新の出題日。
 
 - **URL**: `/quiz/questions`
 - **Method**: `GET`
@@ -624,7 +650,7 @@ curl "http://localhost:8080/quiz/chart?quiz_date=2026-07-03&stock_brand_id=..."
 
 翌営業日終値の予想を1件送信します。同一設問への重複回答は `409` を返します。
 
-出題中は銘柄名・コードとも非公開ですが、回答直後のレスポンスでのみその設問の銘柄コード・名称を公開します（出題中の常時表示はしません）。
+出題時から銘柄コード・名称は設問一覧（`GET /quiz/questions`）で公開されていますが、回答直後のレスポンスでも改めてその設問の銘柄コード・名称を返します（回答受理の確認・銘柄詳細への導線用）。
 
 - **URL**: `/quiz/answers`
 - **Method**: `POST`
@@ -659,6 +685,48 @@ curl "http://localhost:8080/quiz/results?date=2026-07-03"
 
 ```bash
 curl "http://localhost:8080/quiz/stats"
+```
+
+#### 買い候補取得
+
+指定日（`create_daily_stock_picks_v1` の選定基準日）の推奨銘柄一覧とサマリを取得します。`date` を省略すると最新の選定日にフォールバックします。該当日にデータが無い場合も 200 を返し、`pickDate` が `null`・`items` が空配列になります。
+
+- **URL**: `/daily-stock-picks`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `date` (任意): 選定基準日 (YYYY-MM-DD)。省略時は最新の選定日
+
+```bash
+curl "http://localhost:8080/daily-stock-picks"
+curl "http://localhost:8080/daily-stock-picks?date=2026-07-24"
+```
+
+#### 買い候補の選定日一覧取得
+
+日付セレクタ用に、推奨が存在する選定日を新しい順で取得します。
+
+- **URL**: `/daily-stock-picks/dates`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `limit` (任意): 取得件数（既定 90、上限 400）
+
+```bash
+curl "http://localhost:8080/daily-stock-picks/dates?limit=30"
+```
+
+#### 買い候補の累計成績取得
+
+勝率・平均リターンの合計、日次推移、スコア帯別（10点刻み）の的中率を取得します。スコア定義の異なる推奨を混ぜて集計しないよう、`score_version` で常に絞り込みます（省略時は現行バージョン）。
+
+- **URL**: `/daily-stock-picks/stats`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `from` / `to` (任意): 集計期間 (YYYY-MM-DD)
+  - `score_version` (任意): スコア定義バージョン。省略時は現行バージョン（`v1`）
+
+```bash
+curl "http://localhost:8080/daily-stock-picks/stats"
+curl "http://localhost:8080/daily-stock-picks/stats?from=2026-07-01&to=2026-07-31"
 ```
 
 ## Box セットアップ

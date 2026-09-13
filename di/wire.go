@@ -13,6 +13,7 @@ import (
 	"github.com/Code0716/stock-price-repository/infrastructure/cli"
 	"github.com/Code0716/stock-price-repository/infrastructure/cli/commands"
 	"github.com/Code0716/stock-price-repository/infrastructure/database"
+	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
 	"github.com/Code0716/stock-price-repository/usecase"
 	"go.uber.org/zap"
 
@@ -36,6 +37,10 @@ var usecaseSet = wire.NewSet(
 	usecase.NewCreateQuizDailyUniverseInteractor,
 	usecase.NewGradeQuizAnswersInteractor,
 	usecase.NewQuizInteractor,
+	usecase.NewCreateDailyStockPicksInteractor,
+	usecase.NewEvaluateDailyStockPicksInteractor,
+	usecase.NewDailyStockPickInteractor,
+	usecase.NewNotificationHistoryInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -44,6 +49,7 @@ var driverSet = wire.NewSet(
 	driver.NewHTTPRequest,
 	driver.NewHTTPServer,
 	driver.NewSlackAPIClient,
+	gateway.NewRecordingSlackAPIClient,
 	driver.OpenRedis,
 	driver.NewStockAPIClient,
 	driver.NewMySQLDumpClient,
@@ -56,6 +62,7 @@ var cliSet = wire.NewSet(
 	commands.NewHealthCheckCommand,
 	commands.NewUpdateStockBrandsV1Command,
 	commands.NewCreateHistoricalDailyStockPricesV1Command,
+	commands.NewRebuildAnalyzeDailyPricesV1Command,
 	commands.NewCreateDailyStockPriceV1Command,
 	commands.NewCreateNikkeiAndDjiHistoricalDataV1Command,
 	commands.NewAdjustHistoricalDataForStockSplitCommand,
@@ -68,6 +75,8 @@ var cliSet = wire.NewSet(
 	commands.NewSyncFinStatementsAllStocksCommand,
 	commands.NewGradeQuizAnswersV1Command,
 	commands.NewCreateQuizDailyUniverseV1Command,
+	commands.NewCreateDailyStockPicksV1Command,
+	commands.NewEvaluateDailyStockPicksV1Command,
 )
 
 var databaseSet = wire.NewSet(
@@ -79,6 +88,7 @@ var databaseSet = wire.NewSet(
 	database.NewStockBrandsDailyPriceRepositoryImpl,
 	database.NewAnalyzeStockBrandPriceHistoryRepositoryImpl,
 	database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl,
+	database.NewAdjustedDailyPriceRepositoryImpl,
 	database.NewHighVolumeStockBrandRepositoryImpl,
 	database.NewAppliedStockSplitsHistoryRepositoryImpl,
 	database.NewAppliedStockConsolidationsHistoryRepositoryImpl,
@@ -90,6 +100,8 @@ var databaseSet = wire.NewSet(
 	database.NewSector17AverageDailyPriceRepositoryImpl,
 	database.NewQuizDailyUniverseRepositoryImpl,
 	database.NewQuizAnswerRepositoryImpl,
+	database.NewDailyStockPickRepositoryImpl,
+	database.NewNotificationHistoryRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
@@ -118,6 +130,8 @@ var apiSet = wire.NewSet(
 	handler.NewSignalPerformanceHandler,
 	handler.NewSectorPerformanceHandler,
 	handler.NewQuizHandler,
+	handler.NewDailyStockPickHandler,
+	handler.NewNotificationHandler,
 	router.NewRouter,
 )
 
@@ -148,6 +162,7 @@ var grpcDriverSet = wire.NewSet(
 	driver.NewHTTPRequest,
 	driver.NewHTTPServer,
 	driver.NewSlackAPIClient,
+	gateway.NewRecordingSlackAPIClient,
 	driver.OpenRedis,
 	driver.NewStockAPIClient,
 	driver.NewMySQLDumpClient,

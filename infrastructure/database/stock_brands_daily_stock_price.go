@@ -27,10 +27,7 @@ func NewStockBrandsDailyPriceRepositoryImpl(db *gorm.DB) repositories.StockBrand
 }
 func (si *StockBrandsDailyPriceRepositoryImpl) GetLatestPriceBySymbol(ctx context.Context, symbol string) (*models.StockBrandDailyPrice, error) {
 
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 	price, err := tx.StockBrandsDailyPrice.WithContext(ctx).
 		Where(tx.StockBrandsDailyPrice.TickerSymbol.Eq(symbol)).
 		Order(tx.StockBrandsDailyPrice.Date.Desc()).
@@ -45,10 +42,7 @@ func (si *StockBrandsDailyPriceRepositoryImpl) GetLatestPriceBySymbol(ctx contex
 }
 
 func (si *StockBrandsDailyPriceRepositoryImpl) CreateStockBrandDailyPrice(ctx context.Context, dailyPrices []*models.StockBrandDailyPrice) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if err := tx.StockBrandsDailyPrice.WithContext(ctx).
 		Clauses(clause.OnConflict{
@@ -71,10 +65,7 @@ func (si *StockBrandsDailyPriceRepositoryImpl) CreateStockBrandDailyPrice(ctx co
 }
 
 func (si *StockBrandsDailyPriceRepositoryImpl) DeleteByIDs(ctx context.Context, ids []string) error {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if _, err := tx.StockBrandsDailyPrice.WithContext(ctx).
 		Where(tx.StockBrandsDailyPrice.StockBrandID.In(ids...)).
@@ -85,10 +76,7 @@ func (si *StockBrandsDailyPriceRepositoryImpl) DeleteByIDs(ctx context.Context, 
 }
 
 func (si *StockBrandsDailyPriceRepositoryImpl) ListDailyPricesBySymbol(ctx context.Context, filter models.ListDailyPricesBySymbolFilter) ([]*models.StockBrandDailyPrice, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if filter.TickerSymbol == "" {
 		return nil, errors.New("TickerSymbol is required")
@@ -146,10 +134,7 @@ func (si *StockBrandsDailyPriceRepositoryImpl) ListDailyPricesBySymbol(ctx conte
 
 // ListRangePricesBySymbols 複数銘柄の期間中日足を一括取得する（シグナル精度評価用）
 func (si *StockBrandsDailyPriceRepositoryImpl) ListRangePricesBySymbols(ctx context.Context, filter models.ListRangePricesBySymbolsFilter) ([]*models.StockBrandDailyPrice, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	if len(filter.Symbols) == 0 {
 		return []*models.StockBrandDailyPrice{}, nil
@@ -184,10 +169,7 @@ func (si *StockBrandsDailyPriceRepositoryImpl) ListRangePricesBySymbols(ctx cont
 
 // ListRecentTradingDates onOrBefore以前の直近の営業日（データが存在する日）を新しい順にlimit件取得する（クイズのユニバース選定用）。
 func (si *StockBrandsDailyPriceRepositoryImpl) ListRecentTradingDates(ctx context.Context, onOrBefore time.Time, limit int) ([]time.Time, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	dateOnly := time.Date(onOrBefore.Year(), onOrBefore.Month(), onOrBefore.Day(), 0, 0, 0, 0, onOrBefore.Location())
 
@@ -206,10 +188,7 @@ func (si *StockBrandsDailyPriceRepositoryImpl) ListRecentTradingDates(ctx contex
 
 // ListPricesByDateRange 期間中の全銘柄の日足を取得する（クイズのユニバース選定用）。
 func (si *StockBrandsDailyPriceRepositoryImpl) ListPricesByDateRange(ctx context.Context, from, to time.Time) ([]*models.StockBrandDailyPrice, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	dateFrom := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, from.Location())
 	dateTo := time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, to.Location())
@@ -233,10 +212,7 @@ func (si *StockBrandsDailyPriceRepositoryImpl) ListPricesByDateRange(ctx context
 
 // FindNextTradingDate afterより後の直近の営業日を1件取得する（存在しなければnil。クイズ採点用）。
 func (si *StockBrandsDailyPriceRepositoryImpl) FindNextTradingDate(ctx context.Context, after time.Time) (*time.Time, error) {
-	tx, ok := GetTxQuery(ctx)
-	if !ok {
-		tx = si.query
-	}
+	tx := TxOrDefault(ctx, si.query)
 
 	dateOnly := time.Date(after.Year(), after.Month(), after.Day(), 0, 0, 0, 0, after.Location())
 

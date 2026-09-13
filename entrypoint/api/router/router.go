@@ -22,6 +22,8 @@ func NewRouter(
 	signalPerformanceHandler *handler.SignalPerformanceHandler,
 	sectorPerformanceHandler *handler.SectorPerformanceHandler,
 	quizHandler *handler.QuizHandler,
+	dailyStockPickHandler *handler.DailyStockPickHandler,
+	notificationHandler *handler.NotificationHandler,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
@@ -66,9 +68,22 @@ func NewRouter(
 	if sectorPerformanceHandler != nil {
 		mux.HandleFunc("/sector-performance", sectorPerformanceHandler.GetSectorPerformance)
 	}
+	if notificationHandler != nil {
+		mux.HandleFunc("/notifications", notificationHandler.GetNotificationHistories)
+	}
 	registerQuizRoutes(mux, quizHandler)
 	registerDaytradeRoutes(mux, daytradeHandler)
+	registerDailyStockPickRoutes(mux, dailyStockPickHandler)
 	return mux
+}
+
+func registerDailyStockPickRoutes(mux *http.ServeMux, dailyStockPickHandler *handler.DailyStockPickHandler) {
+	if dailyStockPickHandler == nil {
+		return
+	}
+	mux.HandleFunc("/daily-stock-picks", dailyStockPickHandler.GetDailyStockPicks)
+	mux.HandleFunc("/daily-stock-picks/dates", dailyStockPickHandler.GetDailyStockPickDates)
+	mux.HandleFunc("/daily-stock-picks/stats", dailyStockPickHandler.GetDailyStockPickStats)
 }
 
 func registerQuizRoutes(mux *http.ServeMux, quizHandler *handler.QuizHandler) {
@@ -96,4 +111,5 @@ func registerDaytradeRoutes(mux *http.ServeMux, daytradeHandler *handler.Daytrad
 	mux.HandleFunc("/daytrade/trades", daytradeHandler.GetTrades)
 	mux.HandleFunc("/daytrade/trades/note", daytradeHandler.UpsertTradeNote)
 	mux.HandleFunc("/daytrade/tag-stats", daytradeHandler.GetTagStats)
+	mux.HandleFunc("/daytrade/stop-compliance", daytradeHandler.GetStopCompliance)
 }

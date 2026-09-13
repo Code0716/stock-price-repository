@@ -38,8 +38,7 @@ func (h *QuizHandler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 
 	questions, err := h.usecase.GetQuestions(r.Context(), date)
 	if err != nil {
-		h.logger.Error("quiz get questions failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "quiz get questions failed", err)
 		return
 	}
 	respondJSON(w, h.logger, questions)
@@ -56,15 +55,15 @@ func (h *QuizHandler) GetChart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "stock_brand_idは必須です", http.StatusBadRequest)
 		return
 	}
+	reveal := h.httpServer.GetQueryParam(r, "reveal") == "true"
 
-	chart, err := h.usecase.GetChart(r.Context(), *quizDate, stockBrandID)
+	chart, err := h.usecase.GetChart(r.Context(), *quizDate, stockBrandID, reveal)
 	if err != nil {
 		if errors.Is(err, usecase.ErrQuizQuestionNotFound) {
 			http.Error(w, "指定された設問が見つかりません", http.StatusNotFound)
 			return
 		}
-		h.logger.Error("quiz get chart failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "quiz get chart failed", err)
 		return
 	}
 	respondJSON(w, h.logger, chart)
@@ -109,8 +108,7 @@ func (h *QuizHandler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "既に回答済みです", http.StatusConflict)
 			return
 		}
-		h.logger.Error("quiz submit answer failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "quiz submit answer failed", err)
 		return
 	}
 	respondJSONStatus(w, h.logger, http.StatusCreated, reveal)
@@ -125,8 +123,7 @@ func (h *QuizHandler) GetResults(w http.ResponseWriter, r *http.Request) {
 
 	results, err := h.usecase.GetResults(r.Context(), *quizDate)
 	if err != nil {
-		h.logger.Error("quiz get results failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "quiz get results failed", err)
 		return
 	}
 	respondJSON(w, h.logger, results)
@@ -135,8 +132,7 @@ func (h *QuizHandler) GetResults(w http.ResponseWriter, r *http.Request) {
 func (h *QuizHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	stats, err := h.usecase.GetStats(r.Context())
 	if err != nil {
-		h.logger.Error("quiz get stats failed", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "quiz get stats failed", err)
 		return
 	}
 	respondJSON(w, h.logger, stats)

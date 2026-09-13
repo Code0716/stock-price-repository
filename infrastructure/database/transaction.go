@@ -82,6 +82,14 @@ func GetTxDB(ctx context.Context) (*gorm.DB, bool) {
 	return tx, ok
 }
 
+// TxOrDefault ctx にトランザクションがあればそれを、なければ q を返す。
+func TxOrDefault(ctx context.Context, q *genQuery.Query) *genQuery.Query {
+	if tx, ok := GetTxQuery(ctx); ok {
+		return tx
+	}
+	return q
+}
+
 //  gormでテーブルをsql export するなら。
 // package main
 

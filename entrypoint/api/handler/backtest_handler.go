@@ -8,7 +8,6 @@ import (
 	"github.com/Code0716/stock-price-repository/driver"
 	"github.com/Code0716/stock-price-repository/models"
 	"github.com/Code0716/stock-price-repository/usecase"
-	"github.com/Code0716/stock-price-repository/util"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
@@ -92,16 +91,11 @@ func (h *BacktestHandler) validateGetBacktestParams(r *http.Request) (*getBackte
 		return nil, &validationError{message: "シンボルは英数字である必要があります"}
 	}
 
-	from, err := h.httpServer.GetQueryParamDate(r, "from", util.DateLayout)
+	from, to, err := parseDateRange(r)
 	if err != nil {
-		return nil, &validationError{message: "fromの日付形式が不正です"}
+		return nil, err
 	}
 	p.from = from
-
-	to, err := h.httpServer.GetQueryParamDate(r, "to", util.DateLayout)
-	if err != nil {
-		return nil, &validationError{message: "toの日付形式が不正です"}
-	}
 	p.to = to
 
 	takeProfit, ok := parsePositiveRate(h.httpServer.GetQueryParam(r, "takeProfit"), defaultTakeProfit)
@@ -150,18 +144,13 @@ func (h *BacktestHandler) validateGetBacktestParams(r *http.Request) (*getBackte
 func (h *BacktestHandler) GetBacktest(w http.ResponseWriter, r *http.Request) {
 	p, err := h.validateGetBacktestParams(r)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate get backtest params", err)
 		return
 	}
 
 	result, err := h.usecase.GetBacktestComparison(r.Context(), p.symbol, p.from, p.to, p.params)
 	if err != nil {
-		h.logger.Error("failed to get backtest", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get backtest", err)
 		return
 	}
 

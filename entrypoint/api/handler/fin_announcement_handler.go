@@ -83,30 +83,21 @@ func (h *FinAnnouncementHandler) GetFinAnnouncements(w http.ResponseWriter, r *h
 
 	page, err := parseBoundedInt(h.httpServer, r, "page", 1, 0)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate fin announcements page param", err)
 		return
 	}
 	filter.Page = page
 
 	limit, err := parseBoundedInt(h.httpServer, r, "limit", 100, 1000)
 	if err != nil {
-		if verr, ok := err.(*validationError); ok {
-			http.Error(w, verr.message, http.StatusBadRequest)
-			return
-		}
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to validate fin announcements limit param", err)
 		return
 	}
 	filter.Limit = limit
 
 	result, err := h.usecase.GetFinAnnouncements(r.Context(), filter)
 	if err != nil {
-		h.logger.Error("failed to get fin announcements", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get fin announcements", err)
 		return
 	}
 
@@ -136,8 +127,7 @@ func (h *FinAnnouncementHandler) GetNextFinAnnouncement(w http.ResponseWriter, r
 
 	result, err := h.usecase.GetNextFinAnnouncement(r.Context(), symbol)
 	if err != nil {
-		h.logger.Error("failed to get next fin announcement", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get next fin announcement", err)
 		return
 	}
 

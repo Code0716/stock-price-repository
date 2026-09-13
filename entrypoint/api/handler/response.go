@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -20,4 +21,15 @@ func respondJSONStatus(w http.ResponseWriter, logger *zap.Logger, status int, da
 		logger.Error("failed to encode response", zap.Error(err))
 		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 	}
+}
+
+// writeError validationError は 400、それ以外はログ出力の上 500 を返す。
+func writeError(w http.ResponseWriter, logger *zap.Logger, logMsg string, err error) {
+	var verr *validationError
+	if errors.As(err, &verr) {
+		http.Error(w, verr.Error(), http.StatusBadRequest)
+		return
+	}
+	logger.Error(logMsg, zap.Error(err))
+	http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
 }

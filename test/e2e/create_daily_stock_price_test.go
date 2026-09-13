@@ -69,6 +69,7 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 				assert.NoError(t, err)
 
 				mockSlackAPI.EXPECT().SendMessageByStrings(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil).AnyTimes()
+				mockSlackAPI.EXPECT().SendBlockMessage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 				mockStockAPI.EXPECT().GetAllBrandDailyPricesByDate(
 					gomock.Any(),
@@ -129,6 +130,9 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 			stockBrandRepo := database.NewStockBrandRepositoryImpl(db)
 			dailyPriceRepo := database.NewStockBrandsDailyPriceRepositoryImpl(db)
 			analyzeRepo := database.NewStockBrandsDailyPriceForAnalyzeRepositoryImpl(db)
+			splitsHistoryRepo := database.NewAppliedStockSplitsHistoryRepositoryImpl(db)
+			consolidationsHistoryRepo := database.NewAppliedStockConsolidationsHistoryRepositoryImpl(db)
+			adjustedDailyPriceRepo := database.NewAdjustedDailyPriceRepositoryImpl(db)
 
 			// 5. Setup Interactor
 			tx := database.NewTransaction(db)
@@ -138,6 +142,9 @@ func TestE2E_CreateDailyStockPrice(t *testing.T) {
 				stockBrandRepo,
 				dailyPriceRepo,
 				analyzeRepo,
+				splitsHistoryRepo,
+				consolidationsHistoryRepo,
+				adjustedDailyPriceRepo,
 				mockStockAPI,
 				redisClient,
 				mockSlackAPI,

@@ -21,7 +21,7 @@ const (
 
 type valuationInteractorImpl struct {
 	finStatementRepository               repositories.FinStatementRepository
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository
 }
 
 // ValuationInteractor 評価指標（PER/PBR/ROE/予想PER/予想配当利回り）算出インターフェース。
@@ -31,7 +31,7 @@ type ValuationInteractor interface {
 
 func NewValuationInteractor(
 	finStatementRepository repositories.FinStatementRepository,
-	stockBrandsDailyStockPriceRepository repositories.StockBrandsDailyPriceRepository,
+	stockBrandsDailyStockPriceRepository repositories.AdjustedDailyPriceRepository,
 ) ValuationInteractor {
 	return &valuationInteractorImpl{
 		finStatementRepository:               finStatementRepository,

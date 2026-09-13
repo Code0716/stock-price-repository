@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -29,11 +30,12 @@ func TestE2E_Daytrade(t *testing.T) {
 	tx := database.NewTransaction(db)
 	repo := database.NewDaytradeExecutionRepositoryImpl(db)
 	noteRepo := database.NewDaytradeTradeNoteRepositoryImpl(db)
-	interactor := usecase.NewDaytradeInteractor(tx, repo, noteRepo)
+	dailyPriceRepo := database.NewStockBrandsDailyPriceRepositoryImpl(db)
+	interactor := usecase.NewDaytradeInteractor(tx, repo, noteRepo, dailyPriceRepo)
 
 	httpServer := driver.NewHTTPServer()
 	daytradeHandler := handler.NewDaytradeHandler(interactor, httpServer, zap.NewNop())
-	mux := router.NewRouter(nil, nil, nil, nil, nil, nil, daytradeHandler, nil, nil, nil, nil, nil, nil, nil, nil)
+	mux := router.NewRouter(nil, nil, nil, nil, nil, nil, daytradeHandler, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
 
@@ -180,7 +182,7 @@ func TestE2E_Daytrade(t *testing.T) {
 		var body models.DaytradePeriodStats
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 
-		assert.Equal(t, int64(660), body.ProfitLoss)   // 1460 + (-800)
+		assert.Equal(t, int64(660), body.ProfitLoss) // 1460 + (-800)
 		assert.Equal(t, 2, body.TradeCount)
 	})
 
@@ -459,6 +461,51 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Equal(t, 2, result.TotalRow)
 		assert.Equal(t, 2, result.Inserted) // occurrence_no で区別されるため 2 件とも挿入
 		assert.Equal(t, 0, result.Skipped)
+	})
+
+	t.Run("損切り宣言遵守判定_到達したが持ち越して黒字化はbreached_recovered", func(t *testing.T) {
+		// 前段の各サブテストが日付を上書きしている可能性があるため、既知の状態にするため再インポートする。
+		// sbi_sample_sjis.csv の 9984/2026-05-21 (数量200, 平均取得単価5937, 損益+1460, direction=売建) を対象にする。
+		resp := postCSV(t, ts.URL, "../../usecase/daytrade/testdata/sbi_sample_sjis.csv")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		resp.Body.Close()
+
+		brandID := uuid.NewString()
+		require.NoError(t, db.Exec(
+			"INSERT INTO stock_brand (id, ticker_symbol, name, market_code, market_name, created_at, updated_at)"+
+				" VALUES (?, '9984', 'ソフトバンクグループ株式会社', '111', '東証プライム', NOW(), NOW())",
+			brandID,
+		).Error)
+		defer db.Exec("DELETE FROM stock_brand WHERE id = ?", brandID)
+
+		// 宣言ストップ5900(<平均取得単価5937 → ロング扱い)を安値5850が下抜け＝到達
+		require.NoError(t, db.Exec(
+			"INSERT INTO stock_brands_daily_price"+
+				" (id, stock_brand_id, ticker_symbol, date, open_price, close_price, high_price, low_price, adj_close_price, volume, created_at, updated_at)"+
+				" VALUES (UUID(), ?, '9984', '2026-05-21', 5950, 5990, 6000, 5850, 5990, 1000000, NOW(), NOW())",
+			brandID,
+		).Error)
+		defer db.Exec("DELETE FROM stock_brands_daily_price WHERE stock_brand_id = ?", brandID)
+
+		noteBody := `{"tickerSymbol":"9984","executedOn":"2026-05-21","direction":"売建","declaredStopPrice":"5900"}`
+		resp, err := http.Post(ts.URL+"/daytrade/trades/note", "application/json", bytes.NewReader([]byte(noteBody)))
+		require.NoError(t, err)
+		resp.Body.Close()
+		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+		resp, err = http.Get(ts.URL + "/daytrade/stop-compliance?from=2026-05-21&to=2026-05-21")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var compliance models.DaytradeStopCompliance
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&compliance))
+
+		assert.Equal(t, 1, compliance.DeclaredCount)
+		assert.Equal(t, 1, compliance.BreachedRecoveredCount)
+		require.Len(t, compliance.Trades, 1)
+		assert.Equal(t, models.DaytradeStopComplianceBreachedRecovered, compliance.Trades[0].Category)
+		assert.Equal(t, "9984", compliance.Trades[0].TickerSymbol)
 	})
 }
 

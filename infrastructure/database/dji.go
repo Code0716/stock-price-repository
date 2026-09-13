@@ -27,10 +27,7 @@ func NewDjiRepositoryImpl(db *gorm.DB) repositories.DjiRepository {
 }
 
 func (ni *DjiRepositoryImpl) CreateDjiStockAverageDailyPrices(ctx context.Context, averageDailyPrices models.IndexStockAverageDailyPrices) error {
-	query, ok := GetTxQuery(ctx)
-	if !ok {
-		query = ni.query
-	}
+	query := TxOrDefault(ctx, ni.query)
 
 	if err := query.DjiStockAverageDailyStockPrice.WithContext(ctx).
 		Clauses(clause.OnConflict{

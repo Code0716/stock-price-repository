@@ -36,8 +36,7 @@ func (h *ValuationHandler) GetValuation(w http.ResponseWriter, r *http.Request) 
 
 	result, err := h.usecase.GetValuation(r.Context(), symbol)
 	if err != nil {
-		h.logger.Error("failed to get valuation", zap.Error(err))
-		http.Error(w, "内部サーバーエラー", http.StatusInternalServerError)
+		writeError(w, h.logger, "failed to get valuation", err)
 		return
 	}
 	respondJSON(w, h.logger, result)

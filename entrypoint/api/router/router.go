@@ -23,6 +23,7 @@ func NewRouter(
 	sectorPerformanceHandler *handler.SectorPerformanceHandler,
 	quizHandler *handler.QuizHandler,
 	dailyStockPickHandler *handler.DailyStockPickHandler,
+	dailyAvoidStockHandler *handler.DailyAvoidStockHandler,
 	notificationHandler *handler.NotificationHandler,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
@@ -74,6 +75,7 @@ func NewRouter(
 	registerQuizRoutes(mux, quizHandler)
 	registerDaytradeRoutes(mux, daytradeHandler)
 	registerDailyStockPickRoutes(mux, dailyStockPickHandler)
+	registerDailyAvoidStockRoutes(mux, dailyAvoidStockHandler)
 	return mux
 }
 
@@ -84,6 +86,14 @@ func registerDailyStockPickRoutes(mux *http.ServeMux, dailyStockPickHandler *han
 	mux.HandleFunc("/daily-stock-picks", dailyStockPickHandler.GetDailyStockPicks)
 	mux.HandleFunc("/daily-stock-picks/dates", dailyStockPickHandler.GetDailyStockPickDates)
 	mux.HandleFunc("/daily-stock-picks/stats", dailyStockPickHandler.GetDailyStockPickStats)
+}
+
+func registerDailyAvoidStockRoutes(mux *http.ServeMux, dailyAvoidStockHandler *handler.DailyAvoidStockHandler) {
+	if dailyAvoidStockHandler == nil {
+		return
+	}
+	mux.HandleFunc("/daily-avoid-stocks", dailyAvoidStockHandler.GetDailyAvoidStocks)
+	mux.HandleFunc("/daily-avoid-stocks/dates", dailyAvoidStockHandler.GetDailyAvoidStockDates)
 }
 
 func registerQuizRoutes(mux *http.ServeMux, quizHandler *handler.QuizHandler) {

@@ -89,7 +89,7 @@ func TestE2E_GetNotificationHistories(t *testing.T) {
 	interactor := usecase.NewNotificationHistoryInteractor(repo)
 	httpServer := driver.NewHTTPServer()
 	notificationHandler := handler.NewNotificationHandler(interactor, httpServer, zap.NewNop())
-	mux := router.NewRouter(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, notificationHandler)
+	mux := router.NewRouter(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, notificationHandler)
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
 

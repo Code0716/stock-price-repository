@@ -131,6 +131,7 @@ chmod +x shell_scripts/every.sh   # 初回のみ
 4. `create_quiz_daily_universe_v1` — 当日のクイズ出題ユニバース作成（日足に依存）
 5. `create_nikkei_and_dji_historical_data_v1` — 日経平均・NYダウの日足取得（独立）
 6. `sync_fin_announcements` — 決算発表予定の取得（独立）
+7. `create_daily_avoid_stocks_v1` — 避けるべき銘柄（高ボラ銘柄）の判定（日足に依存。他コマンドとの依存順序はなし）
 
 途中のコマンドが失敗しても後続は継続し、最後に失敗コマンドを集計して exit 1 を返します。各コマンドの成否は Slack に通知されます。バックテスト（`backtest_all_stocks_v1`）は `shell_scripts/backtest.sh` に分離しています。
 
@@ -225,6 +226,23 @@ make cli command="create_daily_stock_picks_v1 --top-n=25 --max-per-sector=4 --co
 ```bash
 make cli command=evaluate_daily_stock_picks_v1
 ```
+
+### 避けるべき銘柄（高ボラ銘柄）スクリーニング
+
+流動性ユニバース（平均売買代金1億円/日以上）の中で、直近12ヶ月の実現ボラティリティ（年率換算）が上位パーセンタイルに入る銘柄を「避けるべき銘柄」として判定します。実データ分析（`domain_service/daily_avoid_stock_screening.go` 参照）で、この群は過去7年中6年マイナス・累積-40.5%という頑健な下振れ傾向が確認されています。買い候補（`daily_stock_pick`）の否定ではなく、大きく負けやすい銘柄を避けるための独立したネガティブスクリーニングであり、Slack通知（`notification_history`）とは別に `daily_avoid_stock` テーブルへ保存されます。
+
+上位20%（`severity=elevated`）のうち、さらに上位10%以内は `severity=high` として区別されます。
+
+```bash
+make cli command=create_daily_avoid_stocks_v1
+
+# フラグ例（過去日のバックフィル）
+make cli command="create_daily_avoid_stocks_v1 --date=2026-08-01 --concurrency=0 --force"
+```
+
+- `--date`: 判定基準日 (YYYY-MM-DD)。省略時は最新営業日
+- `--concurrency`: ワーカー数、0でCPUコア数（既定 0）
+- `--force`: 当日分が既にあっても作り直す
 
 ### データエクスポート
 
@@ -727,6 +745,33 @@ curl "http://localhost:8080/daily-stock-picks/dates?limit=30"
 ```bash
 curl "http://localhost:8080/daily-stock-picks/stats"
 curl "http://localhost:8080/daily-stock-picks/stats?from=2026-07-01&to=2026-07-31"
+```
+
+#### 避けるべき銘柄取得
+
+指定日（`create_daily_avoid_stocks_v1` の判定基準日）の該当銘柄一覧とサマリ（ユニバース銘柄数・該当数・閾値ボラ等）を取得します。`date` を省略すると最新の判定日にフォールバックします。該当日にデータが無い場合も 200 を返し、`items` が空配列になります。
+
+- **URL**: `/daily-avoid-stocks`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `date` (任意): 判定基準日 (YYYY-MM-DD)。省略時は最新の判定日
+
+```bash
+curl "http://localhost:8080/daily-avoid-stocks"
+curl "http://localhost:8080/daily-avoid-stocks?date=2026-07-24"
+```
+
+#### 避けるべき銘柄の判定日一覧取得
+
+日付セレクタ用に、判定結果が存在する基準日を新しい順で取得します。
+
+- **URL**: `/daily-avoid-stocks/dates`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `limit` (任意): 取得件数（既定 90、上限 400）
+
+```bash
+curl "http://localhost:8080/daily-avoid-stocks/dates?limit=30"
 ```
 
 ## Box セットアップ

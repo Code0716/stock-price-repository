@@ -118,14 +118,28 @@ func EvaluateDailyPickCandidate(
 }
 
 // passesDailyPickHardFilters 株価・値幅・流動性の事前フィルタを検証する。
+// 値幅ゼロ（ストップ高等）の除外は「翌日買えるか」という買い候補固有の約定可能性フィルタであり、
+// ユニバース定義そのものではないため PassesLiquidityUniverse には含めない。
 func passesDailyPickHardFilters(prices []*models.StockBrandDailyPrice, filter DailyPickFilterParams) bool {
 	n := len(prices)
 	last := prices[n-1]
-	if last.Close.LessThan(filter.MinClosePrice) {
-		return false
-	}
 	if last.High.Equal(last.Low) {
 		return false // ストップ高等の値幅ゼロは翌日買えないため除外
+	}
+	return PassesLiquidityUniverse(prices, filter)
+}
+
+// PassesLiquidityUniverse 流動性ユニバース判定（株価下限・直近averageWindow営業日の平均売買代金・平均出来高）。
+// 買い候補(daily_stock_pick)と避けるべき銘柄(daily_avoid_stock)の両方が、同一のユニバース定義を
+// 共有するためにこの関数だけを呼ぶこと（閾値の二重定義を作らない）。
+func PassesLiquidityUniverse(prices []*models.StockBrandDailyPrice, filter DailyPickFilterParams) bool {
+	n := len(prices)
+	if n == 0 {
+		return false
+	}
+	last := prices[n-1]
+	if last.Close.LessThan(filter.MinClosePrice) {
+		return false
 	}
 
 	metricsStart := n - filter.MetricsWindowDays

@@ -111,5 +111,4 @@ func registerDaytradeRoutes(mux *http.ServeMux, daytradeHandler *handler.Daytrad
 	mux.HandleFunc("/daytrade/trades", daytradeHandler.GetTrades)
 	mux.HandleFunc("/daytrade/trades/note", daytradeHandler.UpsertTradeNote)
 	mux.HandleFunc("/daytrade/tag-stats", daytradeHandler.GetTagStats)
-	mux.HandleFunc("/daytrade/stop-compliance", daytradeHandler.GetStopCompliance)
 }

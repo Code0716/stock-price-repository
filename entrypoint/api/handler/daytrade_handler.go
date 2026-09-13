@@ -185,21 +185,6 @@ func (h *DaytradeHandler) GetInsights(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, h.logger, insights)
 }
 
-func (h *DaytradeHandler) GetStopCompliance(w http.ResponseWriter, r *http.Request) {
-	from, to, err := parseDateRange(r)
-	if err != nil {
-		writeError(w, h.logger, "daytrade stop compliance date range invalid", err)
-		return
-	}
-
-	compliance, err := h.usecase.GetStopCompliance(r.Context(), from, to)
-	if err != nil {
-		writeError(w, h.logger, "daytrade stop compliance failed", err)
-		return
-	}
-	respondJSON(w, h.logger, compliance)
-}
-
 type daytradeRangeResponse struct {
 	Min *string `json:"min"`
 	Max *string `json:"max"`

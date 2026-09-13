@@ -104,21 +104,6 @@ func (mr *MockDaytradeInteractorMockRecorder) GetPeriodStats(ctx, from, to any) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeriodStats", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetPeriodStats), ctx, from, to)
 }
 
-// GetStopCompliance mocks base method.
-func (m *MockDaytradeInteractor) GetStopCompliance(ctx context.Context, from, to *time.Time) (*models.DaytradeStopCompliance, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStopCompliance", ctx, from, to)
-	ret0, _ := ret[0].(*models.DaytradeStopCompliance)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetStopCompliance indicates an expected call of GetStopCompliance.
-func (mr *MockDaytradeInteractorMockRecorder) GetStopCompliance(ctx, from, to any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStopCompliance", reflect.TypeOf((*MockDaytradeInteractor)(nil).GetStopCompliance), ctx, from, to)
-}
-
 // GetSummary mocks base method.
 func (m *MockDaytradeInteractor) GetSummary(ctx context.Context, from, to *time.Time, g models.DaytradeSummaryGranularity) ([]*models.DaytradeSummaryBucket, error) {
 	m.ctrl.T.Helper()

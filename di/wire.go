@@ -40,6 +40,8 @@ var usecaseSet = wire.NewSet(
 	usecase.NewCreateDailyStockPicksInteractor,
 	usecase.NewEvaluateDailyStockPicksInteractor,
 	usecase.NewDailyStockPickInteractor,
+	usecase.NewCreateDailyAvoidStocksInteractor,
+	usecase.NewDailyAvoidStockInteractor,
 	usecase.NewNotificationHistoryInteractor,
 )
 
@@ -77,6 +79,7 @@ var cliSet = wire.NewSet(
 	commands.NewCreateQuizDailyUniverseV1Command,
 	commands.NewCreateDailyStockPicksV1Command,
 	commands.NewEvaluateDailyStockPicksV1Command,
+	commands.NewCreateDailyAvoidStocksV1Command,
 )
 
 var databaseSet = wire.NewSet(
@@ -101,6 +104,7 @@ var databaseSet = wire.NewSet(
 	database.NewQuizDailyUniverseRepositoryImpl,
 	database.NewQuizAnswerRepositoryImpl,
 	database.NewDailyStockPickRepositoryImpl,
+	database.NewDailyAvoidStockRepositoryImpl,
 	database.NewNotificationHistoryRepositoryImpl,
 )
 
@@ -131,6 +135,7 @@ var apiSet = wire.NewSet(
 	handler.NewSectorPerformanceHandler,
 	handler.NewQuizHandler,
 	handler.NewDailyStockPickHandler,
+	handler.NewDailyAvoidStockHandler,
 	handler.NewNotificationHandler,
 	router.NewRouter,
 )

@@ -41,6 +41,20 @@ func (m *MockCreateDailyAvoidStocksInteractor) EXPECT() *MockCreateDailyAvoidSto
 	return m.recorder
 }
 
+// BackfillDailyAvoidStocks mocks base method.
+func (m *MockCreateDailyAvoidStocksInteractor) BackfillDailyAvoidStocks(ctx context.Context, now time.Time, days, concurrency int, force bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BackfillDailyAvoidStocks", ctx, now, days, concurrency, force)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BackfillDailyAvoidStocks indicates an expected call of BackfillDailyAvoidStocks.
+func (mr *MockCreateDailyAvoidStocksInteractorMockRecorder) BackfillDailyAvoidStocks(ctx, now, days, concurrency, force any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BackfillDailyAvoidStocks", reflect.TypeOf((*MockCreateDailyAvoidStocksInteractor)(nil).BackfillDailyAvoidStocks), ctx, now, days, concurrency, force)
+}
+
 // CreateDailyAvoidStocks mocks base method.
 func (m *MockCreateDailyAvoidStocksInteractor) CreateDailyAvoidStocks(ctx context.Context, now time.Time, asOf *time.Time, concurrency int, force bool) error {
 	m.ctrl.T.Helper()

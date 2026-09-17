@@ -16,11 +16,34 @@ import (
 )
 
 func avoidTestDates(now time.Time) []time.Time {
-	dates := make([]time.Time, dailyAvoidStockWindowDays)
+	return avoidTestDatesN(now, dailyAvoidStockWindowDays)
+}
+
+// avoidTestDatesN now を起点に新しい順で n 件の日付を生成する。
+func avoidTestDatesN(now time.Time, n int) []time.Time {
+	dates := make([]time.Time, n)
 	for i := range dates {
 		dates[i] = now.AddDate(0, 0, -i)
 	}
 	return dates
+}
+
+// makeAvoidBackfillPrices dates（新しい順）の各日に対応する日足系列を昇順で生成する。
+// BackfillDailyAvoidStocks は対象日ごとに異なる部分列を切り出すため、日付が dates と
+// 1対1で一致している必要があり、makeAvoidUsecasePrices（固定baseの連番）は使えない。
+func makeAvoidBackfillPrices(dates []time.Time, close decimal.Decimal, volume int64) []*models.StockBrandDailyPrice {
+	out := make([]*models.StockBrandDailyPrice, len(dates))
+	for i, d := range dates {
+		out[len(dates)-1-i] = &models.StockBrandDailyPrice{
+			Date:     d,
+			Close:    close,
+			High:     close.Add(decimal.NewFromInt(1)),
+			Low:      close.Sub(decimal.NewFromInt(1)),
+			Volume:   volume,
+			Adjclose: close,
+		}
+	}
+	return out
 }
 
 // makeAvoidUsecasePrices n本のうち末尾だけ大きく動く日足系列を生成する（domain_service側のテストヘルパーと同趣旨）。
@@ -250,4 +273,146 @@ func TestCreateDailyAvoidStocksInteractorImpl_CreateDailyAvoidStocks_ForceRebuil
 	interactor := NewCreateDailyAvoidStocksInteractor(tx, priceRepo, brandRepo, avoidRepo)
 	err := interactor.CreateDailyAvoidStocks(context.Background(), now, nil, 1, true)
 	assert.NoError(t, err, "候補0件ならBulkCreateまで到達せず正常終了する")
+}
+
+func TestCreateDailyAvoidStocksInteractorImpl_BackfillDailyAvoidStocks(t *testing.T) {
+	now := time.Date(2026, 7, 24, 0, 0, 0, 0, time.UTC)
+
+	t.Run("days<=0はエラー", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		interactor := NewCreateDailyAvoidStocksInteractor(
+			mock_repositories.NewMockTransaction(ctrl),
+			mock_repositories.NewMockAdjustedDailyPriceRepository(ctrl),
+			mock_repositories.NewMockStockBrandRepository(ctrl),
+			mock_repositories.NewMockDailyAvoidStockRepository(ctrl),
+		)
+		err := interactor.BackfillDailyAvoidStocks(context.Background(), now, 0, 1, false)
+		assert.Error(t, err)
+	})
+
+	t.Run("営業日数がボラ判定の最低日数未満なら何もしない", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		priceRepo := mock_repositories.NewMockAdjustedDailyPriceRepository(ctrl)
+		priceRepo.EXPECT().ListRecentTradingDates(gomock.Any(), now, 3+dailyAvoidStockWindowDays-1).
+			Return([]time.Time{now}, nil)
+
+		// FindAllMainMarkets は呼ばれない（最低日数未満で早期return）
+		brandRepo := mock_repositories.NewMockStockBrandRepository(ctrl)
+
+		interactor := NewCreateDailyAvoidStocksInteractor(
+			mock_repositories.NewMockTransaction(ctrl),
+			priceRepo,
+			brandRepo,
+			mock_repositories.NewMockDailyAvoidStockRepository(ctrl),
+		)
+		err := interactor.BackfillDailyAvoidStocks(context.Background(), now, 3, 1, false)
+		assert.NoError(t, err)
+	})
+
+	t.Run("正常系: 価格取得は銘柄ごとに1回だけで複数日ぶん保存される", func(t *testing.T) {
+		days := 3
+		totalDates := days + dailyAvoidStockWindowDays - 1
+		dates := avoidTestDatesN(now, totalDates)
+		targetDates := dates[:days]
+		from := dates[len(dates)-1]
+		to := dates[0]
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		priceRepo := mock_repositories.NewMockAdjustedDailyPriceRepository(ctrl)
+		priceRepo.EXPECT().ListRecentTradingDates(gomock.Any(), now, totalDates).Return(dates, nil)
+
+		brand := &models.StockBrand{ID: "brand-1", TickerSymbol: "1000", Name: "テスト銘柄"}
+		brandRepo := mock_repositories.NewMockStockBrandRepository(ctrl)
+		brandRepo.EXPECT().FindAllMainMarkets(gomock.Any()).Return([]*models.StockBrand{brand}, nil)
+
+		prices := makeAvoidBackfillPrices(dates, decimal.NewFromInt(1000), 2_000_000)
+		// 本テストの肝: days=3 に対して ListDailyPricesBySymbol は銘柄ごとに1回だけ呼ばれること
+		// （重複取得を避けるのが BackfillDailyAvoidStocks を分離した目的）。
+		priceRepo.EXPECT().ListDailyPricesBySymbol(gomock.Any(), models.ListDailyPricesBySymbolFilter{
+			TickerSymbol: "1000",
+			DateFrom:     &from,
+			DateTo:       &to,
+			DateOrder:    dateOrderPtr(models.SortOrderAsc),
+		}).Return(prices, nil).Times(1)
+
+		avoidRepo := mock_repositories.NewMockDailyAvoidStockRepository(ctrl)
+		avoidRepo.EXPECT().ExistsByAsOfDate(gomock.Any(), gomock.Any()).Return(false, nil).Times(days)
+		avoidRepo.EXPECT().DeleteByAsOfDate(gomock.Any(), gomock.Any()).Return(nil).Times(days)
+
+		savedDates := make(map[time.Time]bool)
+		avoidRepo.EXPECT().BulkCreate(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, rows []*models.DailyAvoidStock) error {
+				assert.Len(t, rows, 1)
+				assert.Equal(t, "1000", rows[0].TickerSymbol)
+				savedDates[rows[0].AsOfDate] = true
+				return nil
+			}).Times(days)
+
+		tx := mock_repositories.NewMockTransaction(ctrl)
+		tx.EXPECT().DoInTx(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+			return fn(ctx)
+		}).Times(days)
+
+		interactor := NewCreateDailyAvoidStocksInteractor(tx, priceRepo, brandRepo, avoidRepo)
+		err := interactor.BackfillDailyAvoidStocks(context.Background(), now, days, 1, false)
+		assert.NoError(t, err)
+		for _, d := range targetDates {
+			assert.True(t, savedDates[d], "対象日 %s が保存されていること", d.Format("2006-01-02"))
+		}
+	})
+
+	t.Run("1日分の保存に失敗しても残りの日は続行し、失敗日をまとめてエラーにする", func(t *testing.T) {
+		days := 2
+		totalDates := days + dailyAvoidStockWindowDays - 1
+		dates := avoidTestDatesN(now, totalDates)
+		from := dates[len(dates)-1]
+		to := dates[0]
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		priceRepo := mock_repositories.NewMockAdjustedDailyPriceRepository(ctrl)
+		priceRepo.EXPECT().ListRecentTradingDates(gomock.Any(), now, totalDates).Return(dates, nil)
+
+		brand := &models.StockBrand{ID: "brand-1", TickerSymbol: "1000", Name: "テスト銘柄"}
+		brandRepo := mock_repositories.NewMockStockBrandRepository(ctrl)
+		brandRepo.EXPECT().FindAllMainMarkets(gomock.Any()).Return([]*models.StockBrand{brand}, nil)
+
+		prices := makeAvoidBackfillPrices(dates, decimal.NewFromInt(1000), 2_000_000)
+		priceRepo.EXPECT().ListDailyPricesBySymbol(gomock.Any(), models.ListDailyPricesBySymbolFilter{
+			TickerSymbol: "1000",
+			DateFrom:     &from,
+			DateTo:       &to,
+			DateOrder:    dateOrderPtr(models.SortOrderAsc),
+		}).Return(prices, nil)
+
+		avoidRepo := mock_repositories.NewMockDailyAvoidStockRepository(ctrl)
+		avoidRepo.EXPECT().ExistsByAsOfDate(gomock.Any(), gomock.Any()).Return(false, nil).Times(days)
+		avoidRepo.EXPECT().DeleteByAsOfDate(gomock.Any(), gomock.Any()).Return(nil).Times(days)
+
+		callCount := 0
+		avoidRepo.EXPECT().BulkCreate(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, rows []*models.DailyAvoidStock) error {
+				callCount++
+				if callCount == 1 {
+					return assert.AnError
+				}
+				return nil
+			}).Times(days)
+
+		tx := mock_repositories.NewMockTransaction(ctrl)
+		tx.EXPECT().DoInTx(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+			return fn(ctx)
+		}).Times(days)
+
+		interactor := NewCreateDailyAvoidStocksInteractor(tx, priceRepo, brandRepo, avoidRepo)
+		err := interactor.BackfillDailyAvoidStocks(context.Background(), now, days, 1, false)
+		assert.Error(t, err, "1日でも失敗すれば全体としてはエラーを返す（他の日は続行済み）")
+	})
 }

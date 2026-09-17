@@ -135,3 +135,73 @@ func TestE2E_DailyAvoidStocks(t *testing.T) {
 		assert.Equal(t, int64(1), count)
 	})
 }
+
+// TestE2E_DailyAvoidStocksBackfill --days=N による複数営業日一括バックフィルを検証する。
+// TestE2E_DailyAvoidStocks とは別銘柄・別テストDBで独立させ、既存シナリオと状態を共有しない。
+func TestE2E_DailyAvoidStocksBackfill(t *testing.T) {
+	db, cleanup := helper.SetupTestDB(t)
+	defer cleanup()
+
+	helper.TruncateAllTables(t, db)
+
+	ctx := context.Background()
+	stockBrandRepo := database.NewStockBrandRepositoryImpl(db)
+	priceRepo := database.NewStockBrandsDailyPriceRepositoryImpl(db)
+	avoidRepo := database.NewDailyAvoidStockRepositoryImpl(db)
+	tx := database.NewTransaction(db)
+
+	brandID := uuid.New().String()
+	symbol := "5678"
+	brand := &models.StockBrand{
+		ID:           brandID,
+		TickerSymbol: symbol,
+		Name:         "テスト銘柄2",
+		MarketCode:   "111",
+		MarketName:   "プライム",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+	assert.NoError(t, stockBrandRepo.UpsertStockBrands(ctx, []*models.StockBrand{brand}))
+
+	// 対象3営業日ぶん + ボラ計算ウィンドウ分の日足をまとめてシードする。
+	days := 3
+	windowDays := domain_service.DailyAvoidVolatilityWindowDays + 1 // 253
+	totalDays := days + windowDays - 1
+	asOfDate := time.Now().AddDate(0, 0, -1)
+	base := asOfDate.AddDate(0, 0, -(totalDays - 1))
+	prices := seedAvoidStockWindow(brandID, symbol, base, totalDays, decimal.NewFromInt(1000), decimal.NewFromInt(2000))
+	assert.NoError(t, priceRepo.CreateStockBrandDailyPrice(ctx, prices))
+
+	createInteractor := usecase.NewCreateDailyAvoidStocksInteractor(tx, priceRepo, stockBrandRepo, avoidRepo)
+	createCmd := commands.NewCreateDailyAvoidStocksV1Command(createInteractor)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockSlackAPI := mock_gateway.NewMockSlackAPIClientRaw(ctrl)
+	mockSlackAPI.EXPECT().
+		SendBlockMessage(gomock.Any(), gateway.SlackChannelNameDevNotification, gomock.Any()).
+		Return(nil).
+		AnyTimes()
+
+	runner := helper.NewTestRunner(helper.TestRunnerOptions{
+		CreateDailyAvoidStocksV1Command: createCmd,
+		SlackAPIClient:                  mockSlackAPI,
+	})
+
+	t.Run("--daysで複数営業日ぶんまとめて保存される", func(t *testing.T) {
+		err := runner.Run(ctx, []string{"main", "create_daily_avoid_stocks_v1", "--days=3"})
+		assert.NoError(t, err)
+
+		var dates []time.Time
+		assert.NoError(t, db.Model(&genModel.DailyAvoidStock{}).
+			Where("stock_brand_id = ?", brandID).
+			Distinct("as_of_date").
+			Pluck("as_of_date", &dates).Error)
+		assert.Len(t, dates, 3, "3営業日ぶんのas_of_dateが作成される")
+	})
+
+	t.Run("--dateと--daysの併用はエラー", func(t *testing.T) {
+		err := runner.Run(ctx, []string{"main", "create_daily_avoid_stocks_v1", "--date=2026-01-01", "--days=3"})
+		assert.Error(t, err)
+	})
+}

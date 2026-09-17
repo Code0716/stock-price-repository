@@ -236,13 +236,17 @@ make cli command=evaluate_daily_stock_picks_v1
 ```bash
 make cli command=create_daily_avoid_stocks_v1
 
-# フラグ例（過去日のバックフィル）
+# フラグ例（特定の過去日1日分）
 make cli command="create_daily_avoid_stocks_v1 --date=2026-08-01 --concurrency=0 --force"
+
+# フラグ例（直近60営業日を一括バックフィル。銘柄ごとの価格取得を1回に抑えるため --date を60回叩くより大幅に速い）
+make cli command="create_daily_avoid_stocks_v1 --days=60"
 ```
 
-- `--date`: 判定基準日 (YYYY-MM-DD)。省略時は最新営業日
+- `--date`: 判定基準日 (YYYY-MM-DD)。省略時は最新営業日。`--days` とは併用不可
+- `--days`: 直近N営業日をまとめてバックフィルする。`--date` とは併用不可。銘柄ごとの価格系列をバックフィル全体で1回だけ取得し、対象日ごとに該当ウィンドウをスライスして評価するため、`--date` をN回実行するより大幅に高速（DB読み出し量が O(対象日数×銘柄数) から O(銘柄数) に減る）
 - `--concurrency`: ワーカー数、0でCPUコア数（既定 0）
-- `--force`: 当日分が既にあっても作り直す
+- `--force`: 当日分（`--days` 指定時は各対象日）が既にあっても作り直す
 
 ### データエクスポート
 

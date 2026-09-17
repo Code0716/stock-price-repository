@@ -29,7 +29,12 @@ func (c *CreateDailyAvoidStocksV1Command) Command() *Command {
 			&cli.StringFlag{
 				Name:  "date",
 				Value: "",
-				Usage: "判定基準日 YYYY-MM-DD（省略時は最新営業日。過去日バックフィル用）",
+				Usage: "判定基準日 YYYY-MM-DD（省略時は最新営業日。--days とは併用不可）",
+			},
+			&cli.IntFlag{
+				Name:  "days",
+				Value: 0,
+				Usage: "直近N営業日をまとめてバックフィルする（過去分の一括投入用。--date とは併用不可）",
 			},
 			&cli.IntFlag{
 				Name:  "concurrency",
@@ -47,9 +52,29 @@ func (c *CreateDailyAvoidStocksV1Command) Command() *Command {
 }
 
 func (c *CreateDailyAvoidStocksV1Command) Action(ctx *cli.Context) error {
+	dateStr := ctx.String("date")
+	days := ctx.Int("days")
+	if dateStr != "" && days > 0 {
+		return errors.New("--date と --days は併用できません")
+	}
+
+	if days > 0 {
+		err := c.interactor.BackfillDailyAvoidStocks(
+			ctx.Context,
+			time.Now(),
+			days,
+			ctx.Int("concurrency"),
+			ctx.Bool("force"),
+		)
+		if err != nil {
+			return errors.Wrap(err, "Action error")
+		}
+		return nil
+	}
+
 	var asOf *time.Time
-	if d := ctx.String("date"); d != "" {
-		parsed, err := util.FormatStringToDate(d)
+	if dateStr != "" {
+		parsed, err := util.FormatStringToDate(dateStr)
 		if err != nil {
 			return errors.Wrap(err, "invalid --date")
 		}

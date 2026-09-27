@@ -30,12 +30,14 @@ func MergeTradesWithNotes(
 	result := make([]*models.DaytradeTradeWithNote, 0, len(trades))
 	for _, t := range trades {
 		tw := &models.DaytradeTradeWithNote{
-			TickerSymbol: t.TickerSymbol,
-			BrandName:    t.BrandName,
-			ExecutedOn:   t.ExecutedOn.Format("2006-01-02"),
-			Direction:    t.Direction,
-			ProfitLoss:   t.ProfitLoss,
-			TradeAmount:  t.TradeAmount,
+			TickerSymbol:    t.TickerSymbol,
+			BrandName:       t.BrandName,
+			ExecutedOn:      t.ExecutedOn.Format("2006-01-02"),
+			Direction:       t.Direction,
+			ProfitLoss:      t.ProfitLoss,
+			TradeAmount:     t.TradeAmount,
+			Fee:             t.Fee,
+			GrossProfitLoss: t.GrossProfitLoss,
 		}
 		k := tradeNoteKey{
 			tickerSymbol: t.TickerSymbol,

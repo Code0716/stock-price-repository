@@ -273,6 +273,21 @@ func (h *DaytradeHandler) UpsertTradeNote(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *DaytradeHandler) GetFeeReport(w http.ResponseWriter, r *http.Request) {
+	from, to, err := parseDateRange(r)
+	if err != nil {
+		writeError(w, h.logger, "daytrade fee report date range invalid", err)
+		return
+	}
+
+	report, err := h.usecase.GetFeeReport(r.Context(), from, to)
+	if err != nil {
+		writeError(w, h.logger, "daytrade fee report failed", err)
+		return
+	}
+	respondJSON(w, h.logger, report)
+}
+
 func (h *DaytradeHandler) GetTagStats(w http.ResponseWriter, r *http.Request) {
 	from, to, err := parseDateRange(r)
 	if err != nil {

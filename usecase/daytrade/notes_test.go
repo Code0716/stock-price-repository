@@ -60,6 +60,17 @@ func TestMergeTradesWithNotes(t *testing.T) {
 	}
 }
 
+func TestMergeTradesWithNotes_Fee(t *testing.T) {
+	trades := []*models.DaytradeTradeApprox{
+		{TickerSymbol: "9984", BrandName: "SBG", ExecutedOn: noteBaseDate, Direction: "返済売",
+			ProfitLoss: 995, Fee: -5, GrossProfitLoss: 1000, TradeAmount: 100000},
+	}
+	got := MergeTradesWithNotes(trades, nil)
+	assert.Len(t, got, 1)
+	assert.Equal(t, int64(-5), got[0].Fee)
+	assert.Equal(t, int64(1000), got[0].GrossProfitLoss)
+}
+
 func TestComputeTagStats(t *testing.T) {
 	withNote := func(pnl int64, tags []string) *models.DaytradeTradeWithNote {
 		return &models.DaytradeTradeWithNote{

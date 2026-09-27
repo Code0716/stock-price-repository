@@ -96,6 +96,21 @@ func TestBuildTradeApprox(t *testing.T) {
 	}
 }
 
+func TestBuildTradeApprox_Fee(t *testing.T) {
+	executions := []*models.DaytradeExecution{
+		{TickerSymbol: "9984", BrandName: "SBG", ExecutedOn: baseDate, MarginKind: "返済売",
+			Quantity: 100, UnitPrice: dec("1000"), AverageCost: dec("990"), ProfitLoss: 995, TradeAmount: 100000}, // fee=-5
+		{TickerSymbol: "9984", BrandName: "SBG", ExecutedOn: baseDate, MarginKind: "返済売",
+			Quantity: 100, UnitPrice: dec("1000"), AverageCost: dec("990"), ProfitLoss: 1000, TradeAmount: 100000}, // fee=0
+	}
+
+	trades := BuildTradeApprox(executions)
+	assert.Len(t, trades, 1)
+	assert.Equal(t, int64(1995), trades[0].ProfitLoss)
+	assert.Equal(t, int64(-5), trades[0].Fee)
+	assert.Equal(t, int64(2000), trades[0].GrossProfitLoss)
+}
+
 func TestComputeLossConcentration(t *testing.T) {
 	tests := []struct {
 		name          string

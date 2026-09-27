@@ -460,6 +460,91 @@ func TestE2E_Daytrade(t *testing.T) {
 		assert.Equal(t, 2, result.Inserted) // occurrence_no で区別されるため 2 件とも挿入
 		assert.Equal(t, 0, result.Skipped)
 	})
+
+	// --- 手数料（fee）のテスト ---
+	// 新フォーマットCSV(sbi_sample_new_sjis.csv)は3行とも profitLoss = (unitPrice-averageCost)×quantity（符号はmarginKind依存）に完全一致するため手数料0円。
+	// 手数料ありのケースは独自のinline CSVで作る。
+
+	t.Run("手数料なしCSVはfee=0・grossProfitLoss=profitLoss", func(t *testing.T) {
+		helper.TruncateAllTables(t, db)
+
+		resp := postCSV(t, ts.URL, "../../usecase/daytrade/testdata/sbi_sample_new_sjis.csv")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		resp.Body.Close()
+
+		resp2, err := http.Get(ts.URL + "/daytrade/executions?date=2026-05-21")
+		require.NoError(t, err)
+		defer resp2.Body.Close()
+
+		var body struct {
+			Executions []*models.DaytradeExecution `json:"executions"`
+		}
+		require.NoError(t, json.NewDecoder(resp2.Body).Decode(&body))
+		require.NotEmpty(t, body.Executions)
+		for _, ex := range body.Executions {
+			assert.Equal(t, int64(0), ex.Fee)
+			assert.Equal(t, ex.ProfitLoss, ex.GrossProfitLoss)
+		}
+
+		respSummary, err := http.Get(ts.URL + "/daytrade/summary?granularity=all")
+		require.NoError(t, err)
+		defer respSummary.Body.Close()
+		var summaryBody struct {
+			Buckets []*models.DaytradeSummaryBucket `json:"buckets"`
+		}
+		require.NoError(t, json.NewDecoder(respSummary.Body).Decode(&summaryBody))
+		require.Len(t, summaryBody.Buckets, 1)
+		assert.Equal(t, int64(0), summaryBody.Buckets[0].Fee)
+		assert.Equal(t, summaryBody.Buckets[0].ProfitLoss, summaryBody.Buckets[0].GrossProfitLoss)
+	})
+
+	t.Run("手数料ありCSVでfeeとgrossProfitLossが算出される", func(t *testing.T) {
+		helper.TruncateAllTables(t, db)
+
+		// gross=(5990-5980)*100=1000, profitLoss=990 → fee=-10
+		header := `"約定日","口座","銘柄名","取引","数量","売却/決済額","単価","平均取得価額","実現損益(税引前・円)"` + "\n"
+		row := `"2026/5/20","特定","ソフトバンクグループ 9984","返済売","100","599,000","5,990","5,980","+990"` + "\n"
+		csvContent := []byte(header + row)
+
+		var buf bytes.Buffer
+		mw := multipart.NewWriter(&buf)
+		fw, err := mw.CreateFormFile("file", "fee.csv")
+		require.NoError(t, err)
+		_, err = fw.Write(csvContent)
+		require.NoError(t, err)
+		require.NoError(t, mw.Close())
+
+		resp, err := http.Post(ts.URL+"/daytrade/executions/import", mw.FormDataContentType(), &buf)
+		require.NoError(t, err)
+		resp.Body.Close()
+
+		resp2, err := http.Get(ts.URL + "/daytrade/executions?date=2026-05-20")
+		require.NoError(t, err)
+		defer resp2.Body.Close()
+		var body struct {
+			Executions []*models.DaytradeExecution `json:"executions"`
+		}
+		require.NoError(t, json.NewDecoder(resp2.Body).Decode(&body))
+		require.Len(t, body.Executions, 1)
+		assert.Equal(t, int64(-10), body.Executions[0].Fee)
+		assert.Equal(t, int64(1000), body.Executions[0].GrossProfitLoss)
+
+		respFees, err := http.Get(ts.URL + "/daytrade/fees")
+		require.NoError(t, err)
+		defer respFees.Body.Close()
+		require.Equal(t, http.StatusOK, respFees.StatusCode)
+
+		var report models.DaytradeFeeReport
+		require.NoError(t, json.NewDecoder(respFees.Body).Decode(&report))
+		assert.Equal(t, int64(-10), report.TotalFee)
+		assert.Equal(t, 1, report.FeeRowCount)
+		assert.Equal(t, 1, report.FeeDayCount)
+		assert.Empty(t, report.Anomalies)
+		require.Len(t, report.FeeDays, 1)
+		assert.Equal(t, "2026-05-20", report.FeeDays[0].ExecutedOn)
+		assert.Equal(t, "9984", report.FeeDays[0].TickerSymbol)
+		assert.Equal(t, int64(-10), report.FeeDays[0].Fee)
+	})
 }
 
 func postCSV(t *testing.T, baseURL string, csvPath string) *http.Response {

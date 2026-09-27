@@ -30,6 +30,8 @@ type DaytradeInteractor interface {
 	UpsertTradeNote(ctx context.Context, rec *models.DaytradeTradeNoteRecord) error
 	// GetTagStats はタグ別損益集計を返す。from / to は nil 可。
 	GetTagStats(ctx context.Context, from, to *time.Time) ([]models.DaytradeTagStat, error)
+	// GetFeeReport は手数料レポート（合計・月別・発生日一覧・異常行）を返す。from / to は nil 可。
+	GetFeeReport(ctx context.Context, from, to *time.Time) (*models.DaytradeFeeReport, error)
 }
 
 type daytradeInteractorImpl struct {
@@ -90,7 +92,24 @@ func (u *daytradeInteractorImpl) ImportSBICsv(ctx context.Context, r io.Reader) 
 }
 
 func (u *daytradeInteractorImpl) GetSummary(ctx context.Context, from, to *time.Time, g models.DaytradeSummaryGranularity) ([]*models.DaytradeSummaryBucket, error) {
-	return u.repo.Aggregate(ctx, from, to, g)
+	buckets, err := u.repo.Aggregate(ctx, from, to, g)
+	if err != nil {
+		return nil, err
+	}
+	executions, err := u.repo.FindByDateRange(ctx, from, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "FindByDateRange error")
+	}
+	feeByBucket := daytrade.FeeByBucket(executions, g)
+	for _, b := range buckets {
+		key := ""
+		if b.BucketDate != nil {
+			key = *b.BucketDate
+		}
+		b.Fee = feeByBucket[key]
+		b.GrossProfitLoss = b.ProfitLoss - b.Fee
+	}
+	return buckets, nil
 }
 
 func (u *daytradeInteractorImpl) GetSummaryByTickerSymbol(ctx context.Context, from, to *time.Time) ([]*models.DaytradeSymbolSummary, error) {
@@ -98,7 +117,14 @@ func (u *daytradeInteractorImpl) GetSummaryByTickerSymbol(ctx context.Context, f
 }
 
 func (u *daytradeInteractorImpl) GetExecutionsByDate(ctx context.Context, date time.Time) ([]*models.DaytradeExecution, error) {
-	return u.repo.FindByDate(ctx, date)
+	executions, err := u.repo.FindByDate(ctx, date)
+	if err != nil {
+		return nil, err
+	}
+	for _, ex := range executions {
+		daytrade.ApplyFee(ex)
+	}
+	return executions, nil
 }
 
 func (u *daytradeInteractorImpl) GetCoveredRange(ctx context.Context) (*time.Time, *time.Time, error) {
@@ -140,6 +166,14 @@ func (u *daytradeInteractorImpl) GetTagStats(ctx context.Context, from, to *time
 		return nil, errors.Wrap(err, "GetTrades error")
 	}
 	return daytrade.ComputeTagStats(trades), nil
+}
+
+func (u *daytradeInteractorImpl) GetFeeReport(ctx context.Context, from, to *time.Time) (*models.DaytradeFeeReport, error) {
+	executions, err := u.repo.FindByDateRange(ctx, from, to)
+	if err != nil {
+		return nil, errors.Wrap(err, "FindByDateRange error")
+	}
+	return daytrade.BuildFeeReport(executions), nil
 }
 
 func (u *daytradeInteractorImpl) GetPeriodStats(ctx context.Context, from, to *time.Time) (*models.DaytradePeriodStats, error) {

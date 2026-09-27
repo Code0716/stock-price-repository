@@ -31,6 +31,7 @@ type tradeAccum struct {
 	tradeAmount int64
 	winCount    int
 	lossCount   int
+	fee         int64
 }
 
 // BuildTradeApprox は明細を「銘柄×日×売買方向」で集約して1トレード近似を返す。
@@ -55,9 +56,12 @@ func BuildTradeApprox(executions []*models.DaytradeExecution) []*models.Daytrade
 				direction:  dir,
 			}
 		}
+		_, fee := ExecutionFee(ex)
+
 		a := acc[k]
 		a.profitLoss += ex.ProfitLoss
 		a.tradeAmount += ex.TradeAmount
+		a.fee += fee
 		if ex.ProfitLoss > 0 {
 			a.winCount++
 		} else if ex.ProfitLoss < 0 {
@@ -69,14 +73,16 @@ func BuildTradeApprox(executions []*models.DaytradeExecution) []*models.Daytrade
 	for _, k := range keys {
 		a := acc[k]
 		results = append(results, &models.DaytradeTradeApprox{
-			TickerSymbol: k.tickerSymbol,
-			BrandName:    a.brandName,
-			ExecutedOn:   a.executedOn,
-			Direction:    k.direction,
-			ProfitLoss:   a.profitLoss,
-			TradeAmount:  a.tradeAmount,
-			WinCount:     a.winCount,
-			LossCount:    a.lossCount,
+			TickerSymbol:    k.tickerSymbol,
+			BrandName:       a.brandName,
+			ExecutedOn:      a.executedOn,
+			Direction:       k.direction,
+			ProfitLoss:      a.profitLoss,
+			TradeAmount:     a.tradeAmount,
+			WinCount:        a.winCount,
+			LossCount:       a.lossCount,
+			Fee:             a.fee,
+			GrossProfitLoss: a.profitLoss - a.fee,
 		})
 	}
 	return results

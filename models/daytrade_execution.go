@@ -18,10 +18,13 @@ type DaytradeExecution struct {
 	UnitPrice    decimal.Decimal `json:"unitPrice"`
 	AverageCost  decimal.Decimal `json:"averageCost"`
 	ProfitLoss   int64           `json:"profitLoss"`
-	OccurrenceNo uint32          `json:"occurrenceNo"`
-	Source       string          `json:"source"`
-	CreatedAt    time.Time       `json:"createdAt"`
-	UpdatedAt    time.Time       `json:"updatedAt"`
+	// Fee は ProfitLoss から算出した手数料相当額（0以下、日計り信用は0）。DBカラムではなく都度計算値
+	Fee             int64     `json:"fee"`
+	GrossProfitLoss int64     `json:"grossProfitLoss"` // Fee控除前の損益（ProfitLoss - Fee）
+	OccurrenceNo    uint32    `json:"occurrenceNo"`
+	Source          string    `json:"source"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 type DaytradeSummaryGranularity string
@@ -45,13 +48,15 @@ func (g DaytradeSummaryGranularity) Valid() bool {
 }
 
 type DaytradeSummaryBucket struct {
-	BucketDate  *string `json:"date"`
-	ProfitLoss  int64   `json:"profitLoss"`
-	TradeCount  int     `json:"tradeCount"`
-	GrossProfit int64   `json:"grossProfit"`
-	GrossLoss   int64   `json:"grossLoss"`
-	WinCount    int     `json:"winCount"`
-	LossCount   int     `json:"lossCount"`
+	BucketDate      *string `json:"date"`
+	ProfitLoss      int64   `json:"profitLoss"`
+	TradeCount      int     `json:"tradeCount"`
+	GrossProfit     int64   `json:"grossProfit"`
+	GrossLoss       int64   `json:"grossLoss"`
+	WinCount        int     `json:"winCount"`
+	LossCount       int     `json:"lossCount"`
+	Fee             int64   `json:"fee"`
+	GrossProfitLoss int64   `json:"grossProfitLoss"`
 }
 
 type DaytradeImportResult struct {
@@ -87,14 +92,16 @@ type DaytradeStatsAggregate struct {
 
 // DaytradeTradeApprox は「銘柄×日×売買方向」で集約した1トレード近似
 type DaytradeTradeApprox struct {
-	TickerSymbol string
-	BrandName    string
-	ExecutedOn   time.Time
-	Direction    string // tradeKind が空なら marginKind、それ以外は tradeKind
-	ProfitLoss   int64
-	TradeAmount  int64
-	WinCount     int // 集約行のうち profit_loss > 0 の件数
-	LossCount    int // 集約行のうち profit_loss < 0 の件数
+	TickerSymbol    string
+	BrandName       string
+	ExecutedOn      time.Time
+	Direction       string // tradeKind が空なら marginKind、それ以外は tradeKind
+	ProfitLoss      int64
+	TradeAmount     int64
+	WinCount        int // 集約行のうち profit_loss > 0 の件数
+	LossCount       int // 集約行のうち profit_loss < 0 の件数
+	Fee             int64
+	GrossProfitLoss int64
 }
 
 // DaytradeInsights デイトレ反省ダッシュボード（/daytrade/insights API レスポンス）
@@ -105,8 +112,8 @@ type DaytradeInsights struct {
 
 // DaytradeLossConcentration 大損寄与率（パレート分析）
 type DaytradeLossConcentration struct {
-	TotalLoss   int64                `json:"totalLoss"`   // 負けトレード損失合計（絶対値）
-	Top1Ratio   float64              `json:"top1Ratio"`   // 上位1件が総損失に占める割合
+	TotalLoss   int64                `json:"totalLoss"` // 負けトレード損失合計（絶対値）
+	Top1Ratio   float64              `json:"top1Ratio"` // 上位1件が総損失に占める割合
 	Top3Ratio   float64              `json:"top3Ratio"`
 	Top5Ratio   float64              `json:"top5Ratio"`
 	WorstTrades []DaytradeWorstTrade `json:"worstTrades"` // 損失上位5件（損失大きい順）
@@ -133,9 +140,9 @@ type DaytradeFavoriteTrap struct {
 
 // DaytradeTradeNoteRecord はリポジトリ層が扱うトレード注釈の内部モデル
 type DaytradeTradeNoteRecord struct {
-	TickerSymbol      string           // 近似キー
-	ExecutedOn        time.Time        // 近似キー
-	Direction         string           // 近似キー（正規化済み）
+	TickerSymbol      string    // 近似キー
+	ExecutedOn        time.Time // 近似キー
+	Direction         string    // 近似キー（正規化済み）
 	Memo              string
 	Tags              []string
 	DeclaredStopPrice *decimal.Decimal
@@ -150,13 +157,15 @@ type DaytradeTradeNote struct {
 
 // DaytradeTradeWithNote は近似トレード＋注釈（GET /daytrade/trades の1行）
 type DaytradeTradeWithNote struct {
-	TickerSymbol string             `json:"tickerSymbol"`
-	BrandName    string             `json:"brandName"`
-	ExecutedOn   string             `json:"executedOn"` // YYYY-MM-DD
-	Direction    string             `json:"direction"`
-	ProfitLoss   int64              `json:"profitLoss"`
-	TradeAmount  int64              `json:"tradeAmount"`
-	Note         *DaytradeTradeNote `json:"note"` // 未注釈なら null
+	TickerSymbol    string             `json:"tickerSymbol"`
+	BrandName       string             `json:"brandName"`
+	ExecutedOn      string             `json:"executedOn"` // YYYY-MM-DD
+	Direction       string             `json:"direction"`
+	ProfitLoss      int64              `json:"profitLoss"`
+	TradeAmount     int64              `json:"tradeAmount"`
+	Fee             int64              `json:"fee"`
+	GrossProfitLoss int64              `json:"grossProfitLoss"`
+	Note            *DaytradeTradeNote `json:"note"` // 未注釈なら null
 }
 
 // DaytradeTagStat はタグ別損益集計（GET /daytrade/tag-stats の1行）
@@ -181,4 +190,47 @@ type DaytradePeriodStats struct {
 	MaxDrawdown   int64 `json:"maxDrawdown"`
 	MaxRunup      int64 `json:"maxRunup"`
 	MaxLossStreak int   `json:"maxLossStreak"`
+}
+
+// DaytradeFeeMonthly 月別の手数料・損益比較（GET /daytrade/fees の1行）
+type DaytradeFeeMonthly struct {
+	Month           string `json:"month"` // YYYY-MM
+	Fee             int64  `json:"fee"`
+	ProfitLoss      int64  `json:"profitLoss"`
+	GrossProfitLoss int64  `json:"grossProfitLoss"`
+}
+
+// DaytradeFeeDay 手数料が発生した日・銘柄の1行
+type DaytradeFeeDay struct {
+	ExecutedOn   string `json:"executedOn"` // YYYY-MM-DD
+	TickerSymbol string `json:"tickerSymbol"`
+	BrandName    string `json:"brandName"`
+	Fee          int64  `json:"fee"`
+}
+
+// DaytradeFeeAnomaly は fee > 1（手数料がプラスになる異常行）
+type DaytradeFeeAnomaly struct {
+	ID           uint64          `json:"id"`
+	ExecutedOn   string          `json:"executedOn"` // YYYY-MM-DD
+	TickerSymbol string          `json:"tickerSymbol"`
+	BrandName    string          `json:"brandName"`
+	MarginKind   string          `json:"marginKind"`
+	Quantity     uint32          `json:"quantity"`
+	UnitPrice    decimal.Decimal `json:"unitPrice"`
+	AverageCost  decimal.Decimal `json:"averageCost"`
+	ProfitLoss   int64           `json:"profitLoss"`
+	Gross        int64           `json:"gross"`
+	Fee          int64           `json:"fee"`
+}
+
+// DaytradeFeeReport 手数料レポート（GET /daytrade/fees API レスポンス）
+type DaytradeFeeReport struct {
+	TotalFee        int64                `json:"totalFee"`
+	FeeRowCount     int                  `json:"feeRowCount"`
+	FeeDayCount     int                  `json:"feeDayCount"`
+	ProfitLoss      int64                `json:"profitLoss"`
+	GrossProfitLoss int64                `json:"grossProfitLoss"`
+	Monthly         []DaytradeFeeMonthly `json:"monthly"`
+	FeeDays         []DaytradeFeeDay     `json:"feeDays"`
+	Anomalies       []DaytradeFeeAnomaly `json:"anomalies"`
 }

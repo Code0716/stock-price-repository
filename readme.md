@@ -507,6 +507,39 @@ curl "http://localhost:8080/daytrade/summary?granularity=monthly&from=2026-01-01
   - `from` (任意): 開始日 (YYYY-MM-DD)
   - `to` (任意): 終了日 (YYYY-MM-DD)
 
+#### デイトレード手数料レポート取得
+
+SBI 信用取引 CSV には手数料の列が無く、`profitLoss`（実現損益・税引前）から手数料（制度信用の手数料・金利。日計り信用は0円）が差し引かれた値になっている。
+各約定行の `unitPrice` / `averageCost` / `quantity` から値洗い前の損益（gross）を計算し、`fee = profitLoss - gross` を都度算出して返す（DBには保存しない）。
+
+- **URL**: `/daytrade/fees`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `from` (任意): 開始日 (YYYY-MM-DD)
+  - `to` (任意): 終了日 (YYYY-MM-DD)
+
+**Response Example:**
+
+```json
+{
+  "totalFee": -1249,
+  "feeRowCount": 62,
+  "feeDayCount": 21,
+  "profitLoss": -28910,
+  "grossProfitLoss": -27661,
+  "monthly": [
+    { "month": "2026-09", "fee": -309, "profitLoss": -23004, "grossProfitLoss": -22610 }
+  ],
+  "feeDays": [
+    { "executedOn": "2026-09-01", "tickerSymbol": "6981", "brandName": "村田製作所", "fee": -85 }
+  ],
+  "anomalies": []
+}
+```
+
+- `anomalies`: `fee > 1`（手数料が発生したはずなのにプラスになった異常行）。通常は空配列
+- `/daytrade/summary` の各バケット、`/daytrade/executions` の各明細にも `fee` / `grossProfitLoss` が付与される（既存の `profitLoss` は変更なし）
+
 #### デイトレード約定一覧取得
 
 指定日の約定履歴を取得します。

@@ -1,6 +1,6 @@
 module github.com/Code0716/stock-price-repository
 
-go 1.27.0
+go 1.27.2
 
 require (
 	github.com/alicebob/miniredis/v2 v2.39.0
@@ -19,7 +19,7 @@ require (
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v3 v3.0.5
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/text v0.42.0
 	google.golang.org/grpc v1.83.2

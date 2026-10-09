@@ -107,6 +107,9 @@ Yahoo Finance や j-Quants API から上場銘柄、日足、日経平均日足�
 |              | `J_QUANTS_BASE_URL_V2_API_KEY`          | j-Quants API キー                   |
 |              | `YAHOO_FINANCE_API_BASE_URL`            | Yahoo Finance API ベース URL        |
 |              | `SLACK_NOTIFICATION_BOT_TOKEN`          | 通知用 Slack Bot トークン           |
+|              | `ECONOMIC_CALENDAR_USER_AGENT`          | 市場イベント取得時の User-Agent。BLS は連絡先（メールアドレス等）を含む UA を要求し、不適切だと 403 になる（既定: `stock-price-repository/1.0 (market calendar sync)`） |
+|              | `MARKET_EVENTS_MANUAL_PATH`             | 市場イベントを手入力で上書きする YAML のパス（既定: `resources/market_events_manual.yaml`。無ければ無視） |
+|              | `BOJ_SCHEDULE_URL` / `FOMC_CALENDAR_URL` / `BLS_ICS_URL` | 日銀・FOMC・BLS の取得元 URL（既定は公式サイト。通常は変更不要） |
 | **Box**      | `BOX_RCLONE_REMOTE_NAME`                | rclone のリモート名（デフォルト: `box`） |
 |              | `BOX_RCLONE_FOLDER_PATH`                | アップロード先 Box フォルダパス（空欄でスキップ） |
 
@@ -132,6 +135,7 @@ chmod +x shell_scripts/every.sh   # 初回のみ
 5. `create_nikkei_and_dji_historical_data_v1` — 日経平均・NYダウの日足取得（独立）
 6. `sync_fin_announcements` — 決算発表予定の取得（独立）
 7. `create_daily_avoid_stocks_v1` — 避けるべき銘柄（高ボラ銘柄）の判定（日足に依存。他コマンドとの依存順序はなし）
+8. `sync_market_calendar` — 取引カレンダーと市場イベント（SQ・日銀・FOMC・米CPI・米雇用統計）の取得（独立。外部サイト取得のみ）
 
 途中のコマンドが失敗しても後続は継続し、最後に失敗コマンドを集計して exit 1 を返します。各コマンドの成否は Slack に通知されます。バックテスト（`backtest_all_stocks_v1`）は `shell_scripts/backtest.sh` に分離しています。
 
@@ -175,6 +179,34 @@ j-Quants から近日の決算発表予定を取得し DB に保存します（�
 
 ```bash
 make cli command=sync_fin_announcements
+```
+
+### 取引カレンダー・市場イベントの同期
+
+デイトレカレンダー用に、取引カレンダー（営業日・休場日）と市場イベントを取得して DB に保存します（毎日 `every.sh` で実行。リクエストは4本程度）。
+
+| 種別 (`kind`) | 取得元 | 方式 |
+| :--- | :--- | :--- |
+| 営業日・休場日 | j-Quants `/markets/calendar`（今日の1年前〜翌年末） | 公式 API |
+| `sq_major` / `sq_mini` | 取引カレンダーから計算 | 第2金曜。休場なら直前の営業日。3/6/9/12月がメジャーSQ |
+| `boj` | 日銀「金融政策決定会合」日程ページ | HTML。会合の最終日 |
+| `fomc` | FRB「FOMC Calendars」ページ | HTML。表示日は結果発表の日本時間の日付（会合2日目の翌日） |
+| `us_cpi` / `us_nfp` | BLS 公式 iCalendar | ics。地域別 CPI・州別雇用統計は除く |
+
+- 保存は (種別, 年) 単位の洗い替えです。**取得・パースに失敗したソースは更新せず既存データを残し**、他のソースは続行して最後にまとめてエラーにします（`every.sh` 経由なら Slack に通知されます）。
+- 日銀・FOMC は年8回ちょうどでなければページ構造の変更とみなして、そのソースを更新しません。
+- BLS は User-Agent に連絡先を含めないと 403 になることがあります。その場合は `.env` の `ECONOMIC_CALENDAR_USER_AGENT` を設定してください。
+- スクレイピングが壊れたときの復旧用に、手入力 YAML で上書きできます。ある (種別, 年) に1件でも書くと、その組は手入力だけになります（`label` は省略可）。
+
+```yaml
+# resources/market_events_manual.yaml
+- {date: "2026-12-18", kind: boj}
+- {date: "2026-12-10", kind: fomc, label: "FOMC結果"}
+```
+
+```bash
+make cli command=sync_market_calendar
+make cli command="sync_market_calendar --manual=path/to/manual.yaml"
 ```
 
 ### 財務情報の同期
@@ -810,6 +842,30 @@ curl "http://localhost:8080/daily-avoid-stocks?date=2026-07-24"
 ```bash
 curl "http://localhost:8080/daily-avoid-stocks/dates?limit=30"
 ```
+
+#### 市場カレンダー取得
+
+営業日・休場日と市場イベント（SQ・日銀・FOMC・米CPI・米雇用統計）を取得します。該当データが無ければ `200` で空配列を返します。
+
+- **URL**: `/market/calendar`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `from` (必須): 開始日 (YYYY-MM-DD)
+  - `to` (必須): 終了日 (YYYY-MM-DD。`from` から400日以内)
+
+```bash
+curl "http://localhost:8080/market/calendar?from=2026-10-01&to=2026-10-31"
+```
+
+```json
+{
+  "days": [{ "date": "2026-10-09", "holDiv": 1 }, { "date": "2026-10-10", "holDiv": 0 }],
+  "events": [{ "date": "2026-10-09", "kind": "sq_mini", "label": "SQ" }]
+}
+```
+
+- `holDiv`: `0` 休場 / `1` 営業 / `2` 半日取引 / `3` 休場だが祝日取引あり
+- `kind`: `sq_major` / `sq_mini` / `boj` / `fomc` / `us_cpi` / `us_nfp`
 
 ## Box セットアップ
 

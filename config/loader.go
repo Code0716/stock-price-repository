@@ -24,6 +24,7 @@ func LoadEnvConfig() {
 	LoadConfigApp()
 	LoadConfigRedis()
 	LoadConfigYahooFinance()
+	LoadConfigEconomicCalendar()
 	LoadConfigSlack()
 	LoadConfigJQuants()
 	LoadConfigFeatureFlag()

@@ -20,6 +20,8 @@ type StockAPIClient interface {
 	// j-Quants
 	GetStockBrands(ctx context.Context) ([]*StockBrand, error)
 	GetAnnounceFinSchedule(ctx context.Context) ([]*AnnounceFinScheduleResponseInfo, error)
+	// 取引カレンダー（営業日・休場日）を from〜to の範囲で取得する。
+	GetTradingCalendar(ctx context.Context, from, to time.Time) ([]*TradingCalendarDay, error)
 	GetDailyPricesBySymbolAndRange(ctx context.Context, symbol StockAPISymbol, dateFrom, dateTo time.Time) ([]*StockPrice, error)
 	GetAllBrandDailyPricesByDate(ctx context.Context, date time.Time) ([]*StockPrice, error)
 	GetFinancialStatementsBySymbol(ctx context.Context, symbol StockAPISymbol) ([]*FinancialStatementsResponseInfo, error)

@@ -43,6 +43,7 @@ func NewRunner(
 	evaluateDailyStockPicksV1Command *commands.EvaluateDailyStockPicksV1Command,
 	createDailyStockPicksV1Command *commands.CreateDailyStockPicksV1Command,
 	createDailyAvoidStocksV1Command *commands.CreateDailyAvoidStocksV1Command,
+	syncMarketCalendarCommand *commands.SyncMarketCalendarCommand,
 	indexInteractor usecase.IndexInteractor,
 	slackAPIClient gateway.SlackAPIClient,
 ) *Runner {
@@ -73,6 +74,8 @@ func NewRunner(
 			// create_daily_avoid_stocks_v1 も create_daily_stock_price_v1 の後に実行すること（当日引け値の確定が前提）。
 			// 買い候補とは独立のバッチで、順序依存も相互依存も無い。
 			createDailyAvoidStocksV1Command.Command(),
+			// sync_market_calendar は他のバッチと独立（外部サイト取得のみ）。実行順の依存は無い。
+			syncMarketCalendarCommand.Command(),
 		},
 		indexInteractor: indexInteractor,
 		slackAPIClient:  slackAPIClient,

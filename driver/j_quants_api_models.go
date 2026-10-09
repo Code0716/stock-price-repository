@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 
 	"github.com/Code0716/stock-price-repository/infrastructure/gateway"
@@ -68,6 +69,43 @@ type AnnounceFinSchedule struct {
 	SectorName    string `json:"SectorNm"`
 	FiscalQuarter string `json:"FQ"`
 	Section       string `json:"Section"`
+}
+
+// 取引カレンダー（/markets/calendar）
+type jQuantsTradingCalendarResponse struct {
+	Data []*jQuantsTradingCalendarDay `json:"data"`
+}
+
+type jQuantsTradingCalendarDay struct {
+	Date   string         `json:"Date"`
+	HolDiv jQuantsFlexInt `json:"HolDiv"`
+}
+
+// jQuantsFlexInt J-Quants が文字列("1")と数値(1)のどちらで返しても int として読む。
+type jQuantsFlexInt int
+
+func (f *jQuantsFlexInt) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(string(b), `"`)
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("jQuantsFlexInt.UnmarshalJSON invalid value: %s", string(b)))
+	}
+	*f = jQuantsFlexInt(n)
+	return nil
+}
+
+func (c *StockAPIClient) jQuantsTradingCalendarResponseToResponseInfo(
+	response jQuantsTradingCalendarResponse,
+) ([]*gateway.TradingCalendarDay, error) {
+	days := make([]*gateway.TradingCalendarDay, 0, len(response.Data))
+	for _, v := range response.Data {
+		date, err := util.FormatStringToDate(v.Date)
+		if err != nil {
+			return nil, errors.Wrap(err, "jQuantsTradingCalendarResponseToResponseInfo date parse error")
+		}
+		days = append(days, &gateway.TradingCalendarDay{Date: date, HolDiv: int(v.HolDiv)})
+	}
+	return days, nil
 }
 
 type jQuantsFinancialStatementsResponse struct {

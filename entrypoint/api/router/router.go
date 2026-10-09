@@ -25,6 +25,7 @@ func NewRouter(
 	dailyStockPickHandler *handler.DailyStockPickHandler,
 	dailyAvoidStockHandler *handler.DailyAvoidStockHandler,
 	notificationHandler *handler.NotificationHandler,
+	marketCalendarHandler *handler.MarketCalendarHandler,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
 	if stockPriceHandler != nil {
@@ -76,7 +77,15 @@ func NewRouter(
 	registerDaytradeRoutes(mux, daytradeHandler)
 	registerDailyStockPickRoutes(mux, dailyStockPickHandler)
 	registerDailyAvoidStockRoutes(mux, dailyAvoidStockHandler)
+	registerMarketCalendarRoutes(mux, marketCalendarHandler)
 	return mux
+}
+
+func registerMarketCalendarRoutes(mux *http.ServeMux, marketCalendarHandler *handler.MarketCalendarHandler) {
+	if marketCalendarHandler == nil {
+		return
+	}
+	mux.HandleFunc("/market/calendar", marketCalendarHandler.GetMarketCalendar)
 }
 
 func registerDailyStockPickRoutes(mux *http.ServeMux, dailyStockPickHandler *handler.DailyStockPickHandler) {

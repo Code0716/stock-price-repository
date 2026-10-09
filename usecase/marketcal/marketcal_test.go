@@ -151,17 +151,31 @@ func TestParseBLSICS(t *testing.T) {
 		wantOnly int
 	}{
 		{
-			name:     "正常系: CPI・雇用統計のみ。地域別CPI・州別雇用統計は除外し、折り返し行も展開する",
+			// 実物の ics から抜粋した fixture。カレンダー全体の SUMMARY や VTIMEZONE の DTSTART は無視し、
+			// "Employment Situation of Veterans" や "Consumer Expenditures" は拾わない。
+			name:     "正常系: 実物の ics からCPI・雇用統計だけを取り出す",
 			data:     readFixture(t, "bls.ics"),
-			wantCPI:  []string{"2026-10-14", "2026-12-10"},
-			wantNFP:  []string{"2026-11-06", "2026-12-04"},
-			wantOnly: 4,
+			wantCPI:  []string{"2026-10-14", "2026-11-10", "2026-12-10"},
+			wantNFP:  []string{"2026-10-02", "2026-11-06", "2026-12-04"},
+			wantOnly: 6,
 		},
 		{
-			name:     "正常系: CRLF 改行",
+			name:     "正常系: CRLF 改行・「for <対象月>」付きの SUMMARY",
 			data:     []byte("BEGIN:VEVENT\r\nDTSTART;TZID=US-Eastern:20261014T083000\r\nSUMMARY:Consumer Price Index for September 2026\r\nEND:VEVENT\r\n"),
 			wantCPI:  []string{"2026-10-14"},
 			wantOnly: 1,
+		},
+		{
+			name:     "正常系: 折り返し行の展開・日付のみ/UTC の DTSTART・重複排除",
+			data:     []byte("BEGIN:VEVENT\nDTSTART;VALUE=DATE:20261210\nSUMMARY:Consumer Price Index\n  \nEND:VEVENT\nBEGIN:VEVENT\nDTSTART:20261204T133000Z\nSUMMARY:Employment\n  Situation\nEND:VEVENT\nBEGIN:VEVENT\nDTSTART:20261204T133000Z\nSUMMARY:Employment Situation\nEND:VEVENT\n"),
+			wantCPI:  []string{"2026-12-10"},
+			wantNFP:  []string{"2026-12-04"},
+			wantOnly: 2,
+		},
+		{
+			name:    "異常系: 別の指標だけ（Veterans・地域別CPI・州別）は対象外",
+			data:    []byte("BEGIN:VEVENT\nDTSTART:20260428\nSUMMARY:Employment Situation of Veterans\nEND:VEVENT\nBEGIN:VEVENT\nDTSTART:20261015\nSUMMARY:Consumer Price Index, Pacific Region\nEND:VEVENT\nBEGIN:VEVENT\nDTSTART:20261120\nSUMMARY:State Employment and Unemployment\nEND:VEVENT\n"),
+			wantErr: true,
 		},
 		{
 			name:    "異常系: 対象イベントが無い",

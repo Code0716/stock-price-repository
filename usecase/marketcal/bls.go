@@ -69,13 +69,20 @@ func blsEvent(dtstart, summary string) (*models.MarketEvent, error) {
 	return newEvent(date, kind, label, models.MarketEventSourceBLSICS), nil
 }
 
+// classifyBLSSummary SUMMARY から指標を判定する。実物の ics は "Consumer Price Index" / "Employment Situation" の
+// 完全一致。"Employment Situation of Veterans" や地域別 CPI など別の指標を拾わないよう、
+// 完全一致か「<指標名> for <対象月>」の形だけを対象にする。
 func classifyBLSSummary(summary string) (kind, label string) {
 	s := strings.TrimSpace(summary)
 	switch {
-	case strings.HasPrefix(s, "Consumer Price Index") && !strings.Contains(s, "Region") && !strings.Contains(s, "Area") && !strings.Contains(s, "Metropolitan"):
+	case isBLSIndicator(s, "Consumer Price Index"):
 		return models.MarketEventKindUSCPI, labelUSCPI
-	case strings.HasPrefix(s, "Employment Situation"):
+	case isBLSIndicator(s, "Employment Situation"):
 		return models.MarketEventKindUSNFP, labelUSNFP
 	}
 	return "", ""
+}
+
+func isBLSIndicator(summary, name string) bool {
+	return summary == name || strings.HasPrefix(summary, name+" for ")
 }

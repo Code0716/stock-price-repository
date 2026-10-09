@@ -131,6 +131,7 @@ func TestE2E_MarketCalendar(t *testing.T) {
 
 		// イベント（日付昇順）
 		assert.Equal(t, []string{
+			"2026-10-02 us_nfp 米雇用統計",
 			"2026-10-09 sq_mini SQ",
 			"2026-10-14 us_cpi 米CPI",
 			"2026-10-29 fomc FOMC結果",
@@ -165,6 +166,7 @@ func TestE2E_MarketCalendar(t *testing.T) {
 
 		_, got := getMarketCalendar(t, ts.URL, "from=2026-10-01&to=2026-10-31")
 		assert.Equal(t, []string{
+			"2026-10-02 us_nfp 米雇用統計",
 			"2026-10-09 sq_mini SQ",
 			"2026-10-14 us_cpi 米CPI",
 			"2026-10-29 fomc FOMC結果",

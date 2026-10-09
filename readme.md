@@ -107,7 +107,7 @@ Yahoo Finance や j-Quants API から上場銘柄、日足、日経平均日足�
 |              | `J_QUANTS_BASE_URL_V2_API_KEY`          | j-Quants API キー                   |
 |              | `YAHOO_FINANCE_API_BASE_URL`            | Yahoo Finance API ベース URL        |
 |              | `SLACK_NOTIFICATION_BOT_TOKEN`          | 通知用 Slack Bot トークン           |
-|              | `ECONOMIC_CALENDAR_USER_AGENT`          | 市場イベント取得時の User-Agent。BLS は連絡先（メールアドレス等）を含む UA を要求し、不適切だと 403 になる（既定: `stock-price-repository/1.0 (market calendar sync)`） |
+|              | `ECONOMIC_CALENDAR_USER_AGENT`          | 市場イベント取得時の User-Agent。BLS は UA にメールアドレス形式の文字列が無いと 403 を返す（既定: `stock-price-repository/1.0 (noreply@example.com)`。実運用では自分の連絡先に変更を推奨） |
 |              | `MARKET_EVENTS_MANUAL_PATH`             | 市場イベントを手入力で上書きする YAML のパス（既定: `resources/market_events_manual.yaml`。無ければ無視） |
 |              | `BOJ_SCHEDULE_URL` / `FOMC_CALENDAR_URL` / `BLS_ICS_URL` | 日銀・FOMC・BLS の取得元 URL（既定は公式サイト。通常は変更不要） |
 | **Box**      | `BOX_RCLONE_REMOTE_NAME`                | rclone のリモート名（デフォルト: `box`） |
@@ -195,7 +195,8 @@ make cli command=sync_fin_announcements
 
 - 保存は (種別, 年) 単位の洗い替えです。**取得・パースに失敗したソースは更新せず既存データを残し**、他のソースは続行して最後にまとめてエラーにします（`every.sh` 経由なら Slack に通知されます）。
 - 日銀・FOMC は年8回ちょうどでなければページ構造の変更とみなして、そのソースを更新しません。
-- BLS は User-Agent に連絡先を含めないと 403 になることがあります。その場合は `.env` の `ECONOMIC_CALENDAR_USER_AGENT` を設定してください。
+- BLS は User-Agent にメールアドレス形式の連絡先が無いと 403 を返します（形式のみの検査）。既定値は `noreply@example.com` のダミーで取得できますが、BLS の運用方針上は実際の連絡先を入れるのが望ましいので、`.env` の `ECONOMIC_CALENDAR_USER_AGENT` に設定してください（例: `stock-price-repository/1.0 (you@example.com)`）。
+- BLS の ics には公開済みの年（現状は当年末まで）しか入っていません。翌年分は公開され次第、次回の同期で反映されます。
 - スクレイピングが壊れたときの復旧用に、手入力 YAML で上書きできます。ある (種別, 年) に1件でも書くと、その組は手入力だけになります（`label` は省略可）。
 
 ```yaml

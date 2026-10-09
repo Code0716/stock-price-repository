@@ -91,8 +91,8 @@ func TestSyncMarketCalendarInteractor_SyncMarketCalendar(t *testing.T) {
 				assert.Equal(t, "2026-10-30", calls["boj/2026"].dates[6])
 				assert.Equal(t, "boj_html", calls["boj/2026"].src)
 				assert.Len(t, calls["fomc/2027"].dates, 8)
-				assert.Equal(t, []string{"2026-10-14", "2026-12-10"}, calls["us_cpi/2026"].dates)
-				assert.Equal(t, []string{"2026-11-06", "2026-12-04"}, calls["us_nfp/2026"].dates)
+				assert.Equal(t, []string{"2026-10-14", "2026-11-10", "2026-12-10"}, calls["us_cpi/2026"].dates)
+				assert.Equal(t, []string{"2026-10-02", "2026-11-06", "2026-12-04"}, calls["us_nfp/2026"].dates)
 				// 2026/10/9 はミニSQ、12月はメジャーSQ（第2金曜 12/11）
 				assert.Contains(t, calls["sq_mini/2026"].dates, "2026-10-09")
 				assert.Equal(t, []string{"2026-03-13", "2026-06-12", "2026-09-11", "2026-12-11"}, calls["sq_major/2026"].dates)

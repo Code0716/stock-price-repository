@@ -122,6 +122,13 @@ type AnnounceFinScheduleResponseInfo struct {
 	Section       string
 }
 
+// 取引カレンダー（J-Quants /markets/calendar）の1日分。
+type TradingCalendarDay struct {
+	Date time.Time
+	// HolDiv 休日区分。0: 休場, 1: 営業, 2: 半日取引, 3: 休場だが祝日取引あり
+	HolDiv int
+}
+
 // J-Quants APIから取得した決算短信の情報。
 type FinancialStatementsResponseInfo struct {
 	DisclosedDate                                 string

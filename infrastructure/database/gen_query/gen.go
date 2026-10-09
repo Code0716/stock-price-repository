@@ -28,6 +28,8 @@ var (
 	FinAnnouncement                   *finAnnouncement
 	FinStatement                      *finStatement
 	HighVolumeStockBrand              *highVolumeStockBrand
+	MarketCalendar                    *marketCalendar
+	MarketEvent                       *marketEvent
 	NikkeiStockAverageDailyPrice      *nikkeiStockAverageDailyPrice
 	NotificationHistory               *notificationHistory
 	QuizAnswer                        *quizAnswer
@@ -54,6 +56,8 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	FinAnnouncement = &Q.FinAnnouncement
 	FinStatement = &Q.FinStatement
 	HighVolumeStockBrand = &Q.HighVolumeStockBrand
+	MarketCalendar = &Q.MarketCalendar
+	MarketEvent = &Q.MarketEvent
 	NikkeiStockAverageDailyPrice = &Q.NikkeiStockAverageDailyPrice
 	NotificationHistory = &Q.NotificationHistory
 	QuizAnswer = &Q.QuizAnswer
@@ -81,6 +85,8 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		FinAnnouncement:                   newFinAnnouncement(db, opts...),
 		FinStatement:                      newFinStatement(db, opts...),
 		HighVolumeStockBrand:              newHighVolumeStockBrand(db, opts...),
+		MarketCalendar:                    newMarketCalendar(db, opts...),
+		MarketEvent:                       newMarketEvent(db, opts...),
 		NikkeiStockAverageDailyPrice:      newNikkeiStockAverageDailyPrice(db, opts...),
 		NotificationHistory:               newNotificationHistory(db, opts...),
 		QuizAnswer:                        newQuizAnswer(db, opts...),
@@ -109,6 +115,8 @@ type Query struct {
 	FinAnnouncement                   finAnnouncement
 	FinStatement                      finStatement
 	HighVolumeStockBrand              highVolumeStockBrand
+	MarketCalendar                    marketCalendar
+	MarketEvent                       marketEvent
 	NikkeiStockAverageDailyPrice      nikkeiStockAverageDailyPrice
 	NotificationHistory               notificationHistory
 	QuizAnswer                        quizAnswer
@@ -140,6 +148,8 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		FinAnnouncement:                   q.FinAnnouncement.clone(db),
 		FinStatement:                      q.FinStatement.clone(db),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.clone(db),
+		MarketCalendar:                    q.MarketCalendar.clone(db),
+		MarketEvent:                       q.MarketEvent.clone(db),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.clone(db),
 		NotificationHistory:               q.NotificationHistory.clone(db),
 		QuizAnswer:                        q.QuizAnswer.clone(db),
@@ -176,6 +186,8 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		FinAnnouncement:                   q.FinAnnouncement.replaceDB(db),
 		FinStatement:                      q.FinStatement.replaceDB(db),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.replaceDB(db),
+		MarketCalendar:                    q.MarketCalendar.replaceDB(db),
+		MarketEvent:                       q.MarketEvent.replaceDB(db),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.replaceDB(db),
 		NotificationHistory:               q.NotificationHistory.replaceDB(db),
 		QuizAnswer:                        q.QuizAnswer.replaceDB(db),
@@ -202,6 +214,8 @@ type queryCtx struct {
 	FinAnnouncement                   IFinAnnouncementDo
 	FinStatement                      IFinStatementDo
 	HighVolumeStockBrand              IHighVolumeStockBrandDo
+	MarketCalendar                    IMarketCalendarDo
+	MarketEvent                       IMarketEventDo
 	NikkeiStockAverageDailyPrice      INikkeiStockAverageDailyPriceDo
 	NotificationHistory               INotificationHistoryDo
 	QuizAnswer                        IQuizAnswerDo
@@ -228,6 +242,8 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		FinAnnouncement:                   q.FinAnnouncement.WithContext(ctx),
 		FinStatement:                      q.FinStatement.WithContext(ctx),
 		HighVolumeStockBrand:              q.HighVolumeStockBrand.WithContext(ctx),
+		MarketCalendar:                    q.MarketCalendar.WithContext(ctx),
+		MarketEvent:                       q.MarketEvent.WithContext(ctx),
 		NikkeiStockAverageDailyPrice:      q.NikkeiStockAverageDailyPrice.WithContext(ctx),
 		NotificationHistory:               q.NotificationHistory.WithContext(ctx),
 		QuizAnswer:                        q.QuizAnswer.WithContext(ctx),

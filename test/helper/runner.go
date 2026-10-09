@@ -27,6 +27,7 @@ type TestRunnerOptions struct {
 	EvaluateDailyStockPicksV1Command                 *commands.EvaluateDailyStockPicksV1Command
 	CreateDailyStockPicksV1Command                   *commands.CreateDailyStockPicksV1Command
 	CreateDailyAvoidStocksV1Command                  *commands.CreateDailyAvoidStocksV1Command
+	SyncMarketCalendarCommand                        *commands.SyncMarketCalendarCommand
 	IndexInteractor                                  usecase.IndexInteractor
 	SlackAPIClient                                   gateway.SlackAPIClient
 	MySQLDumpClient                                  gateway.MySQLDumpClient
@@ -98,6 +99,7 @@ func NewTestRunner(opts TestRunnerOptions) *cli.Runner {
 		opts.EvaluateDailyStockPicksV1Command,
 		opts.CreateDailyStockPicksV1Command,
 		opts.CreateDailyAvoidStocksV1Command,
+		opts.SyncMarketCalendarCommand,
 		opts.IndexInteractor,
 		opts.SlackAPIClient,
 	)
@@ -118,5 +120,8 @@ func applyQuizCommandDefaults(opts *TestRunnerOptions) {
 	}
 	if opts.CreateDailyAvoidStocksV1Command == nil {
 		opts.CreateDailyAvoidStocksV1Command = commands.NewCreateDailyAvoidStocksV1Command(nil)
+	}
+	if opts.SyncMarketCalendarCommand == nil {
+		opts.SyncMarketCalendarCommand = commands.NewSyncMarketCalendarCommand(nil)
 	}
 }

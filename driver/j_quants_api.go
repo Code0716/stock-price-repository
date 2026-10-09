@@ -110,6 +110,49 @@ func (c *StockAPIClient) GetAnnounceFinSchedule(ctx context.Context) ([]*gateway
 	return responseInfo, nil
 }
 
+// GetTradingCalendar - 取引カレンダー（営業日・休場日）を from〜to の範囲で取得する
+func (c *StockAPIClient) GetTradingCalendar(ctx context.Context, from, to time.Time) ([]*gateway.TradingCalendarDay, error) {
+	u, err := url.Parse(fmt.Sprintf("%s/markets/calendar", config.GetJQuants().JQuantsBaseURLV2))
+	if err != nil {
+		return nil, errors.Wrap(err, "GetTradingCalendar url.Parse error")
+	}
+	q := u.Query()
+	q.Set("from", util.DatetimeToDateStr(from))
+	q.Set("to", util.DatetimeToDateStr(to))
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "j-quants.api request error")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	req.Header.Set("x-api-key", config.GetJQuants().JQuantsBaseURLV2APIKey)
+
+	res, err := c.request.GetHTTPClient().Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api request to: %s`, u.String()))
+	}
+	defer res.Body.Close()
+
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "j-quants.api io.ReadAll error")
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.Errorf(`j-quants.api status error status: %d, url: %s`, res.StatusCode, u.String())
+	}
+
+	var response jQuantsTradingCalendarResponse
+	if err := json.Unmarshal(resBody, &response); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf(`j-quants.api JSON parse error to: %s`, u.String()))
+	}
+
+	return c.jQuantsTradingCalendarResponseToResponseInfo(response)
+}
+
 // getDailyPricesBySymbolAndRangeJQ - 指定した証券コードの日足を指定した期間分取得する
 // 場中の価格が取れるわけではない
 func (c *StockAPIClient) getDailyPricesBySymbolAndRangeJQ(ctx context.Context, symbol string, dateFrom, dateTo time.Time) ([]*gateway.StockPrice, error) {

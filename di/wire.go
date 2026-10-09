@@ -43,6 +43,8 @@ var usecaseSet = wire.NewSet(
 	usecase.NewCreateDailyAvoidStocksInteractor,
 	usecase.NewDailyAvoidStockInteractor,
 	usecase.NewNotificationHistoryInteractor,
+	usecase.NewSyncMarketCalendarInteractor,
+	usecase.NewMarketCalendarInteractor,
 )
 
 var driverSet = wire.NewSet(
@@ -54,6 +56,7 @@ var driverSet = wire.NewSet(
 	gateway.NewRecordingSlackAPIClient,
 	driver.OpenRedis,
 	driver.NewStockAPIClient,
+	driver.NewEconomicCalendarClient,
 	driver.NewMySQLDumpClient,
 	driver.NewBoxAPIClient,
 	driver.NewLogger,
@@ -80,6 +83,7 @@ var cliSet = wire.NewSet(
 	commands.NewCreateDailyStockPicksV1Command,
 	commands.NewEvaluateDailyStockPicksV1Command,
 	commands.NewCreateDailyAvoidStocksV1Command,
+	commands.NewSyncMarketCalendarCommand,
 )
 
 var databaseSet = wire.NewSet(
@@ -106,6 +110,7 @@ var databaseSet = wire.NewSet(
 	database.NewDailyStockPickRepositoryImpl,
 	database.NewDailyAvoidStockRepositoryImpl,
 	database.NewNotificationHistoryRepositoryImpl,
+	database.NewMarketCalendarRepositoryImpl,
 )
 
 func InitializeCli(ctx context.Context) (*cli.Runner, func(), error) {
@@ -137,6 +142,7 @@ var apiSet = wire.NewSet(
 	handler.NewDailyStockPickHandler,
 	handler.NewDailyAvoidStockHandler,
 	handler.NewNotificationHandler,
+	handler.NewMarketCalendarHandler,
 	router.NewRouter,
 )
 
